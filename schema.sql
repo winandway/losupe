@@ -63,6 +63,18 @@ CREATE TABLE IF NOT EXISTS article_i18n (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_i18n_slug ON article_i18n(lang, slug);
 
+-- Índice de texto completo del buscador (tolerante a acentos, prefijos, ranking bm25).
+-- Se llena desde el código (rebuildSearchIndex / indexArticle), sin triggers.
+CREATE VIRTUAL TABLE IF NOT EXISTS articles_fts USING fts5(
+  article_id UNINDEXED,
+  lang UNINDEXED,
+  title,
+  excerpt,
+  tags,
+  body,
+  tokenize = 'unicode61 remove_diacritics 2'
+);
+
 -- Fuentes que lee el robot (RSS, búsqueda). Se administran desde el panel.
 CREATE TABLE IF NOT EXISTS sources (
   id TEXT PRIMARY KEY,

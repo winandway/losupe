@@ -8,7 +8,7 @@ import { Header } from "@/components/Header";
 import { HeroBanner } from "@/components/HeroBanner";
 import { LangSwitcher } from "@/components/LangSwitcher";
 import { Pagination } from "@/components/Pagination";
-import { SearchForm } from "@/components/SearchForm";
+import { SearchBox } from "@/components/SearchBox";
 import { SectionBadge } from "@/components/SectionBadge";
 import { Byline } from "@/components/Byline";
 import { Prose } from "@/components/Prose";
@@ -21,6 +21,7 @@ import { sampleCardRow } from "./fake-d1";
 vi.mock("next/navigation", () => ({
   usePathname: () => "/es/economia",
   useSearchParams: () => new URLSearchParams("page=2"),
+  useRouter: () => ({ push: vi.fn() }),
 }));
 
 const article = mapCard(sampleCardRow, "es");
@@ -80,7 +81,7 @@ describe("Header, botonera y selector de idioma", () => {
   it("HeroBanner trae el póster del video y el buscador grande", () => {
     const { container } = render(<HeroBanner lang="en" dict={en} />);
     // El video se carga después del evento load (componente cliente); el póster va de una.
-    expect(container.querySelector('img[src="/video/hero-poster.jpg"]')).not.toBeNull();
+    expect(container.querySelector('img[src="/video/hero-v2-poster.jpg"]')).not.toBeNull();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "What's happening, explained.",
     );
@@ -111,10 +112,18 @@ describe("piezas pequeñas", () => {
       "/es/cripto?page=3",
     );
   });
-  it("SearchForm apunta a la ruta del idioma", () => {
-    const { container } = render(<SearchForm lang="en" dict={en} defaultValue="btc" />);
+  it("SearchBox apunta a la ruta del idioma y funciona como formulario", () => {
+    const labels = {
+      placeholder: en.search.placeholder,
+      button: en.search.button,
+      label: en.search.label,
+      seeAllTemplate: en.search.seeAllTemplate,
+      noneTemplate: en.search.noneTemplate,
+    };
+    const { container } = render(<SearchBox lang="en" labels={labels} initialValue="btc" />);
     expect(container.querySelector("form")).toHaveAttribute("action", "/en/search");
-    expect(screen.getByRole("searchbox")).toHaveValue("btc");
+    expect(screen.getByRole("combobox")).toHaveValue("btc");
+    expect(screen.getByRole("combobox")).toHaveAttribute("name", "q");
   });
   it("SectionBadge como enlace y como texto", () => {
     const { rerender } = render(<SectionBadge sectionId="cripto" lang="en" />);

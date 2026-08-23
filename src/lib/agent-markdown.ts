@@ -4,7 +4,8 @@
  */
 import { isLang, type Lang } from "../i18n/config";
 import { articleToMarkdown, listToMarkdown } from "./markdown";
-import { getArticleBySlug, listLatest, searchArticles, type ArticleCard } from "./queries";
+import { getArticleBySlug, listLatest, type ArticleCard } from "./queries";
+import { searchSmart } from "./search";
 import { getSection, sectionByAnySlug } from "./sections";
 import { absoluteUrl, articlePath, ROUTE_WORDS } from "./urls";
 
@@ -68,7 +69,7 @@ export async function renderMarkdown(
           : "Use ?q=term (at least 2 characters).",
         [],
       );
-    const results = await searchArticles(db, lang, q.slice(0, 80));
+    const results = await searchSmart(db, lang, q.slice(0, 80), { limit: 30 });
     return listToMarkdown(
       `${lang === "es" ? "Resultados para" : "Results for"} “${q}” · losupe`,
       `${results.length} ${lang === "es" ? "resultados" : "results"}`,

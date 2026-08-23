@@ -38,7 +38,8 @@ quedó y cómo volver a comprobarlo.
 
 ### Rendimiento (Core Web Vitals)
 
-- ✅ Video del frente diferido: se carga después de `load`, no compite con el LCP; se omite con ahorro de datos o `prefers-reduced-motion`.
+- ✅ Video del frente diferido: se carga después de `load`, no compite con el LCP; se omite con ahorro de datos o `prefers-reduced-motion`. Desde el 23/08 es el vuelo sobre Manhattan (`hero-v2.mp4`, 1,2 MB) con fuente móvil aparte (`hero-v2-m.mp4`, 0,4 MB).
+- ✅ Buscador con sugerencias: la ruta `/datos/buscar` responde `X-Robots-Tag: noindex` y `max-age=60`; la página `/buscar` sigue indexable y funciona sin JavaScript.
 - ✅ Fuentes solo `latin` y Newsreader en pesos fijos (700/800): menos KB.
 - ✅ `width`/`height` en las imágenes de las notas (sin saltos de diseño); `loading="lazy"` fuera de pantalla; `fetchpriority="high"` en la imagen principal.
 - ⚠️ Estáticos: `public/_headers` pide `max-age=86400`; YaDominios Cloud hoy no aplica ese archivo (responde `max-age=0`), pero su borde sí los cachea (`cf-cache-status: HIT`).

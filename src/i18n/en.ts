@@ -67,6 +67,10 @@ export const en: Dict = {
       n === 1 ? `1 result for “${q}”` : `${n} results for “${q}”`,
     none: (q: string) => `Nothing found for “${q}”. Try another word.`,
     hint: "Type at least 2 characters.",
+    seeAll: (q: string) => `See all results for “${q}”`,
+    typing: "Start typing and we will suggest stories.",
+    seeAllTemplate: "See all results for “{q}”",
+    noneTemplate: "Nothing found for “{q}”. Try another word.",
   },
   author: {
     articlesBy: "Stories by",

@@ -78,7 +78,7 @@ describe("splitSql", () => {
     for (const p of parts) {
       expect(p).not.toContain(";");
       expect(p).toMatch(
-        /^(CREATE TABLE IF NOT EXISTS|CREATE INDEX IF NOT EXISTS|CREATE UNIQUE INDEX IF NOT EXISTS|INSERT OR IGNORE INTO)/,
+        /^(CREATE TABLE IF NOT EXISTS|CREATE VIRTUAL TABLE IF NOT EXISTS|CREATE INDEX IF NOT EXISTS|CREATE UNIQUE INDEX IF NOT EXISTS|INSERT OR IGNORE INTO)/,
       );
     }
   });

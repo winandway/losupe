@@ -26,6 +26,7 @@ import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
 import { createSchemaGuard } from "./src/lib/schema-guard";
+import { rebuildSearchIndex } from "./src/lib/search";
 
 // Esquema + semillas (archivo de MundosCrypto y notas editoriales) viajan dentro del worker:
 // la base se crea y se siembra sola, sin pasos manuales.
@@ -75,6 +76,10 @@ export default {
     );
     if (freshSeeds.length > 0) {
       ctx.waitUntil(pingIndexNow(base, [`${base}/sitemap.xml`, `${base}/news-sitemap.xml`]));
+    }
+    // Índice del buscador: se reconstruye cuando cambió el esquema o entró contenido nuevo.
+    if (env.DB && (schema.applied || freshSeeds.length > 0)) {
+      ctx.waitUntil(rebuildSearchIndex(env.DB).catch(() => undefined));
     }
 
     if (isHealth) {

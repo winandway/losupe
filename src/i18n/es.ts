@@ -65,6 +65,10 @@ export const es = {
       n === 1 ? `1 resultado para “${q}”` : `${n} resultados para “${q}”`,
     none: (q: string) => `No encontramos nada con “${q}”. Prueba con otra palabra.`,
     hint: "Escribe al menos 2 letras.",
+    seeAll: (q: string) => `Ver todos los resultados para “${q}”`,
+    typing: "Escribe y te vamos sugiriendo notas.",
+    seeAllTemplate: "Ver todos los resultados para “{q}”",
+    noneTemplate: "No encontramos nada con “{q}”. Prueba con otra palabra.",
   },
   author: {
     articlesBy: "Notas de",

@@ -2,11 +2,12 @@ import { Container } from "@/components/Container";
 import type { Metadata } from "next";
 import { z } from "zod";
 import { ArticleCard } from "@/components/ArticleCard";
-import { SearchForm } from "@/components/SearchForm";
+import { SearchBox } from "@/components/SearchBox";
 import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
-import { searchArticles } from "@/lib/queries";
+import { searchSmart } from "@/lib/search";
+import { searchIndexGuard } from "@/lib/search-guard";
 import { searchPath } from "@/lib/urls";
 
 type Props = {
@@ -34,13 +35,30 @@ export default async function SearchPage({ params, searchParams }: Props) {
   const q = parsed.success ? parsed.data : "";
   const typedSomething = typeof raw === "string" && raw.length > 0;
 
-  const results = q ? await searchArticles(await getDb(), lang, q) : [];
+  let results: Awaited<ReturnType<typeof searchSmart>> = [];
+  if (q) {
+    const db = await getDb();
+    await searchIndexGuard.ensure(db);
+    results = await searchSmart(db, lang, q, { limit: 30 });
+  }
 
   return (
     <Container className="py-6 md:py-8">
       <h1 className="font-display text-3xl font-bold text-ink md:text-4xl">{dict.search.title}</h1>
       <div className="mt-5 max-w-2xl">
-        <SearchForm lang={lang} dict={dict} defaultValue={q} autoFocus={!q} />
+        <SearchBox
+          lang={lang}
+          initialValue={q}
+          autoFocus={!q}
+          labels={{
+            placeholder: dict.search.placeholder,
+            button: dict.search.button,
+            label: dict.search.label,
+            seeAllTemplate: dict.search.seeAllTemplate,
+            noneTemplate: dict.search.noneTemplate,
+          }}
+        />
+        {!q ? <p className="mt-2 text-sm text-muted">{dict.search.typing}</p> : null}
         {typedSomething && !q ? (
           <p className="mt-2 text-sm text-coral">{dict.search.hint}</p>
         ) : null}

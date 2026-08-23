@@ -23,8 +23,10 @@ const ROUTES_200 = [
   "/apple-icon.png",
   "/opengraph-image.png",
   "/favicon.ico",
-  "/video/hero.mp4",
-  "/video/hero-poster.jpg",
+  "/video/hero-v2.mp4",
+  "/video/hero-v2-m.mp4",
+  "/video/hero-v2-poster.jpg",
+  "/datos/buscar?q=bit&lang=es",
   "/es/autor/magaly-molina",
   "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
   "/en/sales/pedro-llerena-launches-mercatren-1-3-million-products-store-taking-on-amazon",
@@ -99,6 +101,43 @@ test("señales para buscadores y agentes de IA", async ({ request }) => {
   expect(img.headers()["cache-control"]).toContain("max-age=86400");
 });
 
+test("buscador: sugerencias, sinónimos y acentos", async ({ request }) => {
+  const bit = (await (await request.get("/datos/buscar?q=bit&lang=es")).json()) as {
+    items: { title: string; url: string }[];
+  };
+  expect(bit.items.length).toBeGreaterThan(0);
+  expect(bit.items.some((i) => /bitcoin/i.test(i.title))).toBe(true);
+  // "btc" → bitcoin (sinónimo); "dolar" sin acento → "dólares"; "mer" → Mercatren
+  const btc = (await (await request.get("/datos/buscar?q=btc&lang=es")).json()) as {
+    items: { title: string }[];
+  };
+  expect(btc.items.some((i) => /bitcoin/i.test(i.title))).toBe(true);
+  const dolar = (await (await request.get("/datos/buscar?q=dolar&lang=es")).json()) as {
+    items: unknown[];
+  };
+  expect(dolar.items.length).toBeGreaterThan(0);
+  const mer = (await (await request.get("/datos/buscar?q=mer&lang=en")).json()) as {
+    items: { url: string }[];
+  };
+  expect(mer.items.some((i) => i.url.includes("mercatren"))).toBe(true);
+  const bad = await request.get("/datos/buscar?q=&lang=es");
+  expect(bad.status()).toBe(400);
+  const page = await request.get("/es/buscar?q=btc");
+  expect(await page.text()).toContain("Bitcoin");
+});
+
+test("buscador del frente: escribe y sugiere sin enviar", async ({ page }) => {
+  await page.goto("/es");
+  const box = page.getByRole("combobox").first();
+  await box.fill("merca");
+  const list = page.getByRole("listbox");
+  await expect(list).toBeVisible();
+  await expect(list.getByRole("option").first()).toContainText(/Mercatren/i);
+  await box.press("ArrowDown");
+  await box.press("Enter");
+  await expect(page).toHaveURL(/\/es\/ventas\/pedro-llerena-lanza-mercatren/);
+});
+
 test("la raíz redirige al idioma del navegador", async ({ request }) => {
   const es = await request.get("/", {
     maxRedirects: 0,
@@ -145,7 +184,7 @@ test("el robot solo responde al programador", async ({ request }) => {
 
 test("portada: franja de video, buscador grande y botonera", async ({ page }) => {
   await page.goto("/es");
-  await expect(page.locator('video source[src="/video/hero.mp4"]')).toHaveCount(1);
+  await expect(page.locator('video source[src^="/video/hero-v2"]')).toHaveCount(1);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lo que pasa, explicado.");
   await expect(page.getByPlaceholder("¿Qué quieres saber hoy?")).toBeVisible();
   const botonera = page.getByRole("navigation", { name: "Secciones" });

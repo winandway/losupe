@@ -12,7 +12,7 @@ export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: nu
       <div className="mx-auto grid max-w-6xl gap-8 px-4 py-10 md:grid-cols-3">
         <div>
           <Link href={homePath(lang)} aria-label={dict.brand.name}>
-            <Logo />
+            <Logo id="losupe-mark-footer" />
           </Link>
           <p className="mt-3 max-w-xs text-sm text-muted">{dict.brand.description}</p>
         </div>

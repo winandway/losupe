@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Newsreader } from "next/font/google";
+import { Inter, Newsreader, Space_Grotesk } from "next/font/google";
 import "../globals.css";
 import { Footer } from "@/components/Footer";
 import { Header } from "@/components/Header";
@@ -11,6 +11,13 @@ import { WebMcp } from "@/components/WebMcp";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  weight: ["500", "700"],
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
@@ -68,7 +75,10 @@ export default async function RootLayout({ children, params }: Props) {
   const lang = toLang((await params).lang);
   const dict = getDict(lang);
   return (
-    <html lang={lang} className={`${inter.variable} ${newsreader.variable} h-full antialiased`}>
+    <html
+      lang={lang}
+      className={`${inter.variable} ${newsreader.variable} ${spaceGrotesk.variable} h-full antialiased`}
+    >
       <body className="flex min-h-full flex-col">
         <Header lang={lang} dict={dict} />
         <main id="contenido" className="flex-1">

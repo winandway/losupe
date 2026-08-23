@@ -13,6 +13,7 @@
   --color-line: #e6e2d6;
   --font-sans: var(--font-inter), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
   --font-display: var(--font-newsreader), Georgia, "Times New Roman", serif;
+  --font-brand: var(--font-space-grotesk), "Inter", ui-sans-serif, system-ui, sans-serif;
 }
 
 html {

@@ -58,9 +58,21 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
 
 ## Marca y frente
 
-- Video del frente: `public/video/hero.mp4` (franja 3:1, 1600×533, 12 s en bucle sin corte, 1.8 MB) y póster
-  `hero-poster.jpg`. Origen: Mixkit «Aerial view of the glass corporate buildings of a big city»
-  (licencia Mixkit Free, sin atribución obligatoria), recortado y comprimido con ffmpeg.
+- Video del frente: `public/video/hero-v2.mp4` (franja 3:1, 1600×532, 17,7 s, 1,2 MB; versión móvil
+  `hero-v2-m.mp4`, 960×320, 0,4 MB) y póster `hero-v2-poster.jpg`. Vuelo cinematográfico entre los
+  edificios de Manhattan al atardecer (Mixkit 30544, licencia Mixkit Free, sin atribución obligatoria);
+  bucle sin corte por fundido cruzado (ffmpeg `xfade`), nunca en reversa. Se carga después de `load`
+  (`HeroVideo`) y se omite con ahorro de datos o `prefers-reduced-motion`.
+- Buscador profesional: índice FTS5 en D1 (`articles_fts`, `unicode61 remove_diacritics 2`, ranking
+  `bm25`), sugerencias desde la primera letra (`GET /datos/buscar?q&lang&limit`, componente
+  `SearchBox` con teclado y ARIA), sinónimos bilingües en `src/lib/search-synonyms.ts`
+  (btc↔bitcoin, ia↔inteligencia artificial↔ai, dólar↔usd…), tolerante a acentos y con prefijos.
+  El índice se reconstruye solo cuando cambia el esquema o entra una semilla (`rebuildSearchIndex`)
+  y, si estuviera vacío, el guardián `searchIndexGuard` lo rellena en la primera búsqueda; si FTS
+  fallara, cae a `LIKE` con sinónimos.
+- Logo «losupe.com»: `src/components/Logo.tsx` (marca SVG: anillo degradado + arco y núcleo amarillos;
+  wordmark Space Grotesk con degradado, punto amarillo y «.com»). Iconos y tarjeta social generados
+  desde ahí (`src/app/icon.png`, `apple-icon.png`, `opengraph-image.png`, `public/brand/`).
 - Autores: `equipo-losupe` (redacción), `kevin-rondon` (archivo de MundosCrypto) y **`magaly-molina`**
   (firma por defecto de lo nuevo: `settings.default_author`).
 - Esquema versionado por huella: si `schema.sql` cambia, el worker lo reaplica solo
