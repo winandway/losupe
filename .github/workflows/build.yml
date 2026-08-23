@@ -1,0 +1,49 @@
+# Compila el sitio y lo empuja a la rama `yapanel-build`, que es la que conecta YaDominios Cloud.
+# Guía oficial: https://yadominios.com/docs/publicar-en-yadominios-cloud
+name: build-para-yadominios-cloud
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: yapanel-build
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Instalar y compilar (OpenNext)
+        run: npm ci && npx opennextjs-cloudflare build
+
+      - name: Empaquetar en un solo _worker.js
+        run: |
+          npx wrangler deploy --dry-run --outdir=.dist-worker --minify
+          mkdir out-deploy
+          cp .dist-worker/worker.js out-deploy/_worker.js
+          cp -r .open-next/assets/* out-deploy/ 2>/dev/null || true
+          cp yadominios.json out-deploy/
+          cp schema.sql out-deploy/
+          echo "Tamaño del worker: $(du -h out-deploy/_worker.js | cut -f1)"
+
+      - name: Publicar en la rama yapanel-build
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_branch: yapanel-build
+          publish_dir: ./out-deploy
+          force_orphan: true
+          commit_message: "build: ${{ github.sha }}"

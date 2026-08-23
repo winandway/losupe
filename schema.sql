@@ -1,0 +1,170 @@
+-- losupe.com — esquema de la base de datos (D1 / SQLite).
+-- Idempotente: YaDominios Cloud lo ejecuta en cada publicación.
+-- Regla: nada de punto y coma dentro de los textos de este archivo.
+
+CREATE TABLE IF NOT EXISTS sections (
+  id TEXT PRIMARY KEY,
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  notes_per_day INTEGER NOT NULL DEFAULT 1,
+  active INTEGER NOT NULL DEFAULT 1
+);
+
+CREATE TABLE IF NOT EXISTS authors (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'person',
+  bio_es TEXT,
+  bio_en TEXT,
+  role_es TEXT,
+  role_en TEXT,
+  avatar_url TEXT,
+  active INTEGER NOT NULL DEFAULT 1,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS articles (
+  id TEXT PRIMARY KEY,
+  section_id TEXT NOT NULL REFERENCES sections(id),
+  author_id TEXT NOT NULL REFERENCES authors(id),
+  status TEXT NOT NULL DEFAULT 'draft',
+  kind TEXT NOT NULL DEFAULT 'evergreen',
+  origin TEXT NOT NULL DEFAULT 'manual',
+  image_url TEXT,
+  image_alt_es TEXT,
+  image_alt_en TEXT,
+  image_credit TEXT,
+  sources_json TEXT NOT NULL DEFAULT '[]',
+  ai_assisted INTEGER NOT NULL DEFAULT 0,
+  reading_minutes INTEGER,
+  views INTEGER NOT NULL DEFAULT 0,
+  legacy_id TEXT,
+  legacy_slug TEXT,
+  is_premium INTEGER NOT NULL DEFAULT 0,
+  published_at TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_articles_pub ON articles(status, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_section ON articles(section_id, status, published_at DESC);
+CREATE INDEX IF NOT EXISTS idx_articles_author ON articles(author_id, status, published_at DESC);
+
+CREATE TABLE IF NOT EXISTS article_i18n (
+  article_id TEXT NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+  lang TEXT NOT NULL,
+  slug TEXT NOT NULL,
+  title TEXT NOT NULL,
+  excerpt TEXT NOT NULL DEFAULT '',
+  content_html TEXT NOT NULL,
+  meta_title TEXT,
+  meta_description TEXT,
+  tags_json TEXT NOT NULL DEFAULT '[]',
+  machine_translated INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (article_id, lang)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_i18n_slug ON article_i18n(lang, slug);
+
+-- Fuentes que lee el robot (RSS, búsqueda). Se administran desde el panel.
+CREATE TABLE IF NOT EXISTS sources (
+  id TEXT PRIMARY KEY,
+  section_id TEXT NOT NULL REFERENCES sections(id),
+  name TEXT NOT NULL,
+  url TEXT NOT NULL,
+  kind TEXT NOT NULL DEFAULT 'rss',
+  lang TEXT NOT NULL DEFAULT 'es',
+  weight INTEGER NOT NULL DEFAULT 1,
+  active INTEGER NOT NULL DEFAULT 1,
+  last_ok_at TEXT,
+  last_error TEXT
+);
+
+-- Corridas del robot (una por mañana) y sus piezas.
+CREATE TABLE IF NOT EXISTS runs (
+  id TEXT PRIMARY KEY,
+  trigger TEXT NOT NULL,
+  status TEXT NOT NULL,
+  step TEXT,
+  started_at TEXT NOT NULL,
+  finished_at TEXT,
+  summary_json TEXT,
+  error TEXT
+);
+CREATE TABLE IF NOT EXISTS run_items (
+  id TEXT PRIMARY KEY,
+  run_id TEXT NOT NULL REFERENCES runs(id),
+  section_id TEXT,
+  status TEXT NOT NULL,
+  step TEXT,
+  topic TEXT,
+  sources_json TEXT,
+  article_id TEXT,
+  cost_usd REAL NOT NULL DEFAULT 0,
+  error TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Registro de gasto en IA e imágenes, por día. El tope diario vive en settings.
+CREATE TABLE IF NOT EXISTS spend_log (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  day TEXT NOT NULL,
+  provider TEXT NOT NULL,
+  model TEXT,
+  units REAL NOT NULL DEFAULT 0,
+  cost_usd REAL NOT NULL DEFAULT 0,
+  run_id TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_spend_day ON spend_log(day);
+
+CREATE TABLE IF NOT EXISTS settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Suscriptores del boletín (fase 4).
+CREATE TABLE IF NOT EXISTS subscribers (
+  id TEXT PRIMARY KEY,
+  email TEXT NOT NULL UNIQUE,
+  lang TEXT NOT NULL DEFAULT 'es',
+  status TEXT NOT NULL DEFAULT 'pending',
+  sections_json TEXT NOT NULL DEFAULT '[]',
+  token TEXT NOT NULL,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  confirmed_at TEXT,
+  unsubscribed_at TEXT,
+  last_sent_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS page_views (
+  day TEXT NOT NULL,
+  article_id TEXT NOT NULL,
+  views INTEGER NOT NULL DEFAULT 0,
+  PRIMARY KEY (day, article_id)
+);
+
+-- Datos base (idempotentes).
+INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
+  ('economia', 1, 2),
+  ('ventas', 2, 1),
+  ('tecnologia', 3, 1),
+  ('cripto', 4, 1),
+  ('artistas', 5, 1);
+
+INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en) VALUES
+  ('equipo-losupe', 'Equipo editorial de losupe', 'newsroom',
+   'Redacción de losupe. Leemos varias fuentes, escribimos en claro y citamos de dónde sale cada dato. Parte del trabajo se hace con ayuda de inteligencia artificial y lo revisa el equipo.',
+   'The losupe newsroom. We read multiple sources, write in plain language, and cite where every fact comes from. Part of the work is done with help from AI and reviewed by the team.',
+   'Redacción', 'Newsroom'),
+  ('kevin-rondon', 'Kevin Rondón', 'person',
+   'Periodista especializado en criptomonedas y mercados. Escribió para MundosCrypto, el portal que dio origen a losupe.',
+   'Journalist covering cryptocurrencies and markets. He wrote for MundosCrypto, the portal that became losupe.',
+   'Periodista de cripto y mercados', 'Crypto and markets journalist');
+
+INSERT OR IGNORE INTO settings (key, value) VALUES
+  ('robot_paused', '1'),
+  ('daily_budget_usd', '1.00'),
+  ('notes_per_day', '6'),
+  ('languages', 'es,en'),
+  ('timezone', 'America/New_York'),
+  ('evergreen_ratio', '0.7');

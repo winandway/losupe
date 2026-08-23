@@ -1,0 +1,6 @@
+npx lint-staged
+gitleaks protect --staged --no-banner --redact
+CAMBIADOS=$(git diff --cached --name-only --diff-filter=ACMR | grep -E '\.(ts|tsx)$' | grep -v '\.d\.ts$' || true)
+if [ -n "$CAMBIADOS" ]; then
+  npx vitest related --run --passWithNoTests $CAMBIADOS
+fi

@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>losupe.com — Plan de arranque</title>
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    font-family: "Avenir Next", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #0B1F3A;
+    background: #fff;
+    font-size: 11.5px;
+    line-height: 1.35;
+  }
+  :root{
+    --navy:#0B1F3A; --navy2:#132B4F; --paper:#F7F5EF; --yellow:#FFD60A; --coral:#FF5A5F;
+    --mint:#2EE6A6; --sky:#3B82F6; --violet:#8B5CF6; --orange:#FB923C; --ink:#0B1F3A; --muted:#5B6B82;
+  }
+  .page {
+    width: 297mm; height: 210mm; position: relative; overflow: hidden;
+    page-break-after: always; break-after: page; padding: 13mm 15mm 12mm 15mm; background: #fff;
+  }
+  .page:last-child { page-break-after: auto; break-after: auto; }
+  .dark { background: var(--navy); color: #fff; }
+  .paper { background: var(--paper); }
+  h1,h2,h3,h4 { margin: 0; font-weight: 700; letter-spacing: -0.01em; }
+  h1 { font-size: 54px; line-height: 1.0; }
+  h2 { font-size: 26px; line-height: 1.1; }
+  h3 { font-size: 15px; }
+  p { margin: 0; }
+  .kicker { font-size: 10.5px; text-transform: uppercase; letter-spacing: .16em; font-weight: 700; color: var(--coral); }
+  .dark .kicker { color: var(--yellow); }
+  .sub { color: var(--muted); font-size: 12.5px; }
+  .dark .sub { color: #C9D3E3; }
+  .grid { display: grid; gap: 10px; }
+  .card { background: #fff; border-radius: 14px; padding: 12px 14px; border: 1px solid #E6E2D6; }
+  .card.tint-y { background: #FFF7C7; border-color: #F3E28A; }
+  .card.tint-c { background: #FFE3E4; border-color: #FFBEC0; }
+  .card.tint-m { background: #D9FBEE; border-color: #9FF0D1; }
+  .card.tint-s { background: #DDE9FF; border-color: #B8CFFF; }
+  .card.tint-v { background: #ECE3FF; border-color: #D2BFFF; }
+  .card.tint-o { background: #FFE8D6; border-color: #FFC9A1; }
+  .chip { display: inline-block; padding: 3px 9px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .02em; }
+  .pill-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .num { font-size: 30px; font-weight: 800; line-height: 1; }
+  .foot { position: absolute; left: 15mm; right: 15mm; bottom: 7mm; display: flex; justify-content: space-between; font-size: 9.5px; color: var(--muted); }
+  .dark .foot { color: #9FB0C9; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: middle; }
+  table { border-collapse: collapse; width: 100%; }
+  th, td { text-align: left; padding: 7px 9px; vertical-align: top; }
+  th { font-size: 10px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); border-bottom: 2px solid #E6E2D6; }
+  td { border-bottom: 1px solid #ECE8DC; font-size: 11px; }
+  tr:last-child td { border-bottom: none; }
+  .tag { font-weight: 700; }
+  .big { font-size: 13px; }
+  .money { font-weight: 800; color: var(--navy); white-space: nowrap; }
+  .ok { color: #0C8F5A; font-weight: 800; }
+  .hl { background: linear-gradient(transparent 55%, var(--yellow) 55%); padding: 0 2px; }
+  .dark .hl { background: linear-gradient(transparent 55%, rgba(255,214,10,.55) 55%); }
+  .arrow { font-size: 20px; color: #B9B2A0; align-self: center; text-align: center; }
+  .step { border-radius: 14px; padding: 12px 13px; color: #fff; position: relative; min-height: 132px; }
+  .step .n { position: absolute; top: 8px; right: 10px; font-size: 22px; font-weight: 800; opacity: .35; }
+  .step h4 { font-size: 13.5px; margin-bottom: 5px; }
+  .step p { font-size: 10.8px; line-height: 1.32; opacity: .95; }
+  .step small { display: block; margin-top: 6px; font-size: 9.5px; font-weight: 700; opacity: .9; letter-spacing: .03em; }
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  ul { margin: 6px 0 0 0; padding-left: 16px; }
+  li { margin-bottom: 4px; }
+  .tl { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .phase { border-radius: 14px; padding: 14px 15px; background: #fff; border: 1px solid #E6E2D6; min-height: 150px; }
+  .phase .h { display: flex; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+  .phase .h .num { font-size: 28px; }
+  .phase ul { padding-left: 14px; font-size: 11.2px; }
+  .phase li { margin-bottom: 5px; }
+  .phase .when { display: inline-block; margin-top: 6px; font-size: 9.8px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--paper); }
+  .alert { border-radius: 14px; padding: 11px 14px; background: #FFF1D6; border: 1.5px solid #FFC46B; }
+  table.costs td { padding: 5px 8px; font-size: 10.4px; }
+  table.costs th { padding: 5px 8px; }
+  .badge { font-size: 9.5px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; padding: 3px 8px; border-radius: 6px; background: var(--navy); color: #fff; display: inline-block; }
+</style>
+</head>
+<body>
+
+<!-- ===================== PÁGINA 1: PORTADA ===================== -->
+<section class="page dark" style="padding:0;">
+  <div style="position:absolute; inset:0; background:
+      radial-gradient(520px 520px at 88% 18%, rgba(255,214,10,.22), transparent 60%),
+      radial-gradient(420px 420px at 8% 92%, rgba(46,230,166,.18), transparent 60%),
+      radial-gradient(380px 380px at 70% 95%, rgba(255,90,95,.20), transparent 60%);"></div>
+  <div style="position:absolute; left:15mm; top:14mm; display:flex; gap:8px; align-items:center;">
+    <span class="badge" style="background:var(--yellow); color:var(--navy);">Plan de arranque</span>
+    <span style="font-size:10.5px; color:#C9D3E3;">22 de agosto de 2026 · preparado para Richard · Windoce LLC</span>
+  </div>
+  <div style="position:absolute; left:15mm; top:44mm; right:15mm;">
+    <p class="kicker">De MundosCrypto a un medio global</p>
+    <h1 style="margin-top:6px;">losupe.com</h1>
+    <h2 style="font-weight:500; margin-top:10px; color:#E8EEF8;">El portal de noticias que se escribe solo <span style="color:var(--yellow);">cada mañana</span>.</h2>
+    <p style="margin-top:16px; max-width:560px; font-size:13.5px; color:#C9D3E3;">
+      Un robot propio —dentro de YaDominios Cloud, sin n8n ni herramientas ajenas— lee las fuentes del día,
+      elige los temas, redacta notas nuevas en español e inglés, las ilustra, las publica y avisa a los buscadores.
+      Tú solo miras el panel y, si quieres, corriges.
+    </p>
+    <div class="pill-row" style="margin-top:18px;">
+      <span class="chip" style="background:var(--mint); color:var(--navy);">Economía</span>
+      <span class="chip" style="background:var(--yellow); color:var(--navy);">Ventas y motivación</span>
+      <span class="chip" style="background:var(--sky); color:#fff;">Tecnología e IA</span>
+      <span class="chip" style="background:var(--orange); color:var(--navy);">Cripto</span>
+      <span class="chip" style="background:var(--coral); color:#fff;">Artistas y tendencias</span>
+    </div>
+  </div>
+  <div style="position:absolute; left:15mm; right:15mm; top:124mm; display:grid; grid-template-columns:1fr 22px 1fr 22px 1fr 22px 1fr; gap:6px; align-items:stretch;">
+    <div style="background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.16); border-radius:14px; padding:10px 12px;">
+      <p class="kicker" style="color:var(--mint);">Fuentes</p><p style="font-size:11px; margin-top:3px; color:#E8EEF8;">RSS de medios y blogs oficiales + búsqueda de noticias. <b>Gratis.</b></p></div>
+    <div style="color:rgba(255,255,255,.45); font-size:22px; align-self:center; text-align:center;">›</div>
+    <div style="background:rgba(255,214,10,.12); border:1px solid rgba(255,214,10,.45); border-radius:14px; padding:10px 12px;">
+      <p class="kicker">Robot redactor</p><p style="font-size:11px; margin-top:3px; color:#E8EEF8;">Cron diario + IA: elige, redacta en ES/EN, ilustra, revisa, publica. <b>Código nuestro.</b></p></div>
+    <div style="color:rgba(255,255,255,.45); font-size:22px; align-self:center; text-align:center;">›</div>
+    <div style="background:rgba(59,130,246,.14); border:1px solid rgba(59,130,246,.5); border-radius:14px; padding:10px 12px;">
+      <p class="kicker" style="color:#8FB4FF;">Portal losupe.com</p><p style="font-size:11px; margin-top:3px; color:#E8EEF8;">Next.js 16 en YaDominios Cloud. Base D1 + fotos R2. Hereda MundosCrypto.</p></div>
+    <div style="color:rgba(255,255,255,.45); font-size:22px; align-self:center; text-align:center;">›</div>
+    <div style="background:rgba(255,90,95,.14); border:1px solid rgba(255,90,95,.5); border-radius:14px; padding:10px 12px;">
+      <p class="kicker" style="color:#FF9A9D;">Lectores</p><p style="font-size:11px; margin-top:3px; color:#E8EEF8;">Google, Discover, RSS y, al final, suscriptores con boletín cada 4 días.</p></div>
+  </div>
+  <div style="position:absolute; left:15mm; right:15mm; bottom:16mm; display:grid; grid-template-columns:repeat(4,1fr); gap:10px;">
+    <div style="border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:11px 13px;">
+      <p class="kicker">¿Se puede?</p><p class="num" style="color:var(--mint);">Sí</p><p class="sub">Todo con piezas que ya existen y ya usamos.</p></div>
+    <div style="border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:11px 13px;">
+      <p class="kicker">¿Cuánto cuesta?</p><p class="num" style="color:var(--yellow);">≈ $10/mes</p><p class="sub">en IA e imágenes, más $69/año de hosting con dominio.</p></div>
+    <div style="border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:11px 13px;">
+      <p class="kicker">¿Cuánto tarda?</p><p class="num" style="color:var(--coral);">4 bloques</p><p class="sub">≈ 4 semanas de trabajo; el robot publica desde el bloque 2.</p></div>
+    <div style="border:1px solid rgba(255,255,255,.18); border-radius:14px; padding:11px 13px;">
+      <p class="kicker">¿Qué necesito de ti?</p><p class="num" style="color:var(--sky);">6 cosas</p><p class="sub">decisiones y llaves; el resto lo hago yo (página 6).</p></div>
+  </div>
+  <div class="foot"><span>losupe.com · plan de arranque</span><span>1 / 6</span></div>
+</section>
+
+<!-- ===================== PÁGINA 2: LA IDEA ===================== -->
+<section class="page paper">
+  <p class="kicker">La idea en una página</p>
+  <h2>Tres piezas, un solo sistema — y todo dentro de <span class="hl">YaDominios Cloud</span></h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr; margin-top:12px;">
+    <div class="card tint-s">
+      <span class="chip" style="background:var(--sky); color:#fff;">1 · El portal</span>
+      <h3 style="margin-top:8px;">losupe.com, bilingüe ES/EN</h3>
+      <p style="margin-top:6px;">Next.js 16 publicado en YaDominios Cloud. Portada, 5 secciones, nota, autor, buscador, RSS, sitemaps y Google News.
+      Hereda <b>todas las noticias de MundosCrypto</b> (se copian a la base nueva; la de Supabase queda intacta).
+      Selector de idioma arriba; cada nota existe en español e inglés.</p>
+    </div>
+    <div class="card tint-y">
+      <span class="chip" style="background:var(--navy); color:#fff;">2 · El robot redactor</span>
+      <h3 style="margin-top:8px;">Código nuestro, cron diario</h3>
+      <p style="margin-top:6px;">A las 6:00 am lee fuentes, elige temas, <b>redacta texto nuevo</b> (no copia), genera la imagen, revisa calidad y SEO,
+      publica y avisa a Google/Bing. Estado en D1, fotos en R2. Panel para <b>ver, corregir, pausar</b> y cambiar fuentes sin tocar código.</p>
+    </div>
+    <div class="card tint-c">
+      <span class="chip" style="background:var(--coral); color:#fff;">3 · Suscriptores (última fase)</span>
+      <h3 style="margin-top:8px;">Registro, avisos y boletín</h3>
+      <p style="margin-top:6px;">Registro con correo, confirmación y un <b>boletín cada 4 días</b> con las 4 notas más leídas, cada una con su foto, en una plantilla bonita.
+      Un solo correo por persona. Bajas con un clic.</p>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1.35fr 1fr; margin-top:12px;">
+    <div class="card">
+      <p class="kicker" style="color:var(--navy);">Las secciones y el ritmo propuesto (tú decides)</p>
+      <table style="margin-top:6px;">
+        <tr><th>Sección</th><th>Qué publica</th><th>Notas/día</th></tr>
+        <tr><td><span class="dot" style="background:var(--mint)"></span><b>Economía</b></td><td>Qué pasó hoy + guías de dinero, ahorro, inflación, dólar, impuestos.</td><td>2</td></tr>
+        <tr><td><span class="dot" style="background:var(--yellow)"></span><b>Ventas y motivación</b></td><td>Cómo vender, negociar, emprender; hábitos y mentalidad.</td><td>1</td></tr>
+        <tr><td><span class="dot" style="background:var(--sky)"></span><b>Tecnología e IA</b></td><td>Lo último de ChatGPT, Claude, Gemini, Suno, IA para programar, herramientas.</td><td>1</td></tr>
+        <tr><td><span class="dot" style="background:var(--orange)"></span><b>Cripto</b></td><td>Mercado, regulación, guías para empezar (mantiene la herencia de MundosCrypto).</td><td>1</td></tr>
+        <tr><td><span class="dot" style="background:var(--coral)"></span><b>Artistas y tendencias</b></td><td>Música, cine, creadores, lo más buscado del día.</td><td>1</td></tr>
+      </table>
+      <p style="margin-top:8px; font-size:10.5px; color:var(--muted);">6 notas/día × 2 idiomas. Empezamos conservador: Google premia calidad y castiga el volumen vacío.</p>
+    </div>
+    <div class="grid" style="grid-template-columns:1fr; gap:10px;">
+      <div class="card tint-m">
+        <p class="num" style="color:#0C8F5A;">70 / 30</p>
+        <p><b>70 % contenido duradero</b> (guías, “cómo hacer”, listas, glosarios, comparativas) que siga trayendo visitas en un año.
+        <b>30 % noticia del día</b> para Google News y Discover.</p>
+      </div>
+      <div class="card tint-v">
+        <p class="kicker" style="color:var(--violet);">Regla de oro del robot</p>
+        <p>Lee varias fuentes, <b>escribe una nota propia</b>, cita de dónde salió, firma con un autor real del equipo y marca
+        “redacción asistida por IA, revisada por el equipo editorial”. Así cumple lo que Google exige (contenido útil, original, con autor).</p>
+      </div>
+    </div>
+  </div>
+  <div class="foot"><span>losupe.com · plan de arranque</span><span>2 / 6</span></div>
+</section>
+
+<!-- ===================== PÁGINA 3: EL ROBOT ===================== -->
+<section class="page">
+  <p class="kicker">Cómo trabaja el robot cada mañana</p>
+  <h2>De la fuente a la portada en <span class="hl">7 pasos</span>, sin que nadie toque nada</h2>
+  <p class="sub" style="margin-top:4px;">Cron a las 6:00 am (hora de EE.UU.) dentro del mismo sitio en YaDominios Cloud. Cada paso deja su huella en la base D1; si algo falla, se reintenta solo y avisa.</p>
+
+  <div style="display:grid; grid-template-columns:1fr 18px 1fr 18px 1fr 18px 1fr; gap:6px; margin-top:14px;">
+    <div class="step" style="background:#1E3A8A;"><span class="n">1</span><h4>Despierta</h4><p>El cron llama al robot. Revisa el tope de gasto del día: si se pasó, no arranca y avisa.</p><small>Cron de YaDominios · D1</small></div>
+    <div class="arrow">›</div>
+    <div class="step" style="background:#0E7C66;"><span class="n">2</span><h4>Lee las fuentes</h4><p>50–80 fuentes por RSS (medios, blogs oficiales de OpenAI, Anthropic, Google, Cloudflare, CoinDesk…) + búsqueda de noticias de Brave para lo que está sonando.</p><small>RSS gratis · Brave News API</small></div>
+    <div class="arrow">›</div>
+    <div class="step" style="background:#7C3AED;"><span class="n">3</span><h4>Elige los temas</h4><p>La IA puntúa cada candidato: relevancia, novedad, si es duradero, si ya lo publicamos. Respeta el 70/30 y el cupo de cada sección.</p><small>Gemini Flash-Lite (centavos)</small></div>
+    <div class="arrow">›</div>
+    <div class="step" style="background:#B91C1C;"><span class="n">4</span><h4>Redacta</h4><p>Lee 2–3 fuentes del tema y escribe una nota nueva: título, bajada, cuerpo con subtítulos, fuentes citadas, meta-título, descripción, etiquetas. ES y EN.</p><small>Gemini 2.5 Flash</small></div>
+  </div>
+  <div style="display:grid; grid-template-columns:1fr 18px 1fr 18px 1fr 18px 1fr; gap:6px; margin-top:8px;">
+    <div class="step" style="background:#C2410C;"><span class="n">5</span><h4>Ilustra</h4><p>Genera una imagen 16:9 propia (Seedream 4, $0.03) o toma una foto libre de Pexels con crédito. La guarda en R2 con nombre y texto alternativo.</p><small>fal.ai Seedream 4 · Pexels</small></div>
+    <div class="arrow">›</div>
+    <div class="step" style="background:#0F766E;"><span class="n">6</span><h4>Revisa</h4><p>Controles automáticos: no copia literal (compara con la fuente), largo mínimo, sin datos inventados sin fuente, enlaces internos, SEO básico. Si no pasa, reescribe o descarta.</p><small>Reglas en código + IA</small></div>
+    <div class="arrow">›</div>
+    <div class="step" style="background:#1D4ED8;"><span class="n">7</span><h4>Publica y avisa</h4><p>Guarda la nota en D1, actualiza portada, RSS y sitemaps, avisa a Google y Bing (IndexNow). Queda en el panel por si quieres corregir o despublicar.</p><small>D1 · R2 · IndexNow</small></div>
+    <div class="arrow"></div>
+    <div class="card tint-y" style="min-height:112px;">
+      <p class="kicker" style="color:var(--navy);">¿Y el “agente” de Cloudflare?</p>
+      <p style="font-size:10.6px; margin-top:4px;">El Agents SDK de Cloudflare corre sobre Durable Objects, que YaDominios Cloud no admite (tampoco Workers AI ni navegador como binding).
+      Por eso el robot es <b>código nuestro</b> (cron + D1) que llama a las IA por HTTP. Más control, cero dependencia, y cabe completo en YaDominios Cloud.</p>
+    </div>
+  </div>
+
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr; margin-top:12px;">
+    <div class="card"><p class="kicker" style="color:var(--navy);">Dónde vive cada cosa</p>
+      <p style="margin-top:4px;"><b>Base nueva:</b> D1 de YaDominios (notas, fuentes, autores, suscriptores, registro de gasto).<br><b>Fotos nuevas:</b> R2 de YaDominios.<br><b>Lo viejo:</b> Supabase de MundosCrypto no se toca; solo se copia.</p></div>
+    <div class="card"><p class="kicker" style="color:var(--navy);">Tú mandas desde el panel</p>
+      <p style="margin-top:4px;">Pausar el robot, cambiar fuentes y secciones, subir o bajar el ritmo, editar una nota, elegir autor, ver cuánto gastó hoy. Sin tocar código.</p></div>
+    <div class="card"><p class="kicker" style="color:var(--navy);">Candados de gasto</p>
+      <p style="margin-top:4px;">Cuentas <b>prepago</b> (Gemini y fal.ai), tope diario en código (un “guardián de modelos”), modelos caros bloqueados. Si se acaba el saldo, el robot se detiene: jamás una factura sorpresa.</p></div>
+  </div>
+  <div class="foot"><span>losupe.com · plan de arranque</span><span>3 / 6</span></div>
+</section>
+
+<!-- ===================== PÁGINA 4: COSTOS ===================== -->
+<section class="page paper">
+  <p class="kicker">Qué usamos y cuánto cuesta</p>
+  <h2>Menos de <span class="hl">$15 al mes</span> con todo andando (6 notas/día, 2 idiomas)</h2>
+  <p class="sub" style="margin-top:4px;">Precios verificados hoy (22 ago 2026) en las páginas oficiales de cada proveedor. Estimación mensual con 180 notas/mes.</p>
+  <div class="card" style="margin-top:9px; padding:4px 10px;">
+    <table class="costs">
+      <tr><th style="width:15%">Pieza</th><th style="width:20%">Herramienta elegida</th><th style="width:29%">Precio oficial</th><th style="width:8%">Al mes</th><th>Nota</th></tr>
+      <tr><td class="tag">Hosting + dominio + base + fotos</td><td>YaDominios Cloud, plan <b>Órbita</b></td><td>$69/año · 3 sitios · 5 GB · base de datos · dominio .com incluido · 100 correos/día</td><td class="money">$5.75</td><td>losupe.com se registra ahí mismo. La base D1 y R2 vienen en el plan.</td></tr>
+      <tr><td class="tag">Redactar (texto)</td><td>Google <b>Gemini 2.5 Flash</b> (API)</td><td>$0.30 por millón de tokens de entrada · $2.50 de salida</td><td class="money">≈ $2</td><td>≈ 1 centavo por nota bilingüe. Curaduría con Flash-Lite ($0.10 / $0.40): centavos.</td></tr>
+      <tr><td class="tag">Ilustrar</td><td><b>Seedream 4</b> vía fal.ai · Pexels</td><td>$0.03 por imagen · Pexels gratis con crédito (200/h, 20 000/mes)</td><td class="money">$0–5</td><td>Bajo el tope de $0.05/imagen de nuestra regla. Alternativa casi gratis: Flux Schnell en Workers AI ($0.0002).</td></tr>
+      <tr><td class="tag">Encontrar noticias</td><td><b>RSS</b> de medios + <b>Brave Search API</b> (news)</td><td>RSS gratis · Brave: $5 de crédito gratis al mes (≈1 000 búsquedas), luego $5 por 1 000</td><td class="money">$0</td><td>NewsAPI ($449/mes) y Tavily ($30/mes) quedan descartados: no hacen falta.</td></tr>
+      <tr><td class="tag">Publicar y avisar a buscadores</td><td>Sitemaps, RSS, IndexNow</td><td>Gratis</td><td class="money">$0</td><td>MundosCrypto ya tiene estas piezas; se reutilizan.</td></tr>
+      <tr><td class="tag">Correos del sitio</td><td>API de correo de YaDominios</td><td>Incluida en el plan (100/día en Órbita; $1 por cada 1 000 extra)</td><td class="money">$0</td><td>Solo para confirmar suscripción y avisos. No permite boletines masivos.</td></tr>
+      <tr><td class="tag">Boletín cada 4 días (última fase)</td><td><b>Resend</b> (envíos masivos)</td><td>Gratis hasta 1 000 suscriptores · $40/mes hasta 5 000</td><td class="money">$0</td><td>Se paga solo cuando el medio ya tenga audiencia.</td></tr>
+      <tr><td class="tag">Robot (cron, cómputo)</td><td>Incluido en YaDominios Cloud</td><td>Cron + D1 + R2 dentro del plan</td><td class="money">$0</td><td>Sin servidores, sin n8n, sin suscripciones extra.</td></tr>
+    </table>
+  </div>
+  <div class="grid" style="grid-template-columns:1.1fr 1fr 1fr; margin-top:8px;">
+    <div class="card" style="background:var(--navy); color:#fff; border:none; padding:9px 13px;">
+      <p class="kicker" style="color:var(--yellow);">Total estimado al arrancar</p>
+      <p class="num" style="margin-top:2px; font-size:26px;">≈ $8–13 <span style="font-size:13px; font-weight:600;">/ mes</span></p>
+      <p style="margin-top:3px; font-size:10.4px; color:#C9D3E3;">+ $69 al año de hosting con dominio. Con 1 000 suscriptores sigue igual; a 5 000 suma $40/mes de boletín.</p>
+    </div>
+    <div class="card" style="padding:9px 13px;">
+      <p class="kicker" style="color:var(--navy);">Si quieres mejor pluma</p>
+      <p style="margin-top:3px; font-size:10.4px;">Cambiar el redactor es una línea: <b>Claude Haiku 4.5</b> ($1 / $5 por millón) ≈ $5/mes · <b>Claude Sonnet 5</b> ($3 / $15) ≈ $15/mes. Se decide probando la calidad, no antes.</p>
+    </div>
+    <div class="card" style="padding:9px 13px;">
+      <p class="kicker" style="color:var(--navy);">Lo que NO vamos a pagar</p>
+      <p style="margin-top:3px; font-size:10.4px;">Ni n8n, ni Zapier, ni NewsAPI, ni servidores, ni Supabase nuevo. Todo corre dentro del plan de YaDominios y dos cuentas prepago (Gemini, fal.ai).</p>
+    </div>
+  </div>
+  <div class="foot"><span>losupe.com · plan de arranque</span><span>4 / 6</span></div>
+</section>
+
+<!-- ===================== PÁGINA 5: LOS PASOS ===================== -->
+<section class="page">
+  <p class="kicker">Los pasos, en orden</p>
+  <h2>Cuatro bloques. Un solo push al final de cada uno, con todo probado.</h2>
+  <p class="sub" style="margin-top:4px;">Cada bloque termina publicado en YaDominios Cloud y con su prueba de humo en verde. El portal queda vivo desde el bloque 1; el robot publica desde el bloque 2.</p>
+  <div class="tl" style="margin-top:12px;">
+    <div class="phase" style="border-top:5px solid var(--sky);">
+      <div class="h"><span class="num" style="color:var(--sky);">1</span><h3>Cimientos y portal</h3></div>
+      <ul>
+        <li>Repo nuevo <b>losupe</b> (público, como pide YaDominios) y carpeta limpia.</li>
+        <li>Blindaje desde el commit 1: tipos, lint, pruebas, gitleaks, CI.</li>
+        <li>Base D1 (notas, secciones, autores, fuentes, suscriptores, gasto) + R2.</li>
+        <li>Portal Next.js 16 bilingüe: portada, secciones, nota, autor, RSS, sitemaps, favicon, tarjeta social, pie Windoce.</li>
+        <li><b>Migrar MundosCrypto</b>: noticias, autores e imágenes a D1/R2.</li>
+        <li>Publicar en <code>losupe.sitios.dev</code> y conectar losupe.com.</li>
+      </ul>
+      <span class="when">Semana 1</span>
+    </div>
+    <div class="phase" style="border-top:5px solid var(--coral);">
+      <div class="h"><span class="num" style="color:var(--coral);">2</span><h3>El robot redactor</h3></div>
+      <ul>
+        <li>Cron diario + lista de fuentes administrable.</li>
+        <li>Curaduría (puntaje, 70/30, sin repetidos).</li>
+        <li>Redacción ES/EN con Gemini, con fuentes citadas y firma de autor.</li>
+        <li>Imágenes (Seedream 4 / Pexels) a R2.</li>
+        <li>Revisión automática anti-copia y SEO.</li>
+        <li>Panel: pausar, corregir, despublicar, ver gasto.</li>
+        <li>Candados: prepago + tope diario en código.</li>
+      </ul>
+      <span class="when">Semana 2</span>
+    </div>
+    <div class="phase" style="border-top:5px solid var(--mint);">
+      <div class="h"><span class="num" style="color:#0C8F5A;">3</span><h3>Google y posicionamiento</h3></div>
+      <ul>
+        <li>Datos estructurados (NewsArticle, autor, organización).</li>
+        <li>News sitemap, IndexNow, Search Console y Bing.</li>
+        <li>Perfiles de autor y política editorial (lo que Google llama E-E-A-T).</li>
+        <li>Enlaces internos automáticos entre notas y secciones.</li>
+        <li>Velocidad y Core Web Vitals en verde.</li>
+        <li>Solicitud a Google News / Publisher Center.</li>
+      </ul>
+      <span class="when">Semana 3</span>
+    </div>
+    <div class="phase" style="border-top:5px solid var(--violet);">
+      <div class="h"><span class="num" style="color:var(--violet);">4</span><h3>Suscriptores y boletín</h3></div>
+      <ul>
+        <li>Registro con correo + confirmación (API de correo de YaDominios).</li>
+        <li>Boletín cada 4 días con las 4 notas top, con foto, plantilla bonita (Resend).</li>
+        <li>Baja con un clic y preferencias por sección.</li>
+        <li>Notificaciones en el navegador (opcional).</li>
+        <li>Métricas: lecturas, clics, suscripciones.</li>
+      </ul>
+      <span class="when">Semana 4</span>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr 1fr; margin-top:12px;">
+    <div class="card tint-s"><p class="kicker" style="color:var(--navy);">Cómo lo hacemos</p><p style="font-size:10.8px; margin-top:3px;">Por bloques, con punto de control al final de cada uno: toca base de datos, servicios externos y contenido público. Dentro de cada bloque, de corrido.</p></div>
+    <div class="card tint-m"><p class="kicker" style="color:var(--navy);">Qué ves tú al final de cada bloque</p><p style="font-size:10.8px; margin-top:3px;">El sitio publicado, capturas de cómo quedó, y el mensaje listo para WhatsApp. Nada a medias.</p></div>
+    <div class="card tint-y"><p class="kicker" style="color:var(--navy);">Después (ideas para más adelante)</p><p style="font-size:10.8px; margin-top:3px;">Videos cortos por nota, podcast automático, apps de noticias por sección, anuncios y contenido premium.</p></div>
+    <div class="card tint-c"><p class="kicker" style="color:var(--navy);">Lo que nunca</p><p style="font-size:10.8px; margin-top:3px;">Copiar y pegar noticias, inventar datos sin fuente, usar imágenes con derechos, modelos caros de IA, facturas sin tope.</p></div>
+  </div>
+  <div class="foot"><span>losupe.com · plan de arranque</span><span>5 / 6</span></div>
+</section>
+
+<!-- ===================== PÁGINA 6: QUÉ NECESITO / QUÉ HAGO ===================== -->
+<section class="page paper">
+  <p class="kicker">Para arrancar</p>
+  <h2>Lo que necesito de ti y lo que hago yo</h2>
+  <div class="two" style="margin-top:12px;">
+    <div class="card" style="border-top:5px solid var(--coral); padding:14px 16px;">
+      <h3 style="font-size:16px;">Lo que necesito de ti (6 cosas)</h3>
+      <ol style="margin:8px 0 0 0; padding-left:18px; font-size:11.8px; line-height:1.4;">
+        <li style="margin-bottom:6px;"><b>Confirmar el origen.</b> losupe.com hereda MundosCrypto (noticias, autores, podcast). Esta carpeta hoy tiene el código de DineroAlTiro: la reinicio como repo nuevo <b>losupe</b>. ¿De acuerdo?</li>
+        <li style="margin-bottom:6px;"><b>Acceso de solo lectura a Supabase de MundosCrypto</b> para copiar noticias e imágenes (ya hay un CSV de 50 notas; faltan las fotos).</li>
+        <li style="margin-bottom:6px;"><b>Plan Órbita en YaDominios Cloud</b> con el dominio losupe.com (o acceso al panel para hacerlo yo; el pago lo haces tú).</li>
+        <li style="margin-bottom:6px;"><b>Dos cuentas prepago</b> con su llave: Gemini (Google AI Studio) y fal.ai. Te paso link + croquis casilla por casilla. Pexels y Brave son gratis: las saco yo.</li>
+        <li style="margin-bottom:6px;"><b>Decisiones editoriales:</b> nombre y logo del medio, las 5 secciones y el ritmo (propuesta en pág. 2), firmas del equipo editorial, y que el boletín sea cada 4 días.</li>
+        <li><b>El modo de trabajo:</b> propongo <b>por bloques</b> con un punto de control al final de cada semana (toca base, servicios externos y contenido público). Dentro de cada bloque, de corrido.</li>
+      </ol>
+    </div>
+    <div class="card" style="border-top:5px solid var(--mint); padding:14px 16px;">
+      <h3 style="font-size:16px;">Lo que hago yo (todo lo demás)</h3>
+      <ul style="font-size:11.8px; line-height:1.4;">
+        <li>Repositorio, blindaje completo, base D1, R2, esquema y migración de MundosCrypto.</li>
+        <li>Portal Next.js 16 bilingüe con SEO, favicon, tarjeta social y pie de Windoce.</li>
+        <li>El robot redactor completo: fuentes, curaduría, redacción, imágenes, revisión, publicación, avisos.</li>
+        <li>Panel editorial: pausar, corregir, fuentes, autores, gasto del día.</li>
+        <li>Candados de gasto en código y cuentas en prepago.</li>
+        <li>Publicación en YaDominios Cloud, dominio, pruebas de humo y capturas.</li>
+        <li>Suscriptores, boletín y documentación de todo en el repo.</li>
+      </ul>
+      <div class="card tint-m" style="margin-top:8px; padding:9px 11px;">
+        <p style="font-size:10.8px;"><b>Puedo arrancar ya</b> con lo que no depende de ti: repo, blindaje, esquema de base, portal y el robot en modo prueba (sin publicar). Las llaves y el plan de YaDominios entran cuando los tengas.</p>
+      </div>
+    </div>
+  </div>
+  <div class="grid" style="grid-template-columns:1fr 1fr 1fr; margin-top:12px;">
+    <div class="alert">
+      <p class="kicker" style="color:#B45309;">Ojo · hallazgo</p>
+      <p style="font-size:10.8px; margin-top:3px;">La carpeta <b>losupe.com</b> apunta al repo de DineroAlTiro (landing de Chile). El portal cripto real está en <b>MundosCrypto</b> (React + Supabase + Cloudflare Pages, ~50 noticias, Google News ya configurado). El plan asume que losupe es su sucesor.</p>
+    </div>
+    <div class="card tint-s">
+      <p class="kicker" style="color:var(--navy);">Riesgos cubiertos</p>
+      <p style="font-size:10.8px; margin-top:3px;"><b>Google:</b> nada de copiar ni volumen vacío; autor real, fuentes, aviso de IA. <b>Dinero:</b> prepago + tope en código. <b>Plataforma:</b> sin Durable Objects ni bindings que YaDominios no admite. <b>Fuentes:</b> lista editable desde el panel.</p>
+    </div>
+    <div class="card" style="background:var(--navy); color:#fff; border:none;">
+      <p class="kicker" style="color:var(--yellow);">Siguiente paso</p>
+      <p style="font-size:11px; margin-top:3px;">Me respondes las 6 cosas (aunque sea con un “sí” a la propuesta) y arranco el bloque 1 ese mismo día. Cuando termine, recibes el sitio publicado, capturas y el mensaje para tus clientes.</p>
+    </div>
+  </div>
+  <div class="foot"><span>losupe.com · plan de arranque · Windoce LLC</span><span>6 / 6</span></div>
+</section>
+
+</body>
+</html>
