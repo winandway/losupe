@@ -22,7 +22,7 @@ export function buildAiCatalog(base: string) {
     },
     entries: [
       {
-        id: urn("content", "llms-txt"),
+        identifier: urn("content", "llms-txt"),
         displayName: "Guía del sitio para modelos (llms.txt)",
         type: "text/plain",
         url: `${origin}/llms.txt`,
@@ -33,7 +33,7 @@ export function buildAiCatalog(base: string) {
         ],
       },
       {
-        id: urn("feeds", "rss-es"),
+        identifier: urn("feeds", "rss-es"),
         displayName: "Últimas notas en español (RSS)",
         type: "application/rss+xml",
         url: `${origin}/es/rss.xml`,
@@ -43,7 +43,7 @@ export function buildAiCatalog(base: string) {
         ],
       },
       {
-        id: urn("feeds", "rss-en"),
+        identifier: urn("feeds", "rss-en"),
         displayName: "Latest stories in English (RSS)",
         type: "application/rss+xml",
         url: `${origin}/en/rss.xml`,
@@ -53,7 +53,7 @@ export function buildAiCatalog(base: string) {
         ],
       },
       {
-        id: urn("content", "markdown-articles"),
+        identifier: urn("content", "markdown-articles"),
         displayName: "Cualquier nota en Markdown (Accept: text/markdown)",
         type: "text/markdown",
         url: `${origin}/es`,
@@ -63,7 +63,7 @@ export function buildAiCatalog(base: string) {
         ],
       },
       {
-        id: urn("discovery", "sitemap"),
+        identifier: urn("discovery", "sitemap"),
         displayName: "Sitemap",
         type: "application/xml",
         url: `${origin}/sitemap.xml`,

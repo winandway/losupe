@@ -101,7 +101,7 @@ describe("robots, llms.txt, catálogos y Link", () => {
     const ai = buildAiCatalog(BASE);
     expect(ai.entries.length).toBeGreaterThanOrEqual(4);
     for (const e of ai.entries) {
-      expect(e.id.startsWith("urn:air:losupe.com:")).toBe(true);
+      expect(e.identifier.startsWith("urn:air:losupe.com:")).toBe(true);
       expect(e.representativeQueries.length).toBeGreaterThanOrEqual(2);
     }
     const idx = await buildSkillsIndex(BASE);

@@ -6,13 +6,13 @@ quedó y cómo volver a comprobarlo.
 
 ## Resumen
 
-| Área                           | Antes                                         | Después                                                                                                             |
-| ------------------------------ | --------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| Lighthouse SEO (móvil)         | 100                                           | 100                                                                                                                 |
-| Lighthouse rendimiento (móvil) | 72 (LCP 7,8 s por el video)                   | ver medición tras publicar (video diferido, fuentes más livianas)                                                   |
-| Lighthouse accesibilidad       | 97 (enlace de autor pequeño)                  | área táctil corregida                                                                                               |
-| Lighthouse buenas prácticas    | 92 (CSP bloqueaba la analítica de Cloudflare) | CSP corregida                                                                                                       |
-| isitagentready.com             | 20/100 — Nivel 1                              | Link headers, Markdown para agentes, Content Signals, reglas por bot, api-catalog, ai-catalog, agent-skills, WebMCP |
+| Área                           | Antes                                         | Después                                                                                                    |
+| ------------------------------ | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------- |
+| Lighthouse SEO (móvil)         | 100                                           | 100                                                                                                        |
+| Lighthouse rendimiento (móvil) | 72 (LCP 7,8 s por el video)                   | 77 (LCP 5,1 s); siguiente paso: imágenes responsivas en el bloque 2                                        |
+| Lighthouse accesibilidad       | 97 (enlace de autor pequeño)                  | área táctil corregida                                                                                      |
+| Lighthouse buenas prácticas    | 92 (CSP bloqueaba la analítica de Cloudflare) | 100                                                                                                        |
+| isitagentready.com             | 20/100 — Nivel 1                              | **60/100 — Nivel 4 «Agent-Integrated»** (Discoverability 3/4, Content 1/1, Bot Access 2/2, API/Skills 3/8) |
 
 ## Checklist (✅ hecho · ❌ pendiente · ⚪ no aplica hoy)
 
@@ -41,7 +41,7 @@ quedó y cómo volver a comprobarlo.
 - ✅ Video del frente diferido: se carga después de `load`, no compite con el LCP; se omite con ahorro de datos o `prefers-reduced-motion`.
 - ✅ Fuentes solo `latin` y Newsreader en pesos fijos (700/800): menos KB.
 - ✅ `width`/`height` en las imágenes de las notas (sin saltos de diseño); `loading="lazy"` fuera de pantalla; `fetchpriority="high"` en la imagen principal.
-- ✅ Estáticos con `Cache-Control: public, max-age=86400, stale-while-revalidate`.
+- ⚠️ Estáticos: `public/_headers` pide `max-age=86400`; YaDominios Cloud hoy no aplica ese archivo (responde `max-age=0`), pero su borde sí los cachea (`cf-cache-status: HIT`).
 - ❌ Imágenes responsivas (`srcset`) para las tarjetas: se resuelve en el bloque 2 cuando el robot genere tamaños al guardar en R2.
 
 ### Descubrimiento por agentes de IA (isitagentready.com)
