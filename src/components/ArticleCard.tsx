@@ -42,24 +42,32 @@ export function ArticleCard({
 
   if (variant === "hero") {
     return (
-      <article className="grid gap-5 md:grid-cols-5 md:items-center">
+      <article className="grid gap-4 md:grid-cols-5 md:items-center md:gap-5">
         <Link
           href={href}
-          className="block aspect-video overflow-hidden rounded-2xl bg-paper md:col-span-3"
+          className="relative block aspect-video overflow-hidden rounded-2xl bg-paper md:col-span-3"
         >
           {image}
+          {/* La etiqueta va SOBRE la foto: así se lee como foto de una nota, no como la página misma. */}
+          <span className="pointer-events-none absolute left-3 top-3">
+            <SectionBadge sectionId={article.sectionId} lang={lang} size="md" asLink={false} />
+          </span>
         </Link>
         <div className="md:col-span-2">
-          <SectionBadge sectionId={article.sectionId} lang={lang} size="md" />
-          <h2 className="mt-3 font-display text-3xl font-bold leading-tight text-ink md:text-4xl">
+          <div className="hidden md:block">
+            <SectionBadge sectionId={article.sectionId} lang={lang} size="md" />
+          </div>
+          <h2 className="font-display text-[1.6rem] font-bold leading-[1.15] text-ink md:mt-3 md:text-4xl md:leading-tight">
             <Link href={href} className="hover:underline decoration-accent decoration-4">
               {article.title}
             </Link>
           </h2>
           {article.excerpt ? (
-            <p className="mt-3 line-clamp-3 text-base text-muted">{article.excerpt}</p>
+            <p className="mt-2 line-clamp-2 text-[15px] text-muted md:mt-3 md:line-clamp-3 md:text-base">
+              {article.excerpt}
+            </p>
           ) : null}
-          <div className="mt-4">
+          <div className="mt-3 md:mt-4">
             <Byline
               lang={lang}
               dict={dict}
@@ -108,31 +116,38 @@ export function ArticleCard({
   }
 
   return (
-    <article className="flex flex-col">
-      <Link href={href} className="block aspect-video overflow-hidden rounded-xl bg-paper">
+    <article className="flex flex-row-reverse items-start gap-4 sm:flex-col sm:gap-0">
+      <Link
+        href={href}
+        className="block h-[4.75rem] w-[6.75rem] shrink-0 overflow-hidden rounded-lg bg-paper sm:aspect-video sm:h-auto sm:w-full sm:rounded-xl"
+        aria-hidden="true"
+        tabIndex={-1}
+      >
         {image}
       </Link>
-      <div className="mt-3">
-        <SectionBadge sectionId={article.sectionId} lang={lang} />
-      </div>
-      <h3 className="mt-2 font-display text-xl font-bold leading-snug text-ink">
-        <Link href={href} className="hover:underline">
-          {article.title}
-        </Link>
-      </h3>
-      {article.excerpt ? (
-        <p className="mt-2 line-clamp-2 text-sm text-muted">{article.excerpt}</p>
-      ) : null}
-      <div className="mt-3">
-        <Byline
-          lang={lang}
-          dict={dict}
-          authorId={article.authorId}
-          authorName={article.authorName}
-          publishedAt={article.publishedAt}
-          readingMinutes={article.readingMinutes}
-          compact
-        />
+      <div className="min-w-0 flex-1">
+        <div className="sm:mt-3">
+          <SectionBadge sectionId={article.sectionId} lang={lang} />
+        </div>
+        <h3 className="mt-1.5 line-clamp-3 font-display text-[1.05rem] font-bold leading-snug text-ink sm:mt-2 sm:line-clamp-none sm:text-xl">
+          <Link href={href} className="hover:underline">
+            {article.title}
+          </Link>
+        </h3>
+        {article.excerpt ? (
+          <p className="mt-2 hidden line-clamp-2 text-sm text-muted sm:block">{article.excerpt}</p>
+        ) : null}
+        <div className="mt-1.5 sm:mt-3">
+          <Byline
+            lang={lang}
+            dict={dict}
+            authorId={article.authorId}
+            authorName={article.authorName}
+            publishedAt={article.publishedAt}
+            readingMinutes={article.readingMinutes}
+            compact
+          />
+        </div>
       </div>
     </article>
   );

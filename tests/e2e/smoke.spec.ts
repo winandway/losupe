@@ -126,16 +126,107 @@ test("buscador: sugerencias, sinónimos y acentos", async ({ request }) => {
   expect(await page.text()).toContain("Bitcoin");
 });
 
-test("buscador del frente: escribe y sugiere sin enviar", async ({ page }) => {
+/** Candado: la sugerencia tiene que ser lo que está arriba de todo en su punto central (nada la tapa). */
+async function topmostIsInside(page: import("@playwright/test").Page, container: string) {
+  return page.evaluate((sel) => {
+    const box = document.querySelector(sel);
+    const opt = box?.querySelector('[role="option"]');
+    if (!box || !opt) return { ok: false, why: "sin opción" };
+    const r = opt.getBoundingClientRect();
+    const el = document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2);
+    return { ok: !!el && box.contains(el), why: el?.tagName ?? "nada" };
+  }, container);
+}
+
+test("buscador del frente: escribe y sugiere sin enviar (escritorio: desplegable; celular: hoja completa)", async ({
+  page,
+  isMobile,
+}) => {
   await page.goto("/es");
+  // Candado: se simula un navegador con «modo oscuro forzado», que mete un `filter` al hero y a las
+  // fotos. Eso convierte al hero en una capa cerrada y fue lo que dejó las sugerencias DEBAJO de la
+  // foto de la nota principal en el celular de Richard (23 ago 2026). Con el portal no debe pasar.
+  await page.addStyleTag({
+    content:
+      "main > section:first-of-type { filter: invert(1) hue-rotate(180deg); } main img { filter: invert(1) hue-rotate(180deg); }",
+  });
   const box = page.getByRole("combobox").first();
+  if (isMobile) {
+    // En celular, tocar la caja abre la búsqueda a pantalla completa (sobre todo lo demás).
+    await box.click();
+    const sheet = page.getByRole("dialog", { name: "Buscar" });
+    await expect(sheet).toBeVisible();
+    await expect(sheet).toContainText("Escribe y te vamos sugiriendo notas.");
+    const sheetInput = sheet.getByRole("combobox");
+    await expect(sheetInput).toBeFocused();
+    await sheetInput.fill("merca");
+    const list = sheet.getByRole("listbox");
+    await expect(list).toBeVisible();
+    await expect(list.getByRole("option").first()).toContainText(/Mercatren/i);
+    const vp = page.viewportSize()!;
+    const b = (await sheet.boundingBox())!;
+    expect(b.width).toBeGreaterThanOrEqual(vp.width - 1);
+    expect(b.height).toBeGreaterThanOrEqual(vp.height - 1);
+    expect(await topmostIsInside(page, '[role="dialog"]')).toMatchObject({ ok: true });
+    // Cerrar con la flecha y volver a abrir escribiendo
+    await sheet.getByRole("button", { name: "Cerrar la búsqueda" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(page).toHaveURL(/\/es$/);
+    await box.click();
+    await page.getByRole("dialog").getByRole("combobox").fill("merca");
+    await page.getByRole("dialog").getByRole("option").first().click();
+    await expect(page).toHaveURL(/\/es\/ventas\/pedro-llerena-lanza-mercatren/);
+    return;
+  }
   await box.fill("merca");
   const list = page.getByRole("listbox");
   await expect(list).toBeVisible();
   await expect(list.getByRole("option").first()).toContainText(/Mercatren/i);
+  // El desplegable vive fuera del hero (portal en body) y nada lo tapa
+  expect(
+    await page.evaluate(() => document.querySelector('[role="listbox"]')?.parentElement?.tagName),
+  ).toBe("BODY");
+  expect(await topmostIsInside(page, '[role="listbox"]')).toMatchObject({ ok: true });
   await box.press("ArrowDown");
   await box.press("Enter");
   await expect(page).toHaveURL(/\/es\/ventas\/pedro-llerena-lanza-mercatren/);
+});
+
+test("celular: barra fija con logo, menú hamburguesa y secciones", async ({ page, isMobile }) => {
+  test.skip(!isMobile, "solo celular");
+  await page.goto("/es");
+  const menuBtn = page.getByRole("button", { name: "Menú" });
+  await expect(menuBtn).toBeVisible();
+  // La barra del logo sigue visible después de bajar
+  await page.mouse.wheel(0, 1200);
+  await page.waitForTimeout(300);
+  await expect(page.getByRole("link", { name: "losupe — Portada" }).first()).toBeInViewport();
+  await menuBtn.click();
+  const dialog = page.getByRole("dialog", { name: "Menú" });
+  await expect(dialog).toBeVisible();
+  await expect(dialog.getByRole("link", { name: "English" })).toHaveAttribute("href", "/en");
+  await dialog.getByRole("link", { name: "Cripto" }).click();
+  await expect(page).toHaveURL(/\/es\/cripto$/);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
+
+test("portada en celular: lista compacta de «Lo último» y sin notas repetidas", async ({
+  page,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "solo celular");
+  await page.goto("/es");
+  // Las tarjetas de «Lo último» son filas: la miniatura mide poco más de 100 px de ancho
+  const thumb = page
+    .locator('section[aria-label="Lo último"] article a[aria-hidden="true"]')
+    .first();
+  const tb = (await thumb.boundingBox())!;
+  expect(tb.width).toBeLessThan(130);
+  // Ninguna nota aparece dos veces en la portada
+  const hrefs = await page
+    .locator("main article h2 a, main article h3 a")
+    .evaluateAll((as) => as.map((a) => a.getAttribute("href")));
+  expect(new Set(hrefs).size).toBe(hrefs.length);
 });
 
 test("la raíz redirige al idioma del navegador", async ({ request }) => {

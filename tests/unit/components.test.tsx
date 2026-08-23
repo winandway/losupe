@@ -28,10 +28,15 @@ const article = mapCard(sampleCardRow, "es");
 
 describe("ArticleCard", () => {
   it("enlaza al artículo en la sección correcta (tarjeta)", () => {
-    render(<ArticleCard article={article} lang="es" dict={es} />);
+    const { container } = render(<ArticleCard article={article} lang="es" dict={es} />);
     const link = screen.getByRole("link", { name: "Bitcoin sube" });
     expect(link).toHaveAttribute("href", "/es/cripto/bitcoin-sube");
-    expect(screen.getByRole("img")).toHaveAttribute("alt", "Bitcoin");
+    // La foto enlaza igual pero va oculta al lector de pantalla (el titular ya es el enlace)
+    expect(container.querySelector("img")).toHaveAttribute("alt", "Bitcoin");
+    expect(container.querySelector("a[aria-hidden='true']")).toHaveAttribute(
+      "href",
+      "/es/cripto/bitcoin-sube",
+    );
   });
   it("variantes hero y fila, y sin imagen", () => {
     const { rerender } = render(
@@ -119,6 +124,7 @@ describe("piezas pequeñas", () => {
       label: en.search.label,
       seeAllTemplate: en.search.seeAllTemplate,
       noneTemplate: en.search.noneTemplate,
+      close: en.search.close,
     };
     const { container } = render(<SearchBox lang="en" labels={labels} initialValue="btc" />);
     expect(container.querySelector("form")).toHaveAttribute("action", "/en/search");
@@ -162,5 +168,86 @@ describe("piezas pequeñas", () => {
     );
     render(<SectionHeading title="Lo último" href="/es/cripto" linkLabel="Ver" color="#000" />);
     expect(screen.getByRole("link", { name: /Ver/ })).toHaveAttribute("href", "/es/cripto");
+  });
+});
+
+describe("celular: menú hamburguesa y hoja de búsqueda", () => {
+  it("el menú abre a pantalla completa con secciones, idioma y enlaces del sitio, y cierra con Escape", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const user = userEvent.setup();
+    render(<Header lang="es" dict={es} />);
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const btn = screen.getByRole("button", { name: "Menú" });
+    expect(btn).toHaveAttribute("aria-expanded", "false");
+    await user.click(btn);
+    const dialog = screen.getByRole("dialog", { name: "Menú" });
+    expect(btn).toHaveAttribute("aria-expanded", "true");
+    const { within } = await import("@testing-library/react");
+    expect(within(dialog).getByRole("link", { name: "Cripto" })).toHaveAttribute(
+      "href",
+      "/es/cripto",
+    );
+    expect(within(dialog).getByRole("link", { name: "Economía" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+    expect(within(dialog).getByRole("link", { name: "English" })).toHaveAttribute(
+      "href",
+      "/en/economy?page=2",
+    );
+    expect(within(dialog).getByRole("link", { name: "Política editorial" })).toBeInTheDocument();
+    expect(within(dialog).getByRole("link", { name: "RSS en español" })).toHaveAttribute(
+      "href",
+      "/es/rss.xml",
+    );
+    expect(document.body.style.overflow).toBe("hidden");
+    await user.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(document.body.style.overflow).toBe("");
+    // Al tocar una sección también se cierra
+    await user.click(btn);
+    await user.click(within(screen.getByRole("dialog")).getByRole("link", { name: "Cripto" }));
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  it("en celular, tocar el buscador abre la hoja a pantalla completa; en la página de resultados no", async () => {
+    const { default: userEvent } = await import("@testing-library/user-event");
+    const user = userEvent.setup();
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) =>
+      ({
+        matches: query.includes("max-width"),
+        media: query,
+        addEventListener: () => undefined,
+        removeEventListener: () => undefined,
+      }) as unknown as MediaQueryList) as typeof window.matchMedia;
+    try {
+      const labels = {
+        placeholder: es.search.placeholder,
+        button: es.search.button,
+        label: es.search.label,
+        seeAllTemplate: es.search.seeAllTemplate,
+        noneTemplate: es.search.noneTemplate,
+        close: es.search.close,
+        hint: es.search.typing,
+      };
+      const { unmount } = render(<SearchBox lang="es" labels={labels} size="lg" />);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await user.click(screen.getByRole("combobox"));
+      const dialog = screen.getByRole("dialog", { name: "Buscar" });
+      expect(dialog).toHaveTextContent("Escribe y te vamos sugiriendo notas.");
+      expect(screen.getAllByRole("combobox")).toHaveLength(2);
+      expect(document.activeElement).toBe(screen.getAllByRole("combobox")[1]);
+      await user.click(screen.getByRole("button", { name: "Cerrar la búsqueda" }));
+      expect(screen.queryByRole("dialog")).toBeNull();
+      unmount();
+      // Página de resultados: enfoca sola y NO abre la hoja
+      render(<SearchBox lang="es" labels={labels} autoFocus />);
+      expect(screen.queryByRole("dialog")).toBeNull();
+      await user.click(screen.getByRole("combobox"));
+      expect(screen.queryByRole("dialog")).toBeNull();
+    } finally {
+      window.matchMedia = original;
+    }
   });
 });

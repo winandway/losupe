@@ -70,6 +70,14 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   El índice se reconstruye solo cuando cambia el esquema o entra una semilla (`rebuildSearchIndex`)
   y, si estuviera vacío, el guardián `searchIndexGuard` lo rellena en la primera búsqueda; si FTS
   fallara, cae a `LIKE` con sinónimos.
+- Celular con figura de diario (23 ago 2026): barra superior fija con ☰ menú + logo + lupa
+  (`Header.tsx` + `MobileMenu.tsx`, panel a pantalla completa con secciones, idioma y enlaces del
+  sitio); las fichas de secciones se deslizan con la página. La búsqueda abre una hoja a pantalla
+  completa (`SearchBox.tsx`, portal en `body`); «Lo último» y los bloques de sección son filas
+  compactas con miniatura a la derecha (`ArticleCard` tarjeta = fila bajo `sm`), la etiqueta de
+  sección va sobre la foto de la nota principal y los bloques no repiten notas ya mostradas.
+  En escritorio la botonera navy sigue fija. Los arreglos con su prueba están en
+  [docs/candados.md](docs/candados.md).
 - Logo «losupe.com»: `src/components/Logo.tsx` (marca SVG: anillo degradado + arco y núcleo amarillos;
   wordmark Space Grotesk con degradado, punto amarillo y «.com»). Iconos y tarjeta social generados
   desde ahí (`src/app/icon.png`, `apple-icon.png`, `opengraph-image.png`, `public/brand/`).

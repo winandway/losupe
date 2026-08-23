@@ -35,10 +35,11 @@ export function Byline({
       <span aria-hidden="true">·</span>
       <time dateTime={publishedAt}>{formatDate(publishedAt, lang)}</time>
       {readingMinutes ? (
-        <>
+        // En las filas compactas de celular el tiempo de lectura sobra; en escritorio se muestra.
+        <span className={compact ? "hidden sm:contents" : "contents"}>
           <span aria-hidden="true">·</span>
           <span>{dict.article.minutes(readingMinutes)}</span>
-        </>
+        </span>
       ) : null}
     </p>
   );

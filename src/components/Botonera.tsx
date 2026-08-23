@@ -12,11 +12,11 @@ export type BotoneraItem = {
   exact?: boolean;
 };
 
-/** Barra de navegación principal (botonera), fija arriba al hacer scroll. */
+/** Barra de navegación principal (botonera). En escritorio queda fija arriba; en celular la barra fija es la del logo. */
 export function Botonera({ items, label }: { items: BotoneraItem[]; label: string }) {
   const pathname = usePathname() ?? "/";
   return (
-    <nav aria-label={label} className="sticky top-0 z-40 bg-ink shadow-md">
+    <nav aria-label={label} className="bg-ink shadow-md md:sticky md:top-0 md:z-40">
       <ul className="no-scrollbar mx-auto flex max-w-6xl items-center gap-1 overflow-x-auto px-2 py-2">
         {items.map((item) => {
           const active = item.exact ? pathname === item.href : pathname.startsWith(item.href);

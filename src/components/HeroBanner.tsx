@@ -53,6 +53,8 @@ export function HeroBanner({ lang, dict }: { lang: Lang; dict: Dict }) {
               label: dict.search.label,
               seeAllTemplate: dict.search.seeAllTemplate,
               noneTemplate: dict.search.noneTemplate,
+              close: dict.search.close,
+              hint: dict.search.typing,
             }}
           />
         </div>

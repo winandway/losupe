@@ -15,6 +15,8 @@ export const es = {
     search: "Buscar",
     about: "Acerca de losupe",
     language: "Idioma",
+    menu: "Menú",
+    closeMenu: "Cerrar el menú",
     skip: "Saltar al contenido",
   },
   hero: {
@@ -30,6 +32,7 @@ export const es = {
     topStory: "Lo más importante de hoy",
     moreFrom: "Más de",
     viewAll: "Ver toda la sección",
+    more: "Ver más",
     empty: "Estamos preparando las primeras notas. Vuelve muy pronto.",
     welcomeTitle: "Lo que pasa, explicado.",
     welcomeBody:
@@ -69,6 +72,7 @@ export const es = {
     typing: "Escribe y te vamos sugiriendo notas.",
     seeAllTemplate: "Ver todos los resultados para “{q}”",
     noneTemplate: "No encontramos nada con “{q}”. Prueba con otra palabra.",
+    close: "Cerrar la búsqueda",
   },
   author: {
     articlesBy: "Notas de",

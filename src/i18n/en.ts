@@ -17,6 +17,8 @@ export const en: Dict = {
     search: "Search",
     about: "About losupe",
     language: "Language",
+    menu: "Menu",
+    closeMenu: "Close menu",
     skip: "Skip to content",
   },
   hero: {
@@ -32,6 +34,7 @@ export const en: Dict = {
     topStory: "Today's top story",
     moreFrom: "More from",
     viewAll: "View the whole section",
+    more: "More",
     empty: "We're preparing our first stories. Check back soon.",
     welcomeTitle: "What's happening, explained.",
     welcomeBody:
@@ -71,6 +74,7 @@ export const en: Dict = {
     typing: "Start typing and we will suggest stories.",
     seeAllTemplate: "See all results for “{q}”",
     noneTemplate: "Nothing found for “{q}”. Try another word.",
+    close: "Close search",
   },
   author: {
     articlesBy: "Stories by",

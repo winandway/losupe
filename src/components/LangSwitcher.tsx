@@ -12,10 +12,16 @@ export function LangSwitcher({
   lang,
   labels,
   groupLabel,
+  onNavigate,
+  full = false,
 }: {
   lang: Lang;
   labels: Record<Lang, string>;
   groupLabel: string;
+  /** Se llama al tocar un idioma (p. ej. para cerrar el menú de celular). */
+  onNavigate?: () => void;
+  /** Muestra el nombre completo del idioma (menú de celular) en vez de ES/EN. */
+  full?: boolean;
 }) {
   const pathname = usePathname() ?? "/";
   const searchParams = useSearchParams();
@@ -38,12 +44,13 @@ export function LangSwitcher({
             lang={l}
             aria-label={labels[l]}
             aria-current={active ? "true" : undefined}
-            className={`flex items-center gap-1 px-2.5 py-1.5 transition ${
+            onClick={onNavigate}
+            className={`flex items-center gap-1 transition ${full ? "px-4 py-2 text-sm" : "px-2.5 py-1.5"} ${
               active ? "bg-ink text-white" : "text-ink hover:bg-paper"
             }`}
           >
             <span aria-hidden="true">{FLAGS[l]}</span>
-            <span>{SHORT[l]}</span>
+            {full ? <span>{labels[l]}</span> : <span className="hidden sm:inline">{SHORT[l]}</span>}
           </Link>
         );
       })}

@@ -56,6 +56,7 @@ export default async function SearchPage({ params, searchParams }: Props) {
             label: dict.search.label,
             seeAllTemplate: dict.search.seeAllTemplate,
             noneTemplate: dict.search.noneTemplate,
+            close: dict.search.close,
           }}
         />
         {!q ? <p className="mt-2 text-sm text-muted">{dict.search.typing}</p> : null}

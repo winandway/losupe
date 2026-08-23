@@ -33,6 +33,7 @@ export const dynamic = "force-dynamic";
 
 export const viewport: Viewport = {
   themeColor: "#0b1f3a",
+  colorScheme: "only light",
   width: "device-width",
   initialScale: 1,
 };

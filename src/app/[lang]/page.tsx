@@ -28,11 +28,19 @@ export default async function HomePage({ params }: Props) {
   const lang = await requireLang(params);
   const dict = getDict(lang);
   const [db, base] = await Promise.all([getDb(), getBaseUrl()]);
-  const [latest, perSection] = await Promise.all([
+  const [latest, perSectionRaw] = await Promise.all([
     listLatest(db, lang, { limit: 7 }),
-    listLatestPerSection(db, lang, 3),
+    listLatestPerSection(db, lang, 6),
   ]);
   const [hero, ...rest] = latest;
+  // Los bloques de sección no repiten lo que ya salió arriba (principal + «Lo último»).
+  const shown = new Set(latest.map((a) => a.id));
+  const perSection = Object.fromEntries(
+    Object.entries(perSectionRaw).map(([id, items]) => [
+      id,
+      items.filter((a) => !shown.has(a.id)).slice(0, 3),
+    ]),
+  ) as typeof perSectionRaw;
 
   return (
     <>
@@ -41,7 +49,7 @@ export default async function HomePage({ params }: Props) {
 
       <HeroBanner lang={lang} dict={dict} />
 
-      <Container className="py-8 md:py-10">
+      <Container className="py-6 md:py-10">
         {hero ? (
           <section aria-label={dict.home.topStory}>
             <ArticleCard article={hero} lang={lang} dict={dict} variant="hero" priority />
@@ -53,9 +61,9 @@ export default async function HomePage({ params }: Props) {
         )}
 
         {rest.length > 0 ? (
-          <section className="mt-12" aria-label={dict.home.latest}>
+          <section className="mt-10 md:mt-12" aria-label={dict.home.latest}>
             <SectionHeading title={dict.home.latest} />
-            <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-5 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 [&>*+*]:border-t [&>*+*]:border-line [&>*+*]:pt-5 sm:[&>*+*]:border-0 sm:[&>*+*]:pt-0">
               {rest.map((a) => (
                 <ArticleCard key={a.id} article={a} lang={lang} dict={dict} />
               ))}
@@ -67,14 +75,15 @@ export default async function HomePage({ params }: Props) {
           const items = perSection[s.id];
           if (!items || items.length === 0) return null;
           return (
-            <section key={s.id} className="mt-12" aria-label={s.name[lang]}>
+            <section key={s.id} className="mt-10 md:mt-12" aria-label={s.name[lang]}>
               <SectionHeading
                 title={s.name[lang]}
                 color={s.color}
                 href={sectionPath(lang, s.id)}
                 linkLabel={dict.home.viewAll}
+                linkLabelShort={dict.home.more}
               />
-              <div className="grid gap-6 md:grid-cols-3">
+              <div className="grid gap-5 md:grid-cols-3 md:gap-6 [&>*+*]:border-t [&>*+*]:border-line [&>*+*]:pt-5 md:[&>*+*]:border-0 md:[&>*+*]:pt-0">
                 {items.map((a) => (
                   <ArticleCard key={a.id} article={a} lang={lang} dict={dict} variant="row" />
                 ))}
