@@ -51,6 +51,7 @@ export const es = {
     sponsoredLabel: "Contenido patrocinado",
     sponsoredNoticeTemplate:
       "Nota producida por encargo de {sponsor}. La empresa aportó la información; la redacción y la revisión son de losupe.",
+    readMore: "Sigue leyendo",
     related: "Te puede interesar",
     share: "Compartir",
     shareOn: (network: string) => `Compartir en ${network}`,

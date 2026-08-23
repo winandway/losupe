@@ -7,6 +7,7 @@ import { Byline } from "@/components/Byline";
 import { JsonLd } from "@/components/JsonLd";
 import { getSponsorForArticle } from "@/lib/robot/publish";
 import { Prose } from "@/components/Prose";
+import { ReadMore } from "@/components/ReadMore";
 import { SectionBadge } from "@/components/SectionBadge";
 import { SectionHeading } from "@/components/SectionHeading";
 import { ShareLinks } from "@/components/ShareLinks";
@@ -14,6 +15,7 @@ import { getDict, otherLang, type Lang } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { formatDate } from "@/lib/dates";
 import { getDb } from "@/lib/db";
+import { splitAfterParagraph } from "@/lib/html";
 import { getArticleBySlug, listRelated, type ArticleFull } from "@/lib/queries";
 import { getSection, sectionByAnySlug } from "@/lib/sections";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/seo";
@@ -95,6 +97,9 @@ export default async function ArticlePage({ params }: Props) {
   const base = await getBaseUrl();
   const url = absoluteUrl(base, expectedPath);
   const related = await listRelated(db, lang, article.sectionId, article.id, 4);
+  // Enlace interno dentro del texto: la nota relacionada más reciente, tras el segundo párrafo.
+  const readMoreTarget = related[0] ?? null;
+  const { before: bodyBefore, after: bodyAfter } = splitAfterParagraph(article.contentHtml, 2);
   const showLegacy = article.origin === "mundoscrypto";
   const sponsor =
     article.origin === "sponsored" ? await getSponsorForArticle(db, article.id) : null;
@@ -187,7 +192,15 @@ export default async function ArticlePage({ params }: Props) {
           ) : null}
 
           <div className="mt-8">
-            <Prose html={article.contentHtml} />
+            {readMoreTarget ? (
+              <>
+                <Prose html={bodyBefore} />
+                <ReadMore article={readMoreTarget} lang={lang} label={dict.article.readMore} />
+                <Prose html={bodyAfter} />
+              </>
+            ) : (
+              <Prose html={article.contentHtml} />
+            )}
           </div>
 
           {article.sources.length > 0 ? (

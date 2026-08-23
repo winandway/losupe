@@ -18,6 +18,16 @@ quedó y cómo volver a comprobarlo.
 
 ### Google / buscadores
 
+**Bloque 3 (23 ago 2026):** Search Console verificado y los dos sitemaps en «Correcto» (59 páginas y
+4 noticias). Datos estructurados reforzados: `NewsMediaOrganization` con `@id` compartido, políticas
+editoriales, de correcciones y de ética, logo con medidas e idiomas; la nota declara `wordCount`,
+`timeRequired`, `speakable` (para asistentes de voz), `citation` con sus fuentes y el editor
+enlazado por `@id`; los titulares se recortan a los 110 caracteres que muestra Google. Portada y
+secciones declaran su `CollectionPage` + `ItemList` y sus migas de pan. El perfil del autor dice
+para quién trabaja y de qué sabe (E-E-A-T). **Enlaces internos:** cada nota lleva un bloque «Sigue
+leyendo» dentro del texto (tras el segundo párrafo) hacia otra nota nuestra, y el robot ahora recibe
+las rutas de nuestras notas publicadas para enlazarlas de forma natural mientras redacta.
+
 - ✅ Títulos, descripciones y canónicas por página y por idioma; `hreflang` es/en/x-default.
 - ✅ Open Graph y Twitter Card con imagen (1200×630 en portada; imagen de la nota en artículos); `og:locale` y `og:locale:alternate`.
 - ✅ JSON-LD: `NewsMediaOrganization`, `WebSite` + `SearchAction`, `NewsArticle`/`Article` con autor, editor, fechas e imagen, `BreadcrumbList`, `ProfilePage`/`Person` en páginas de autor.

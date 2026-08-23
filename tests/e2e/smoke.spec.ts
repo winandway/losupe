@@ -98,6 +98,45 @@ test("los mapas del sitio son válidos para Google (XML, rutas y cabeceras)", as
   expect(txt).toMatch(/^Sitemap: https?:\/\/\S+\/news-sitemap\.xml$/m);
 });
 
+test("datos estructurados: la nota se declara como noticia con su editor, autor y fuentes", async ({
+  page,
+}) => {
+  await page.goto("/es");
+  const href = await page.locator("main article h2 a").first().getAttribute("href");
+  await page.goto(href!);
+  const bloques = await page.locator('script[type="application/ld+json"]').allTextContents();
+  const datos = bloques.map((b) => JSON.parse(b));
+  const nota = datos.find((d) => d["@type"] === "NewsArticle" || d["@type"] === "Article");
+  expect(nota).toBeTruthy();
+  expect(nota.headline.length).toBeLessThanOrEqual(110);
+  expect(nota.publisher["@type"]).toBe("NewsMediaOrganization");
+  expect(nota.author.url).toContain("/es/autor/");
+  expect(nota.wordCount).toBeGreaterThan(100);
+  expect(nota.speakable).toBeTruthy();
+  expect(nota.isAccessibleForFree).toBe(true);
+  expect(datos.some((d) => d["@type"] === "BreadcrumbList")).toBe(true);
+  // Enlace interno dentro del texto («Sigue leyendo»), que reparte autoridad entre nuestras notas
+  const dentro = page.locator("article aside a[href^='/es/']");
+  if ((await dentro.count()) > 0) {
+    await expect(dentro.first()).toBeVisible();
+  }
+
+  // Portada y sección declaran su lista de notas
+  await page.goto("/es");
+  const portada = (await page.locator('script[type="application/ld+json"]').allTextContents()).map(
+    (b) => JSON.parse(b),
+  );
+  expect(portada.some((d) => d["@type"] === "NewsMediaOrganization")).toBe(true);
+  const lista = portada.find((d) => d["@type"] === "CollectionPage");
+  expect(lista?.mainEntity?.itemListElement?.length).toBeGreaterThan(0);
+  await page.goto("/es/cripto");
+  const seccion = (await page.locator('script[type="application/ld+json"]').allTextContents()).map(
+    (b) => JSON.parse(b),
+  );
+  expect(seccion.some((d) => d["@type"] === "CollectionPage")).toBe(true);
+  expect(seccion.some((d) => d["@type"] === "BreadcrumbList")).toBe(true);
+});
+
 test("señales para buscadores y agentes de IA", async ({ request }) => {
   const robots = await request.get("/robots.txt");
   const robotsTxt = await robots.text();

@@ -55,6 +55,8 @@ export function cleanEditorialHtml(html: string): string {
     }
     if (name === "a") {
       const href = attrs?.match(/href\s*=\s*["']([^"']+)["']/i)?.[1] ?? "";
+      // Enlaces internos (/es/... o /en/...): se quedan en el sitio, sin nofollow ni pestaña nueva.
+      if (/^\/(es|en)\//.test(href)) return `<a href="${href}">`;
       if (!/^https?:\/\//i.test(href) && !/^mailto:/i.test(href)) {
         droppedAnchors += 1;
         return "";
@@ -104,6 +106,7 @@ FUENTES (lo más importante)
 1. Texto 100 % original: NO copies frases de las fuentes. Reformula con tus palabras y tu estructura. Inventamos el titular y el enfoque; la información viene de donde la leímos y eso se dice.
 2. Nada inventado: cada cifra, nombre o dato tiene que salir de las fuentes que te doy. Si una cifra la da la propia empresa, dilo ("según la compañía"). Si no tienes un dato, no lo pongas.
 3. Nombra la fuente en la misma frase en que usas su dato, con su nombre propio y un enlace <a href="URL">: "según The New York Times", "como reportó Reuters", "de acuerdo con la Reserva Federal". Si una noticia aparece en muchos medios, apóyate en la fuente MÁS confiable (medio grande, agencia, organismo oficial, la empresa o persona protagonista) y dilo. Una o dos menciones por fuente; sin listas de enlaces al final.
+3.b Si te doy NOTAS NUESTRAS relacionadas, enlaza UNA o DOS dentro del texto, de forma natural, donde de verdad venga a cuento («como contamos en <a href="/es/...">esta nota</a>»). Son enlaces internos: usa la ruta tal cual te la doy, sin dominio.
 4. Cuando la nota es un encargo de una empresa (contenido patrocinado), la información sale de la propia empresa y de su sitio: ahí la fuente somos nosotros y la empresa ("según Mercatren", "la compañía explica en su sitio"). Nunca la presentes como cobertura de terceros que no existe.
 
 FORMA
@@ -146,6 +149,7 @@ function sourcesBlock(sources: readonly SourceDoc[], maxTotal = 24_000): string 
 }
 
 export type SponsoredBrief = {
+  internalLinks?: readonly InternalLink[];
   sponsorName: string;
   website: string;
   sponsorBrief?: string | null;
@@ -172,8 +176,10 @@ ${b.sponsorBrief ? `QUIÉN ES LA EMPRESA (brief interno): ${b.sponsorBrief}` : "
 CONTEXTO: la empresa contrató esta nota con el medio. El sitio la marcará como contenido patrocinado; tú NO escribas "publicidad" ni "patrocinado" dentro del texto. Escríbela como una nota informativa útil para el lector (qué es, cómo funciona, para quién sirve, qué la diferencia, qué viene), con los datos de su propio sitio web como fuente principal y citándolo. Enlaza el sitio de la empresa una o dos veces. Sin adjetivos vacíos ni promesas que no salgan de las fuentes. Si hay cifras, atribúyelas a la empresa.
 
 MATERIAL DE INVESTIGACIÓN (páginas del sitio de la empresa y fuentes extra):
-${sourcesBlock(docs)}`;
+${sourcesBlock(docs)}${internalLinksBlock(b.internalLinks ?? [])}`;
 }
+
+export type InternalLink = { title: string; path: string };
 
 export type UniversalBrief = {
   sectionId: SectionId;
@@ -181,7 +187,17 @@ export type UniversalBrief = {
   topicSummary?: string | null;
   kind: "news" | "evergreen";
   sources: readonly SourceDoc[];
+  /** Notas nuestras que el redactor puede enlazar dentro del texto (SEO interno). */
+  internalLinks?: readonly InternalLink[];
 };
+
+/** Bloque de notas nuestras para enlazar (rutas relativas, sin dominio). */
+export function internalLinksBlock(links: readonly InternalLink[]): string {
+  if (links.length === 0) return "";
+  return `\n\nNOTAS NUESTRAS QUE PUEDES ENLAZAR (usa la ruta tal cual, sin dominio):\n${links
+    .map((l) => `- ${l.title} → ${l.path}`)
+    .join("\n")}`;
+}
 
 /** Nota universal: una noticia o guía duradera a partir de fuentes públicas. */
 export function buildUniversalPrompt(b: UniversalBrief): string {
@@ -198,7 +214,7 @@ TIPO: ${kindText}
 Usa SOLO el material de abajo. Si las fuentes se contradicen, dilo. Cita cada fuente con enlace donde uses su dato.
 
 MATERIAL:
-${sourcesBlock(b.sources)}`;
+${sourcesBlock(b.sources)}${internalLinksBlock(b.internalLinks ?? [])}`;
 }
 
 export class DraftRejectedError extends Error {

@@ -92,3 +92,23 @@ export function escapeHtml(text: string): string {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
 }
+
+/**
+ * Parte el cuerpo de una nota después del N-ésimo párrafo, para poder meter en medio un enlace
+ * interno («Sigue leyendo»). Los enlaces internos dentro del texto son de lo que más pesa para
+ * posicionar: reparten autoridad entre nuestras propias notas y retienen al lector.
+ * Si la nota es corta, devuelve todo en `before` y no se inserta nada.
+ */
+export function splitAfterParagraph(
+  html: string,
+  afterParagraph = 2,
+): { before: string; after: string } {
+  const positions: number[] = [];
+  const re = /<\/p>/gi;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(html)) !== null) positions.push(m.index + m[0].length);
+  // Hace falta al menos un párrafo más después del corte para que valga la pena partir.
+  if (positions.length < afterParagraph + 2) return { before: html, after: "" };
+  const at = positions[afterParagraph - 1]!;
+  return { before: html.slice(0, at), after: html.slice(at) };
+}

@@ -1,6 +1,6 @@
 import { pingIndexNow } from "@/lib/indexnow";
 import type { SectionId } from "@/lib/sections";
-import { absoluteUrl } from "@/lib/urls";
+import { absoluteUrl, articlePath } from "@/lib/urls";
 import {
   assertBudget,
   BudgetExceededError,
@@ -28,7 +28,13 @@ import {
   pickCandidate,
   robotNotesToday,
 } from "./universal";
-import { buildSponsoredPrompt, buildUniversalPrompt, writeDraft, type SourceDoc } from "./writer";
+import {
+  buildSponsoredPrompt,
+  buildUniversalPrompt,
+  writeDraft,
+  type InternalLink,
+  type SourceDoc,
+} from "./writer";
 
 /**
  * El pipeline del robot: una corrida = hasta N notas. Cada nota alterna entre un ENCARGO de la cola
@@ -198,6 +204,32 @@ async function maybeAddVideo(
     };
   } catch {
     return { draft, video: null };
+  }
+}
+
+/** Notas nuestras ya publicadas de la misma sección, para que el redactor enlace hacia dentro. */
+async function internalLinksFor(
+  db: D1Database,
+  sectionId: SectionId,
+  lang: "es" | "en" = "es",
+  limit = 6,
+): Promise<InternalLink[]> {
+  try {
+    const { results } = await db
+      .prepare(
+        `SELECT i.title, i.slug, a.section_id FROM articles a
+         JOIN article_i18n i ON i.article_id = a.id AND i.lang = ?2
+         WHERE a.status = 'published' AND a.section_id = ?1
+         ORDER BY a.published_at DESC LIMIT ?3`,
+      )
+      .bind(sectionId, lang, limit)
+      .all<{ title: string; slug: string; section_id: string }>();
+    return results.map((r) => ({
+      title: r.title,
+      path: articlePath(lang, r.section_id as SectionId, r.slug),
+    }));
+  } catch {
+    return [];
   }
 }
 
@@ -407,6 +439,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           .run();
         await noteItem(db, runId, itemId, { status: "working", step: "write" });
         const prompt = buildSponsoredPrompt({
+          internalLinks: await internalLinksFor(db, sectionId),
           sponsorName: a.sponsor.name,
           website: a.sponsor.website,
           sponsorBrief: a.sponsor.brief,
@@ -529,6 +562,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           topicSummary: c.summary,
           kind: noteKind,
           sources: docs,
+          internalLinks: await internalLinksFor(db, c.sectionId),
         });
         const written = await writeDraft(
           prompt,

@@ -9,7 +9,7 @@ import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listLatest, listLatestPerSection } from "@/lib/queries";
 import { SECTIONS } from "@/lib/sections";
-import { organizationJsonLd, websiteJsonLd } from "@/lib/seo";
+import { itemListJsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
 import { searchPath, sectionPath } from "@/lib/urls";
 
@@ -44,8 +44,19 @@ export default async function HomePage({ params }: Props) {
 
   return (
     <>
-      <JsonLd data={organizationJsonLd(base, dict.brand.name, dict.brand.description)} />
+      <JsonLd data={organizationJsonLd(base, dict.brand.name, dict.brand.description, lang)} />
       <JsonLd data={websiteJsonLd(base, lang, dict.brand.name, searchPath(lang))} />
+      {latest.length > 0 ? (
+        <JsonLd
+          data={itemListJsonLd(
+            base,
+            lang,
+            `${dict.brand.name} — ${dict.brand.tagline}`,
+            latest.map((a) => ({ title: a.title, sectionId: a.sectionId, slug: a.slug })),
+            `/${lang}`,
+          )}
+        />
+      ) : null}
 
       <HeroBanner lang={lang} dict={dict} />
 

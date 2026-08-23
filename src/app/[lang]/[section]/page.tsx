@@ -1,4 +1,5 @@
 import { Container } from "@/components/Container";
+import { JsonLd } from "@/components/JsonLd";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -9,8 +10,9 @@ import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listPaged } from "@/lib/queries";
 import { sectionByAnySlug, sectionBySlug } from "@/lib/sections";
-import { sectionAlternates } from "@/lib/seo";
-import { sectionPath } from "@/lib/urls";
+import { breadcrumbJsonLd, itemListJsonLd, sectionAlternates } from "@/lib/seo";
+import { getBaseUrl } from "@/lib/site";
+import { homePath, sectionPath } from "@/lib/urls";
 
 type Props = {
   params: Promise<{ lang: string; section: string }>;
@@ -57,8 +59,29 @@ export default async function SectionPage({ params, searchParams }: Props) {
   const result = await listPaged(db, lang, page, { sectionId: section.id });
   if (page > 1 && result.items.length === 0) notFound();
 
+  const base = await getBaseUrl();
+
   return (
     <Container className="py-6 md:py-8">
+      {page === 1 && result.items.length > 0 ? (
+        <>
+          <JsonLd
+            data={itemListJsonLd(
+              base,
+              lang,
+              section.name[lang],
+              result.items.map((a) => ({ title: a.title, sectionId: a.sectionId, slug: a.slug })),
+              sectionPath(lang, section.id),
+            )}
+          />
+          <JsonLd
+            data={breadcrumbJsonLd(base, lang, [
+              { name: dict.nav.home, path: homePath(lang) },
+              { name: section.name[lang], path: sectionPath(lang, section.id) },
+            ])}
+          />
+        </>
+      ) : null}
       <header className="mb-8">
         <SectionHeading as="h1" title={section.name[lang]} color={section.color} />
         <p className="max-w-2xl text-muted">{section.description[lang]}</p>
