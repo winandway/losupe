@@ -366,7 +366,7 @@ test("publica tu noticia: el pedido llega al panel y se convierte en encargo", a
   // El pedido queda enlazado y el patrocinador se cancela para no ensuciar la cola local
   await page.getByLabel("Estado").selectOption("canceled");
   await page.getByRole("button", { name: "Guardar" }).click();
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page.getByText("Cambios guardados.")).toBeVisible();
 });
 
 test("el formulario público rechaza datos inválidos sin perder al cliente", async ({ request }) => {
@@ -434,8 +434,19 @@ test("/__health incluye el estado del robot (llaves, tope, cola)", async ({ requ
   expect(Array.isArray(body.robot.missing)).toBe(true);
 });
 
+/** Abre la barra lateral del panel en celular (reintenta por si el clic llega antes de hidratar). */
+async function abrirMenuPanel(page: import("@playwright/test").Page) {
+  const boton = page.getByRole("button", { name: "Abrir el menú" });
+  const panel = page.getByRole("dialog", { name: "Panel de losupe" });
+  await expect(async () => {
+    if (!(await panel.isVisible())) await boton.click({ timeout: 2000 });
+    await expect(panel).toBeVisible({ timeout: 2000 });
+  }).toPass({ timeout: 20_000 });
+}
+
 test("panel: sin sesión manda a entrar; contraseña mala avisa; con la buena entra y sale", async ({
   page,
+  isMobile,
 }) => {
   // El navegador de prueba pide inglés; el panel obedece a la cookie de idioma.
   await page.goto("/panel/accion/idioma?lang=es");
@@ -455,10 +466,42 @@ test("panel: sin sesión manda a entrar; contraseña mala avisa; con la buena en
   await expect(page).toHaveURL(/\/panel$/);
   await expect(page.getByRole("heading", { name: "Robot redactor" })).toBeVisible();
   await expect(page.getByText("GEMINI_API_KEY").first()).toBeVisible();
+  // Barra lateral: navega entre secciones y marca la activa (en celular hay que abrirla)
+  if (isMobile) await abrirMenuPanel(page);
+  const side = page.getByRole("navigation", { name: "Panel de losupe" }).last();
+  await side.getByRole("link", { name: /Encargos/ }).click();
+  await expect(page).toHaveURL(/\/panel\/encargos$/);
+  if (isMobile) await abrirMenuPanel(page);
+  await expect(
+    page
+      .getByRole("navigation", { name: "Panel de losupe" })
+      .last()
+      .getByRole("link", { name: /Encargos/ }),
+  ).toHaveAttribute("aria-current", "page");
+  if (isMobile) await page.getByRole("button", { name: "Cerrar el menú" }).click();
+  await page.goto("/panel");
   // Cerrar sesión borra la sesión: /panel vuelve a pedir contraseña
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  if (isMobile) await abrirMenuPanel(page);
+  await page.getByRole("button", { name: "Cerrar sesión" }).last().click();
   await expect(page).toHaveURL(/\/panel\/entrar$/);
   await page.goto("/panel");
+  await expect(page).toHaveURL(/\/panel\/entrar$/);
+});
+
+test("desde el sitio público hay una puerta al panel", async ({ page, isMobile }) => {
+  await page.goto("/es");
+  if (isMobile) {
+    await page.getByRole("button", { name: "Menú" }).click();
+    const dialog = page.getByRole("dialog", { name: "Menú" });
+    await expect(dialog.getByRole("link", { name: "Entrar al panel" })).toHaveAttribute(
+      "href",
+      "/panel",
+    );
+    return;
+  }
+  const link = page.getByRole("link", { name: "Entrar al panel" });
+  await expect(link).toHaveAttribute("href", "/panel");
+  await link.click();
   await expect(page).toHaveURL(/\/panel\/entrar$/);
 });
 
@@ -508,5 +551,4 @@ test("panel: crear patrocinador, encolar ideas, ver cola y ejecutar sin llave av
   await page.getByLabel("Estado").selectOption("canceled");
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Cambios guardados.")).toBeVisible();
-  await page.getByRole("button", { name: "Cerrar sesión" }).click();
 });

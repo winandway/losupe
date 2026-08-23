@@ -2,16 +2,19 @@
 export function LogoMark({
   className = "h-7 w-7",
   id = "losupe-mark",
+  onDark = false,
 }: {
   className?: string;
   id?: string;
+  /** Variante para fondos oscuros: el anillo arranca en blanco en vez de navy. */
+  onDark?: boolean;
 }) {
   const gid = `${id}-grad`;
   return (
     <svg viewBox="0 0 32 32" fill="none" aria-hidden="true" className={className}>
       <defs>
         <linearGradient id={gid} x1="0" y1="0" x2="32" y2="32" gradientUnits="userSpaceOnUse">
-          <stop offset="0" stopColor="#0B1F3A" />
+          <stop offset="0" stopColor={onDark ? "#FFFFFF" : "#0B1F3A"} />
           <stop offset="0.55" stopColor="#1D4ED8" />
           <stop offset="1" stopColor="#2EE6A6" />
         </linearGradient>
@@ -32,22 +35,35 @@ export function Logo({
   className = "",
   size = "md",
   id = "losupe-mark",
+  onDark = false,
 }: {
   className?: string;
   size?: "md" | "lg";
   id?: string;
+  /** Variante para fondos oscuros (panel): texto claro y anillo con blanco. */
+  onDark?: boolean;
 }) {
   const text = size === "lg" ? "text-[2.1rem]" : "text-[1.55rem]";
   const mark = size === "lg" ? "h-9 w-9" : "h-7 w-7";
   return (
     <span className={`inline-flex items-center gap-2 ${className}`}>
-      <LogoMark className={mark} id={id} />
+      <LogoMark className={mark} id={id} onDark={onDark} />
       <span className={`font-brand ${text} font-bold leading-none tracking-[-0.045em]`}>
-        <span className="bg-gradient-to-r from-ink via-[#1d4ed8] to-[#2ee6a6] bg-clip-text text-transparent">
+        <span
+          className={
+            onDark
+              ? "bg-gradient-to-r from-white via-[#7db2f0] to-[#2ee6a6] bg-clip-text text-transparent"
+              : "bg-gradient-to-r from-ink via-[#1d4ed8] to-[#2ee6a6] bg-clip-text text-transparent"
+          }
+        >
           losupe
         </span>
         <span className="text-accent">.</span>
-        <span className="text-[0.78em] font-semibold tracking-[-0.02em] text-ink/80">com</span>
+        <span
+          className={`text-[0.78em] font-semibold tracking-[-0.02em] ${onDark ? "text-white/80" : "text-ink/80"}`}
+        >
+          com
+        </span>
       </span>
     </span>
   );

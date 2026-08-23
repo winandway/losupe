@@ -110,6 +110,7 @@ export const en: Dict = {
     editorial: "Editorial policy",
     privacy: "Privacy",
     terms: "Terms and conditions",
+    panelLogin: "Panel sign in",
   },
   notFound: {
     title: "We couldn't find that page",
@@ -283,6 +284,8 @@ export const en: Dict = {
       notes: "Stories",
       sources: "Sources",
       logout: "Sign out",
+      openMenu: "Open menu",
+      closeMenu: "Close menu",
       site: "View site",
       language: "Language",
     },

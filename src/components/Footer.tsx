@@ -74,7 +74,7 @@ export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: nu
         </div>
       </div>
       <div className="border-t border-line">
-        <p className="mx-auto max-w-6xl px-4 py-4 text-center text-xs text-muted">
+        <p className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-4 text-center text-xs text-muted">
           © {y} {dict.brand.domain} | {dict.footer.rights} {dict.footer.developedBy}{" "}
           <a
             href="https://windoce.com"
@@ -84,6 +84,12 @@ export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: nu
           >
             Windoce LLC
           </a>
+          <span aria-hidden="true" className="hidden sm:inline">
+            ·
+          </span>
+          <Link href="/panel" className="hover:text-ink hover:underline" rel="nofollow">
+            {dict.footer.panelLogin}
+          </Link>
         </p>
       </div>
     </footer>

@@ -36,6 +36,7 @@ export function Header({ lang, dict }: { lang: Lang; dict: Dict }) {
     { key: "editorial", label: dict.footer.editorial, href: staticPath("editorial", lang) },
     { key: "privacy", label: dict.footer.privacy, href: staticPath("privacy", lang) },
     { key: "terms", label: dict.footer.terms, href: staticPath("terms", lang) },
+    { key: "panel", label: dict.footer.panelLogin, href: "/panel" },
   ];
 
   return (

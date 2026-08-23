@@ -107,3 +107,22 @@ diario…`, 23 ago 2026).
   el tope; `tests/unit/robot-pipeline.test.ts` → con el tope gastado la corrida se salta.
 - **Qué NO tocar:** no agregar modelos a la lista blanca sin autorización escrita de Richard con el
   costo por imagen; no quitar el `assert` «porque el panel ya valida».
+
+## 7. La barra lateral del panel no puede vivir dentro de un encabezado con `backdrop-blur`
+
+- **Cómo se vio (23 ago 2026, al rediseñar el panel):** la barra lateral aparecía pintada pero los
+  enlaces no se podían tocar: los clics los interceptaba el bloque del logo o el de abajo, y la
+  navegación quedaba muerta.
+- **Causa real (la misma familia del candado 1):** `backdrop-filter` (la clase `backdrop-blur`) en el
+  encabezado convierte a ese encabezado en el **marco de referencia** de los elementos con
+  `position: fixed` que estén dentro. La barra, que debía medir la altura de la pantalla, quedó
+  encerrada en los ~60 px del encabezado y todo se solapó.
+- **Qué se hizo:** `src/components/panel/PanelShell.tsx` pinta `<PanelSidebar>` **fuera** del
+  `<header>`, como hijo directo del contenedor raíz; el encabezado usa fondo sólido (`bg-paper`) en
+  vez de `backdrop-blur`; y el botón de menú de celular es `fixed` en la esquina, con el encabezado
+  dejándole sitio (`pl-16`).
+- **Candado:** `tests/e2e/smoke.spec.ts` → «panel: sin sesión manda a entrar…» navega **haciendo
+  clic** en «Encargos» dentro de la barra lateral (en celular la abre antes) y comprueba
+  `aria-current="page"`. Si la barra vuelve a quedar atrapada, el clic falla y la prueba se pone roja.
+- **Qué NO tocar:** no metas `backdrop-blur`, `filter` ni `transform` en ancestros de algo `fixed`.
+  Si hace falta el efecto, el elemento fijo se saca de ese subárbol (o se pinta en un portal).

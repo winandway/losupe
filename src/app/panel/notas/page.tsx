@@ -87,9 +87,8 @@ export default async function NotesPage({ searchParams }: Props) {
     </li>
   );
   return (
-    <PanelShell lang={lang} dict={dict} active="notes" flash={flashText}>
-      <h1 className="font-display text-3xl font-bold text-ink">{p.title}</h1>
-      <section className="mt-6 rounded-2xl border border-line bg-white p-5">
+    <PanelShell lang={lang} dict={dict} active="notes" title={p.title} flash={flashText}>
+      <section className="rounded-2xl border border-line bg-white p-5">
         <h2 className="font-display text-xl font-bold">{p.review}</h2>
         {review.length === 0 ? (
           <p className="mt-2 text-sm text-muted">{p.empty}</p>

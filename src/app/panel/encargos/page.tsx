@@ -19,11 +19,15 @@ export default async function SponsorsPage({ searchParams }: Props) {
       : undefined,
   };
   return (
-    <PanelShell lang={lang} dict={dict} active="sponsors" flash={flashText}>
-      <h1 className="font-display text-3xl font-bold text-ink">{p.title}</h1>
-      <p className="mt-2 max-w-3xl text-sm text-muted">{p.intro}</p>
-
-      <section className="mt-6 overflow-x-auto rounded-2xl border border-line bg-white">
+    <PanelShell
+      lang={lang}
+      dict={dict}
+      active="sponsors"
+      title={p.title}
+      intro={p.intro}
+      flash={flashText}
+    >
+      <section className="overflow-x-auto rounded-2xl border border-line bg-white">
         {sponsors.length === 0 ? (
           <p className="p-5 text-sm text-muted">{p.empty}</p>
         ) : (

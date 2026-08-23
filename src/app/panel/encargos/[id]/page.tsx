@@ -40,21 +40,35 @@ export default async function SponsorDetailPage({ params, searchParams }: Props)
   }
 
   return (
-    <PanelShell lang={lang} dict={dict} active="sponsors" flash={flashText}>
-      <p className="text-sm">
-        <Link href="/panel/encargos" className="font-semibold hover:underline">
+    <PanelShell
+      lang={lang}
+      dict={dict}
+      active="sponsors"
+      title={sponsor.name}
+      flash={flashText}
+      actions={
+        <Link
+          href="/panel/encargos"
+          className="rounded-full border border-line px-3 py-1.5 text-xs font-bold hover:bg-white"
+        >
           ← {p.title}
         </Link>
+      }
+    >
+      <p className="mb-5 text-sm">
+        <strong>{sponsor.published}</strong> {p.published} · <strong>{sponsor.queued}</strong>{" "}
+        {p.queuedShort} · <strong>{sponsor.remaining}</strong> {p.remaining} ·{" "}
+        <a
+          href={sponsor.website}
+          target="_blank"
+          rel="noopener noreferrer nofollow"
+          className="underline"
+        >
+          {sponsor.website}
+        </a>
       </p>
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-        <h1 className="font-display text-3xl font-bold text-ink">{sponsor.name}</h1>
-        <p className="text-sm">
-          <strong>{sponsor.published}</strong> {p.published} · <strong>{sponsor.queued}</strong>{" "}
-          {p.queuedShort} · <strong>{sponsor.remaining}</strong> {p.remaining}
-        </p>
-      </div>
 
-      <section className="mt-6 rounded-2xl border border-line bg-white p-5">
+      <section className="rounded-2xl border border-line bg-white p-5">
         <h2 className="font-display text-xl font-bold">{p.ideas}</h2>
         {assignments.length === 0 ? (
           <p className="mt-2 text-sm text-muted">{p.noIdeas}</p>

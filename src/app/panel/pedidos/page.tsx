@@ -16,11 +16,15 @@ export default async function OrdersPage({ searchParams }: Props) {
     error: flash.error,
   };
   return (
-    <PanelShell lang={lang} dict={dict} active="orders" flash={flashText}>
-      <h1 className="font-display text-3xl font-bold text-ink">{p.title}</h1>
-      <p className="mt-2 max-w-3xl text-sm text-muted">{p.intro}</p>
-
-      <div className="mt-5 grid gap-3 sm:grid-cols-4">
+    <PanelShell
+      lang={lang}
+      dict={dict}
+      active="orders"
+      title={p.title}
+      intro={p.intro}
+      flash={flashText}
+    >
+      <div className="grid gap-3 sm:grid-cols-4">
         {(
           [
             [p.newOnes, summary.newCount],

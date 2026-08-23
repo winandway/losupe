@@ -51,10 +51,15 @@ export default async function PanelHome({ searchParams }: Props) {
     | undefined;
 
   return (
-    <PanelShell lang={lang} dict={dict} active="dashboard" flash={flashText}>
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <h1 className="font-display text-3xl font-bold text-ink">{p.dashboard.title}</h1>
-        <form action="/panel/accion/robot" method="post" className="flex flex-wrap gap-2">
+    <PanelShell
+      lang={lang}
+      dict={dict}
+      active="dashboard"
+      title={p.dashboard.title}
+      intro={p.dashboard.howItWorks}
+      flash={flashText}
+      actions={
+        <form action="/panel/accion/robot" method="post">
           <input type="hidden" name="op" value={status.paused ? "resume" : "pause"} />
           <button
             type="submit"
@@ -65,10 +70,9 @@ export default async function PanelHome({ searchParams }: Props) {
             {status.paused ? p.dashboard.resume : p.dashboard.pause}
           </button>
         </form>
-      </div>
-      <p className="mt-2 max-w-3xl text-sm text-muted">{p.dashboard.howItWorks}</p>
-
-      <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      }
+    >
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <Card title={p.dashboard.status}>
           <p className="flex items-center gap-2 text-lg font-bold">
             <Dot ok={!status.paused} /> {status.paused ? p.dashboard.paused : p.dashboard.running}

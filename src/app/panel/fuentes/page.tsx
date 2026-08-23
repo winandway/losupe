@@ -19,10 +19,15 @@ export default async function SourcesPage({ searchParams }: Props) {
   };
   const input = "mt-1 w-full rounded-xl border border-line bg-white px-3 py-2 text-sm";
   return (
-    <PanelShell lang={lang} dict={dict} active="sources" flash={flashText}>
-      <h1 className="font-display text-3xl font-bold text-ink">{p.title}</h1>
-      <p className="mt-2 max-w-3xl text-sm text-muted">{p.intro}</p>
-      <section className="mt-6 overflow-x-auto rounded-2xl border border-line bg-white">
+    <PanelShell
+      lang={lang}
+      dict={dict}
+      active="sources"
+      title={p.title}
+      intro={p.intro}
+      flash={flashText}
+    >
+      <section className="overflow-x-auto rounded-2xl border border-line bg-white">
         <table className="w-full text-sm">
           <thead className="bg-paper text-left text-xs uppercase tracking-wider text-muted">
             <tr>

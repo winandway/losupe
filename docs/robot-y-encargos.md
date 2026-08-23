@@ -62,9 +62,15 @@ flowchart LR
 - **Ajustes** (Inicio): notas por día, porcentaje de guías duraderas frente a actualidad, tope diario.
 - Idioma del panel con el botón **EN/ES** (cookie), todo el texto vive en `src/i18n/{es,en}.ts → panel`.
 
+El panel se maneja con una **barra lateral** fija (en celular se abre con el botón de menú): Inicio,
+Pedidos, Encargos, Notas y Fuentes, con avisos numerados en Pedidos y Notas cuando hay algo por
+atender, y abajo «Ver el sitio», el cambio de idioma y **Cerrar sesión**. Desde el sitio público se
+entra por el enlace «Entrar al panel» del pie de página (y del menú en celular).
+
+![Inicio del panel](img/capturas/panel-sidebar-inicio.png)
+![Encargos](img/capturas/panel-sidebar-encargos.png)
+![Barra lateral en celular](img/capturas/panel-sidebar-movil.png)
 ![Entrar](img/capturas/panel-entrar.png)
-![Inicio](img/capturas/panel-inicio-con-cola.png)
-![Encargo](img/capturas/panel-encargo.png)
 
 ## 4. Qué hace el robot por dentro (archivos)
 

@@ -108,6 +108,7 @@ export const es = {
     editorial: "Política editorial",
     privacy: "Privacidad",
     terms: "Términos y condiciones",
+    panelLogin: "Entrar al panel",
   },
   notFound: {
     title: "No encontramos esa página",
@@ -281,6 +282,8 @@ export const es = {
       notes: "Notas",
       sources: "Fuentes",
       logout: "Cerrar sesión",
+      openMenu: "Abrir el menú",
+      closeMenu: "Cerrar el menú",
       site: "Ver el sitio",
       language: "Idioma",
     },

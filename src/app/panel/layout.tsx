@@ -35,9 +35,9 @@ export default function PanelLayout({ children }: { children: React.ReactNode })
   return (
     <html
       lang="es"
-      className={`${inter.variable} ${newsreader.variable} ${spaceGrotesk.variable} h-full antialiased`}
+      className={`${inter.variable} ${newsreader.variable} ${spaceGrotesk.variable} h-full bg-paper antialiased`}
     >
-      <body className="min-h-full bg-paper">{children}</body>
+      <body className="min-h-full bg-paper text-ink">{children}</body>
     </html>
   );
 }
