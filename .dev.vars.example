@@ -1,0 +1,14 @@
+# Variables locales para `wrangler dev` / pruebas de humo. Cópialo a `.dev.vars` (no se commitea).
+# En producción TODO esto va en YaDominios Cloud → tarjeta del sitio → Variables de entorno.
+NEXTJS_ENV=development
+CRON_SECRET=
+# Robot redactor (vacías en local: el robot reporta qué falta sin romper nada)
+GEMINI_API_KEY=
+FAL_KEY=
+PEXELS_API_KEY=
+BRAVE_API_KEY=
+# Panel: contraseña SOLO de pruebas locales (la de producción la inventa Richard y va en YaDominios)
+ADMIN_PASSWORD=losupe-panel-local
+TURNSTILE_SITE_KEY=
+TURNSTILE_SECRET_KEY=
+NEXT_PUBLIC_SITE_URL=

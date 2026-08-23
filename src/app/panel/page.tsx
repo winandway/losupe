@@ -1,0 +1,222 @@
+import Link from "next/link";
+import { PanelShell } from "@/components/panel/PanelShell";
+import { flashFrom, panelDict, requirePanelSession } from "@/lib/panel/server";
+import { robotStatus } from "@/lib/robot/pipeline";
+
+type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
+
+function Card({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <section className="rounded-2xl border border-line bg-white p-5">
+      <h2 className="text-xs font-bold uppercase tracking-widest text-muted">{title}</h2>
+      <div className="mt-3">{children}</div>
+    </section>
+  );
+}
+
+function Dot({ ok }: { ok: boolean }) {
+  return (
+    <span
+      aria-hidden="true"
+      className={`inline-block h-2.5 w-2.5 rounded-full ${ok ? "bg-mint" : "bg-coral"}`}
+    />
+  );
+}
+
+export default async function PanelHome({ searchParams }: Props) {
+  const { env } = await requirePanelSession();
+  const { lang, dict } = await panelDict();
+  const p = dict.panel;
+  const status = await robotStatus(env);
+  const sp = await searchParams;
+  const flash = flashFrom(sp);
+  const flashText = {
+    ok: flash.ok ? ((p.flash as Record<string, string>)[flash.ok] ?? flash.ok) : undefined,
+    error: flash.error ? `${p.flash.error}: ${flash.error}` : undefined,
+  };
+  const summary = status.lastRun?.summary as
+    | {
+        reason?: string;
+        notes?: {
+          kind: string;
+          ok: boolean;
+          title?: string;
+          path?: string;
+          status?: string;
+          error?: string;
+          sponsor?: string;
+        }[];
+      }
+    | null
+    | undefined;
+
+  return (
+    <PanelShell lang={lang} dict={dict} active="dashboard" flash={flashText}>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <h1 className="font-display text-3xl font-bold text-ink">{p.dashboard.title}</h1>
+        <form action="/panel/accion/robot" method="post" className="flex flex-wrap gap-2">
+          <input type="hidden" name="op" value={status.paused ? "resume" : "pause"} />
+          <button
+            type="submit"
+            className={`rounded-full px-4 py-2 text-sm font-bold ${
+              status.paused ? "bg-mint text-ink" : "bg-ink text-white"
+            }`}
+          >
+            {status.paused ? p.dashboard.resume : p.dashboard.pause}
+          </button>
+        </form>
+      </div>
+      <p className="mt-2 max-w-3xl text-sm text-muted">{p.dashboard.howItWorks}</p>
+
+      <div className="mt-6 grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        <Card title={p.dashboard.status}>
+          <p className="flex items-center gap-2 text-lg font-bold">
+            <Dot ok={!status.paused} /> {status.paused ? p.dashboard.paused : p.dashboard.running}
+          </p>
+          <p className="mt-1 flex items-center gap-2 text-sm">
+            <Dot ok={status.missing.length === 0} />
+            {status.missing.length === 0 ? p.dashboard.ready : p.dashboard.notReady}
+          </p>
+          {status.missing.length > 0 ? (
+            <ul className="mt-2 space-y-1 text-sm text-coral">
+              {status.missing.map((m) => (
+                <li key={m}>
+                  {p.dashboard.missing}: <code className="rounded bg-paper px-1">{m}</code>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          <form action="/panel/accion/robot" method="post" className="mt-4">
+            <input type="hidden" name="op" value="run" />
+            <button
+              type="submit"
+              className="rounded-full bg-accent px-4 py-2 text-sm font-extrabold uppercase tracking-wide text-ink hover:brightness-95"
+            >
+              {p.dashboard.runNow}
+            </button>
+          </form>
+        </Card>
+
+        <Card title={p.dashboard.keys}>
+          <ul className="space-y-1.5 text-sm">
+            {(
+              [
+                ["GEMINI_API_KEY", status.keys.gemini],
+                ["FAL_KEY", status.keys.fal],
+                ["PEXELS_API_KEY", status.keys.pexels],
+                ["BRAVE_API_KEY", status.keys.brave],
+                ["ADMIN_PASSWORD", status.keys.admin],
+              ] as const
+            ).map(([k, ok]) => (
+              <li key={k} className="flex items-center gap-2">
+                <Dot ok={ok} />
+                <code className="rounded bg-paper px-1">{k}</code>
+                <span className="text-muted">{ok ? p.dashboard.present : p.dashboard.absent}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
+
+        <Card title={p.dashboard.budget}>
+          <p className="text-2xl font-bold">
+            ${status.budget.spentTodayUsd.toFixed(3)}{" "}
+            <span className="text-base font-semibold text-muted">
+              {p.dashboard.of} ${status.budget.limitUsd.toFixed(2)}
+            </span>
+          </p>
+          <p className="mt-2 text-sm text-muted">
+            {p.dashboard.quota}: <strong className="text-ink">{status.quota.today}</strong>{" "}
+            {p.dashboard.of} {status.quota.notesPerDay}
+          </p>
+          <p className="mt-2 flex items-center gap-2 text-sm">
+            <Dot ok={status.autoPublish} />
+            {p.dashboard.autoPublish}:{" "}
+            {status.autoPublish ? p.dashboard.autoOn : p.dashboard.autoOff}
+          </p>
+          <form action="/panel/accion/robot" method="post" className="mt-3">
+            <input type="hidden" name="op" value={status.autoPublish ? "auto_off" : "auto_on"} />
+            <button
+              type="submit"
+              className="rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-paper"
+            >
+              {status.autoPublish ? p.dashboard.autoToggleOff : p.dashboard.autoToggleOn}
+            </button>
+          </form>
+        </Card>
+
+        <Card title={p.dashboard.queue}>
+          <p className="text-sm">
+            <strong>{status.queue.sponsorsActive}</strong> {p.dashboard.sponsorsActive} ·{" "}
+            <strong>{status.queue.queued}</strong> {p.dashboard.queued} ·{" "}
+            <strong>{status.queue.inReview}</strong> {p.dashboard.inReview}
+          </p>
+          <p className="mt-2 text-sm text-muted">
+            {p.dashboard.next}:{" "}
+            {status.queue.nextTitle ? (
+              <strong className="text-ink">
+                {status.queue.nextTitle}
+                {status.queue.nextSponsor ? ` — ${status.queue.nextSponsor}` : ""}
+              </strong>
+            ) : (
+              p.dashboard.none
+            )}
+          </p>
+          <Link
+            href="/panel/encargos"
+            className="mt-3 inline-block text-sm font-bold text-ink hover:underline"
+          >
+            {p.nav.sponsors} →
+          </Link>
+        </Card>
+
+        <Card title={p.dashboard.lastRun}>
+          {status.lastRun ? (
+            <div className="text-sm">
+              <p>
+                <Dot ok={status.lastRun.status === "done"} />{" "}
+                <strong>{status.lastRun.status}</strong> · {status.lastRun.trigger} ·{" "}
+                <time dateTime={status.lastRun.startedAt}>
+                  {status.lastRun.startedAt.replace("T", " ").slice(0, 16)} UTC
+                </time>
+              </p>
+              {summary?.reason ? <p className="mt-1 text-muted">{summary.reason}</p> : null}
+              {status.lastRun.error ? (
+                <p className="mt-1 font-semibold text-coral">{status.lastRun.error}</p>
+              ) : null}
+              {summary?.notes && summary.notes.length > 0 ? (
+                <ul className="mt-2 space-y-1">
+                  {summary.notes.map((n, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <Dot ok={n.ok} />
+                      <span>
+                        <span className="font-semibold">
+                          {n.kind === "sponsored" ? p.notes.sponsored : p.notes.universal}
+                          {n.sponsor ? ` (${n.sponsor})` : ""}:
+                        </span>{" "}
+                        {n.ok && n.path ? (
+                          <a
+                            href={n.path}
+                            className="underline"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            {n.title}
+                          </a>
+                        ) : (
+                          <span className="text-coral">{n.error}</span>
+                        )}
+                        {n.status ? <span className="text-muted"> · {n.status}</span> : null}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </div>
+          ) : (
+            <p className="text-sm text-muted">{p.dashboard.never}</p>
+          )}
+        </Card>
+      </div>
+    </PanelShell>
+  );
+}

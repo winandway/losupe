@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { getDict, isLang, otherLang, pickLangFromAcceptLanguage, toLang } from "@/i18n";
 import { es } from "@/i18n/es";
 import { en } from "@/i18n/en";
-import { SECTIONS, getSection, sectionByAnySlug, sectionBySlug, sectionSlug, isSectionId } from "@/lib/sections";
+import {
+  SECTIONS,
+  getSection,
+  sectionByAnySlug,
+  sectionBySlug,
+  sectionSlug,
+  isSectionId,
+} from "@/lib/sections";
 import {
   aboutPath,
   absoluteUrl,
@@ -14,7 +21,13 @@ import {
   sectionPath,
   swapLangPath,
 } from "@/lib/urls";
-import { articleJsonLd, breadcrumbJsonLd, safeJsonLd, sectionAlternates, websiteJsonLd } from "@/lib/seo";
+import {
+  articleJsonLd,
+  breadcrumbJsonLd,
+  safeJsonLd,
+  sectionAlternates,
+  websiteJsonLd,
+} from "@/lib/seo";
 import { mapFull } from "@/lib/queries";
 import { sampleFullRow } from "./fake-d1";
 
@@ -103,7 +116,10 @@ describe("seo", () => {
   });
   it("arma NewsArticle con autor y editor", () => {
     const article = mapFull(sampleFullRow, "es", { es: "bitcoin-sube" });
-    const ld = articleJsonLd("https://losupe.com", "es", article, "losupe") as Record<string, unknown>;
+    const ld = articleJsonLd("https://losupe.com", "es", article, "losupe") as Record<
+      string,
+      unknown
+    >;
     expect(ld["@type"]).toBe("NewsArticle");
     expect(ld.headline).toBe("Bitcoin sube");
     expect((ld.author as { url: string }).url).toBe("https://losupe.com/es/autor/kevin-rondon");
@@ -121,6 +137,10 @@ describe("seo", () => {
       potentialAction: { target: string };
     };
     expect(ws.potentialAction.target).toContain("/en/search?q=");
-    expect(sectionAlternates("cripto")).toEqual({ es: "/es/cripto", en: "/en/crypto", "x-default": "/es/cripto" });
+    expect(sectionAlternates("cripto")).toEqual({
+      es: "/es/cripto",
+      en: "/en/crypto",
+      "x-default": "/es/cripto",
+    });
   });
 });

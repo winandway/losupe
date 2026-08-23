@@ -51,6 +51,9 @@ jobs:
       - name: Base local para pruebas de humo
         run: npm run db:local
 
+      - name: Variables locales de prueba (contraseña del panel de PRUEBA, no la real)
+        run: cp .dev.vars.example .dev.vars
+
       - name: Navegadores de Playwright
         run: npx playwright install --with-deps chromium
 

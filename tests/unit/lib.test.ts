@@ -34,7 +34,9 @@ describe("slugify", () => {
 
 describe("html", () => {
   it("stripHtml deja texto plano y decodifica entidades", () => {
-    expect(stripHtml("<p>Hola&nbsp;<b>mundo</b> &amp; m&aacute;s</p>")).toBe("Hola mundo & m&aacute;s");
+    expect(stripHtml("<p>Hola&nbsp;<b>mundo</b> &amp; m&aacute;s</p>")).toBe(
+      "Hola mundo & m&aacute;s",
+    );
     expect(decodeEntities("&#8220;x&#8221; &#x41;")).toBe("“x” A");
   });
   it("sanitizeHtml elimina scripts, manejadores, javascript: e imágenes base64", () => {
@@ -64,7 +66,9 @@ describe("html", () => {
     expect(excerptFrom("corto")).toBe("corto");
   });
   it("escapeHtml", () => {
-    expect(escapeHtml(`<a href="x">'&'</a>`)).toBe("&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;");
+    expect(escapeHtml(`<a href="x">'&'</a>`)).toBe(
+      "&lt;a href=&quot;x&quot;&gt;&#39;&amp;&#39;&lt;/a&gt;",
+    );
   });
 });
 
@@ -88,7 +92,8 @@ describe("dates", () => {
 
 describe("csv", () => {
   it("lee campos con comillas, punto y coma y saltos de línea", () => {
-    const text = '﻿id;title;content\n1;"Hola; mundo";"<p>línea 1\nlínea 2</p>"\n2;Simple;"con ""comillas"""\n';
+    const text =
+      '﻿id;title;content\n1;"Hola; mundo";"<p>línea 1\nlínea 2</p>"\n2;Simple;"con ""comillas"""\n';
     const rows = parseCsv(text, ";");
     expect(rows).toHaveLength(2);
     expect(rows[0]?.title).toBe("Hola; mundo");
@@ -132,7 +137,12 @@ describe("rss", () => {
   });
   it("arma el news sitemap", () => {
     const xml = buildNewsSitemap("losupe", [
-      { loc: "https://losupe.com/es/cripto/a", title: "A", publicationDate: "2025-11-20T15:00:00.000Z", language: "es" },
+      {
+        loc: "https://losupe.com/es/cripto/a",
+        title: "A",
+        publicationDate: "2025-11-20T15:00:00.000Z",
+        language: "es",
+      },
     ]);
     expect(xml).toContain("<news:name>losupe</news:name>");
     expect(xml).toContain("<news:title>A</news:title>");

@@ -25,8 +25,9 @@
     },
   ],
   "triggers": {
-    // 11:00 UTC = 6:00 am hora del este de EE.UU. (invierno) / 7:00 am (verano).
-    "crons": ["0 11 * * *"],
+    // Cada 2 horas entre las 11:00 y las 23:00 UTC (7 am–7 pm hora del este): una nota por corrida,
+    // repartidas a lo largo del día hasta completar el cupo diario (settings.notes_per_day).
+    "crons": ["0 11-23/2 * * *"],
   },
   "observability": {
     "enabled": true,

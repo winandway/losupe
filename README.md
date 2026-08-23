@@ -86,7 +86,19 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
 - Esquema versionado por huella: si `schema.sql` cambia, el worker lo reaplica solo
   (`settings.schema_hash`), así que agregar un autor o una columna es editar `schema.sql` y publicar.
 
-## Publicar una nota a mano (sin panel todavía)
+## Robot redactor y encargos (bloque 2)
+
+- Panel en `/panel` (contraseña `ADMIN_PASSWORD`, sesión en base, ojito, límite de intentos, Turnstile
+  opcional): Inicio (estado, llaves, tope, última corrida), **Encargos** (patrocinadores + cola de
+  ideas de titular), Notas (revisar/publicar), Fuentes (RSS).
+- El robot alterna una nota de **encargo** (lee el sitio del patrocinador, redacta ES/EN con Gemini,
+  ilustra, guarda con etiqueta «Contenido patrocinado») con una **universal** (RSS por sección).
+  Cron cada 2 h (11–23 UTC), una nota por corrida, cupo `notes_per_day`, tope `daily_budget_usd`,
+  modelos caros bloqueados en código. Tutorial completo: [docs/robot-y-encargos.md](docs/robot-y-encargos.md).
+- Llaves (en YaDominios Cloud → Variables de entorno): `ADMIN_PASSWORD`, `GEMINI_API_KEY`,
+  `FAL_KEY` o `PEXELS_API_KEY`, opcionales `BRAVE_API_KEY`, `TURNSTILE_*`, `CRON_SECRET`.
+
+## Publicar una nota a mano (sin el robot)
 
 1. Crea `seed/content/AAAA-MM-DD-tema.mjs` copiando `seed/content/2026-08-23-mercatren.mjs` (artículo + `i18n.es` + `i18n.en`, imágenes en `public/img/notas/...`).
 2. `npm run schema:embed` y `git push`. El worker la siembra en la primera visita (marca por huella: si editas la nota y vuelves a publicar, se actualiza).

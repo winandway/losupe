@@ -27,7 +27,9 @@ describe("mapeo de filas", () => {
       aiAssisted: true,
       sectionId: "cripto",
     });
-    expect(mapCard({ ...sampleCardRow, section_id: "inexistente" }, "es").sectionId).toBe("economia");
+    expect(mapCard({ ...sampleCardRow, section_id: "inexistente" }, "es").sectionId).toBe(
+      "economia",
+    );
   });
   it("parseJsonArray tolera basura", () => {
     expect(parseJsonArray('["a"]')).toEqual(["a"]);
@@ -64,7 +66,12 @@ describe("consultas", () => {
     const db = new FakeD1((sql) => (sql.includes("COUNT(*)") ? [{ n: 1 }] : [sampleCardRow]));
     await listLatest(db.asD1(), "en");
     await listLatest(db.asD1(), "en", { authorId: "kevin-rondon" });
-    await listLatest(db.asD1(), "en", { sectionId: "cripto", authorId: "kevin-rondon", limit: 3, offset: 6 });
+    await listLatest(db.asD1(), "en", {
+      sectionId: "cripto",
+      authorId: "kevin-rondon",
+      limit: 3,
+      offset: 6,
+    });
     await countPublished(db.asD1());
     await countPublished(db.asD1(), { sectionId: "cripto" });
     await countPublished(db.asD1(), { sectionId: "cripto", authorId: "kevin-rondon" });
@@ -110,7 +117,18 @@ describe("consultas", () => {
   it("listRelated, searchArticles, getAuthor, sitemaps", async () => {
     const db = new FakeD1((sql) => {
       if (sql.includes("FROM authors")) {
-        return [{ id: "kevin-rondon", name: "Kevin", kind: "person", bio_es: "b", bio_en: null, role_es: null, role_en: null, avatar_url: null }];
+        return [
+          {
+            id: "kevin-rondon",
+            name: "Kevin",
+            kind: "person",
+            bio_es: "b",
+            bio_en: null,
+            role_es: null,
+            role_en: null,
+            avatar_url: null,
+          },
+        ];
       }
       if (sql.includes("t.title, a.published_at")) return [{ ...sampleCardRow, title: "A" }];
       return [sampleCardRow];

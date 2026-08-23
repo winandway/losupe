@@ -5,6 +5,7 @@ import { ArticleCard } from "@/components/ArticleCard";
 import { Container } from "@/components/Container";
 import { Byline } from "@/components/Byline";
 import { JsonLd } from "@/components/JsonLd";
+import { getSponsorForArticle } from "@/lib/robot/publish";
 import { Prose } from "@/components/Prose";
 import { SectionBadge } from "@/components/SectionBadge";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -95,6 +96,8 @@ export default async function ArticlePage({ params }: Props) {
   const url = absoluteUrl(base, expectedPath);
   const related = await listRelated(db, lang, article.sectionId, article.id, 4);
   const showLegacy = article.origin === "mundoscrypto";
+  const sponsor =
+    article.origin === "sponsored" ? await getSponsorForArticle(db, article.id) : null;
 
   return (
     <>
@@ -123,7 +126,14 @@ export default async function ArticlePage({ params }: Props) {
           </nav>
 
           <header>
-            <SectionBadge sectionId={article.sectionId} lang={lang} size="md" />
+            <div className="flex flex-wrap items-center gap-2">
+              <SectionBadge sectionId={article.sectionId} lang={lang} size="md" />
+              {sponsor ? (
+                <span className="rounded-full border border-line bg-paper px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted">
+                  {dict.article.sponsoredLabel}
+                </span>
+              ) : null}
+            </div>
             <h1 className="mt-4 font-display text-3xl font-bold leading-tight text-ink md:text-5xl">
               {article.title}
             </h1>
@@ -142,6 +152,12 @@ export default async function ArticlePage({ params }: Props) {
               <ShareLinks url={url} title={article.title} dict={dict} />
             </div>
           </header>
+
+          {sponsor ? (
+            <p className="mt-5 rounded-xl border border-line bg-paper px-4 py-3 text-sm text-muted">
+              {dict.article.sponsoredNoticeTemplate.replace("{sponsor}", sponsor.name)}
+            </p>
+          ) : null}
 
           {article.fallback ? (
             <p className="mt-5 rounded-xl border border-accent bg-accent/15 px-4 py-3 text-sm text-ink">

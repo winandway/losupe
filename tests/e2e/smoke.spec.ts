@@ -368,3 +368,88 @@ test("404 con página propia y en el idioma correcto", async ({ page }) => {
   expect(res?.status()).toBe(404);
   await expect(page.getByText("We couldn't find that page")).toBeVisible();
 });
+
+test("/__health incluye el estado del robot (llaves, tope, cola)", async ({ request }) => {
+  const res = await request.get("/__health");
+  const body = (await res.json()) as {
+    robot: {
+      paused: boolean;
+      keys: Record<string, boolean>;
+      missing: string[];
+      queue: { queued: number };
+    };
+  };
+  expect(body.robot).toBeTruthy();
+  expect(typeof body.robot.paused).toBe("boolean");
+  expect(body.robot.keys).toHaveProperty("gemini");
+  expect(Array.isArray(body.robot.missing)).toBe(true);
+});
+
+test("panel: sin sesión manda a entrar; contraseña mala avisa; con la buena entra y sale", async ({
+  page,
+}) => {
+  // El navegador de prueba pide inglés; el panel obedece a la cookie de idioma.
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/panel");
+  await expect(page).toHaveURL(/\/panel\/entrar$/);
+  await expect(page.getByRole("heading", { name: "Entrar al panel" })).toBeVisible();
+  // Ojito de la contraseña
+  const pass = page.getByLabel("Contraseña", { exact: true });
+  await pass.fill("mala");
+  await expect(pass).toHaveAttribute("type", "password");
+  await page.getByRole("button", { name: "Ver la contraseña" }).click();
+  await expect(pass).toHaveAttribute("type", "text");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page.getByRole("alert")).toContainText("Contraseña incorrecta");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await expect(page).toHaveURL(/\/panel$/);
+  await expect(page.getByRole("heading", { name: "Robot redactor" })).toBeVisible();
+  await expect(page.getByText("GEMINI_API_KEY").first()).toBeVisible();
+  // Cerrar sesión borra la sesión: /panel vuelve a pedir contraseña
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page).toHaveURL(/\/panel\/entrar$/);
+  await page.goto("/panel");
+  await expect(page).toHaveURL(/\/panel\/entrar$/);
+});
+
+test("panel: crear patrocinador, encolar ideas, ver cola y ejecutar sin llave avisa claro", async ({
+  page,
+}) => {
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/panel/entrar");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.goto("/panel/encargos");
+  const name = `Empresa Prueba ${Date.now()}`;
+  await page.getByLabel("Nombre de la empresa").fill(name);
+  await page.getByLabel("Sitio web (con https://)").fill("https://example.com");
+  await page.getByLabel("Notas contratadas").fill("3");
+  await page
+    .getByLabel("Quién es la empresa (brief para el redactor)")
+    .fill("Vende software a pymes.");
+  await page.getByRole("button", { name: "Crear patrocinador" }).click();
+  await expect(page).toHaveURL(/\/panel\/encargos\/[0-9a-f-]+\?ok=created$/);
+  await expect(page.getByRole("heading", { name })).toBeVisible();
+  await page
+    .getByLabel("Agregar ideas de titular")
+    .fill("Cómo ayuda la empresa a las pymes | enfoque en tiendas\nOtra idea de nota");
+  await page.getByRole("button", { name: "Agregar a la cola" }).click();
+  await expect(page.getByText("Ideas agregadas a la cola.")).toBeVisible();
+  await expect(page.getByText("Cómo ayuda la empresa a las pymes")).toBeVisible();
+  await expect(page.getByText("En cola").first()).toBeVisible();
+  // El resumen de la portada del panel muestra la cola
+  await page.goto("/panel");
+  await expect(page.getByText(/encargos en cola/)).toBeVisible();
+  // Ejecutar ahora sin GEMINI_API_KEY: la corrida queda en error y lo dice
+  await page.getByRole("button", { name: "Ejecutar ahora (1 nota)" }).click();
+  await expect(page.getByRole("alert")).toContainText(/GEMINI_API_KEY/);
+  await expect(page.getByText("Falta GEMINI_API_KEY", { exact: false }).first()).toBeVisible();
+  // Limpieza: cancelar el patrocinador para no ensuciar la cola local
+  await page.goto("/panel/encargos");
+  await page.getByRole("link", { name }).click();
+  await page.getByLabel("Estado").selectOption("canceled");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await expect(page.getByText("Cambios guardados.")).toBeVisible();
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+});

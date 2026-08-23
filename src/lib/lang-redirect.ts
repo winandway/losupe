@@ -11,6 +11,7 @@ const SKIP_PREFIXES = [
   "/__scheduled",
   "/__health",
   "/noticia/",
+  "/panel",
 ];
 const SKIP_EXACT = new Set([
   "/robots.txt",

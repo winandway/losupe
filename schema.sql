@@ -155,6 +155,80 @@ CREATE TABLE IF NOT EXISTS page_views (
   PRIMARY KEY (day, article_id)
 );
 
+
+-- Patrocinadores: empresas que compraron notas (encargos) en losupe. Se administran desde el panel.
+CREATE TABLE IF NOT EXISTS sponsors (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  website TEXT NOT NULL,
+  contact_name TEXT,
+  contact_email TEXT,
+  brief TEXT,
+  section_id TEXT REFERENCES sections(id),
+  notes_total INTEGER NOT NULL DEFAULT 1,
+  period_start TEXT,
+  period_end TEXT,
+  status TEXT NOT NULL DEFAULT 'active',
+  internal_notes TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Cola de encargos: cada fila es una nota prometida a un patrocinador (idea de titular + brief + fuentes).
+CREATE TABLE IF NOT EXISTS assignments (
+  id TEXT PRIMARY KEY,
+  sponsor_id TEXT NOT NULL REFERENCES sponsors(id) ON DELETE CASCADE,
+  position INTEGER NOT NULL DEFAULT 0,
+  title_idea TEXT NOT NULL,
+  brief TEXT,
+  section_id TEXT REFERENCES sections(id),
+  source_urls_json TEXT NOT NULL DEFAULT '[]',
+  scheduled_for TEXT,
+  status TEXT NOT NULL DEFAULT 'queued',
+  research_json TEXT,
+  article_id TEXT,
+  run_id TEXT,
+  error TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now')),
+  published_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_assignments_queue ON assignments(status, scheduled_for, position);
+CREATE INDEX IF NOT EXISTS idx_assignments_sponsor ON assignments(sponsor_id, status);
+
+-- Candidatos de noticias universales que el robot descubre en las fuentes (RSS o búsqueda).
+CREATE TABLE IF NOT EXISTS candidates (
+  id TEXT PRIMARY KEY,
+  source_id TEXT,
+  section_id TEXT NOT NULL REFERENCES sections(id),
+  url TEXT NOT NULL UNIQUE,
+  title TEXT NOT NULL,
+  summary TEXT,
+  lang TEXT NOT NULL DEFAULT 'es',
+  published_at TEXT,
+  score REAL NOT NULL DEFAULT 0,
+  status TEXT NOT NULL DEFAULT 'new',
+  article_id TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_candidates_pick ON candidates(status, section_id, score DESC, published_at DESC);
+
+-- Sesiones del panel (se borran al cerrar sesión) e intentos de entrada (límite por IP).
+CREATE TABLE IF NOT EXISTS panel_sessions (
+  id TEXT PRIMARY KEY,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  expires_at TEXT NOT NULL,
+  ip TEXT,
+  user_agent TEXT
+);
+CREATE TABLE IF NOT EXISTS login_attempts (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  ip TEXT NOT NULL,
+  ok INTEGER NOT NULL DEFAULT 0,
+  at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip, at);
+
 -- Datos base (idempotentes).
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('economia', 1, 2),
@@ -184,4 +258,21 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('notes_per_day', '6'),
   ('languages', 'es,en'),
   ('timezone', 'America/New_York'),
-  ('evergreen_ratio', '0.7');
+  ('evergreen_ratio', '0.7'),
+  ('robot_auto_publish', '0'),
+  ('robot_last_kind', 'universal'),
+  ('robot_notes_per_run', '1');
+
+-- Fuentes iniciales del robot (RSS públicos). Se pueden apagar o ampliar desde el panel.
+INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VALUES
+  ('bing-economia-es', 'economia', 'Bing Noticias: economía (ES)', 'https://www.bing.com/news/search?q=econom%C3%ADa+Estados+Unidos&format=rss&setlang=es', 'rss', 'es', 2),
+  ('bing-economy-en', 'economia', 'Bing News: economy (EN)', 'https://www.bing.com/news/search?q=economy&format=rss&setlang=en', 'rss', 'en', 1),
+  ('entrepreneur-en', 'ventas', 'Entrepreneur', 'https://www.entrepreneur.com/latest.rss', 'rss', 'en', 1),
+  ('bing-emprendimiento-es', 'ventas', 'Bing Noticias: emprendimiento y ventas (ES)', 'https://www.bing.com/news/search?q=emprendimiento+ventas+pymes&format=rss&setlang=es', 'rss', 'es', 2),
+  ('theverge-ai', 'tecnologia', 'The Verge', 'https://www.theverge.com/rss/index.xml', 'rss', 'en', 1),
+  ('google-ai-blog', 'tecnologia', 'Google AI blog', 'https://blog.google/technology/ai/rss/', 'rss', 'en', 2),
+  ('bing-ia-es', 'tecnologia', 'Bing Noticias: inteligencia artificial (ES)', 'https://www.bing.com/news/search?q=inteligencia+artificial&format=rss&setlang=es', 'rss', 'es', 2),
+  ('coindesk', 'cripto', 'CoinDesk', 'https://www.coindesk.com/arc/outboundfeeds/rss/', 'rss', 'en', 2),
+  ('cointelegraph-es', 'cripto', 'Cointelegraph en español', 'https://es.cointelegraph.com/rss', 'rss', 'es', 2),
+  ('billboard', 'artistas', 'Billboard', 'https://www.billboard.com/feed/', 'rss', 'en', 1),
+  ('bing-artistas-es', 'artistas', 'Bing Noticias: artistas y música (ES)', 'https://www.bing.com/news/search?q=artistas+m%C3%BAsica+estrenos&format=rss&setlang=es', 'rss', 'es', 2);

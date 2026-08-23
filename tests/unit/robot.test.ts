@@ -11,7 +11,7 @@ function envWith(db: FakeD1, extra: Record<string, string> = {}) {
   return { DB: db.asD1(), ...extra };
 }
 
-describe("robot programado (bloque 1)", () => {
+describe("robot programado", () => {
   it("respeta el interruptor de pausa", async () => {
     const paused = new FakeD1((sql) => (sql.includes("settings") ? [{ value: "1" }] : []));
     expect(await isRobotPaused(paused.asD1())).toBe(true);
@@ -27,7 +27,10 @@ describe("robot programado (bloque 1)", () => {
     expect(result.reason).toBe("robot_paused");
     const insert = db.calls.find((c) => c.sql.startsWith("INSERT INTO runs"));
     expect(insert?.params[1]).toBe("cron");
-    expect(insert?.params[2]).toBe("skipped");
+    // La corrida arranca como "running" y al cerrar queda "skipped" con el motivo en el resumen.
+    const update = db.calls.find((c) => c.sql.startsWith("UPDATE runs SET status"));
+    expect(update?.params[1]).toBe("skipped");
+    expect(String(update?.params[4])).toContain("robot_paused");
   });
 
   it("solo deja pasar al programador o a la clave manual (nunca al modo desarrollo)", () => {
@@ -36,20 +39,32 @@ describe("robot programado (bloque 1)", () => {
       new Request(url, { headers });
     expect(isScheduledRequestAuthorized(req("https://x/__scheduled"), envWith(db))).toBe(false);
     expect(
-      isScheduledRequestAuthorized(req("https://x/__scheduled", { "x-yad-cron": "1" }), envWith(db)),
+      isScheduledRequestAuthorized(
+        req("https://x/__scheduled", { "x-yad-cron": "1" }),
+        envWith(db),
+      ),
     ).toBe(true);
     expect(
-      isScheduledRequestAuthorized(req("https://x/__scheduled?key=abc"), envWith(db, { CRON_SECRET: "abc" })),
+      isScheduledRequestAuthorized(
+        req("https://x/__scheduled?key=abc"),
+        envWith(db, { CRON_SECRET: "abc" }),
+      ),
     ).toBe(true);
     expect(
-      isScheduledRequestAuthorized(req("https://x/__scheduled?key=abd"), envWith(db, { CRON_SECRET: "abc" })),
+      isScheduledRequestAuthorized(
+        req("https://x/__scheduled?key=abd"),
+        envWith(db, { CRON_SECRET: "abc" }),
+      ),
     ).toBe(false);
     expect(
-      isScheduledRequestAuthorized(req("https://x/__scheduled"), envWith(db, { NEXTJS_ENV: "development" })),
+      isScheduledRequestAuthorized(
+        req("https://x/__scheduled"),
+        envWith(db, { NEXTJS_ENV: "development" }),
+      ),
     ).toBe(false);
-    expect(
-      isScheduledRequestAuthorized(req("https://x/__scheduled?key=abc"), envWith(db)),
-    ).toBe(false);
+    expect(isScheduledRequestAuthorized(req("https://x/__scheduled?key=abc"), envWith(db))).toBe(
+      false,
+    );
   });
 
   it("responde 404 sin permiso y JSON con permiso", async () => {

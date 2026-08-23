@@ -82,3 +82,28 @@ diario…`, 23 ago 2026).
   (`btc` → Bitcoin, `dolar` → dólares, `mer` → Mercatren, `q` vacío → 400).
 - **Qué NO tocar:** la tokenización `unicode61 remove_diacritics 2`; las claves de `search.*` en
   `src/i18n/{es,en}.ts` deben existir en ambos idiomas (hay prueba de paridad).
+
+## 5. El panel `/panel` no debe pasar por la redirección de idioma
+
+- **Cómo se vio (23 ago 2026, en local):** `/panel/entrar` redirigía a `/en/panel/entrar` y salía la
+  portada pública con 404 de Next; el login nunca cargaba.
+- **Causa:** `src/lib/lang-redirect.ts` manda toda ruta sin `/es` o `/en` al idioma del navegador; el
+  panel no lleva prefijo de idioma (usa cookie `panel_lang`).
+- **Qué se hizo:** `/panel` está en `SKIP_PREFIXES` (junto con `/media/`, `/datos/`, `/__health`…).
+- **Candado:** `tests/unit/agent.test.ts` → «las rutas de descubrimiento no se redirigen por idioma»
+  incluye `/panel`, `/panel/entrar`, `/panel/accion/entrar`, `/media/...`, `/datos/buscar`; y la e2e
+  «panel: sin sesión manda a entrar…».
+- **Qué NO tocar:** no agregar páginas nuevas fuera de `[lang]` sin sumarlas a `SKIP_PREFIXES`.
+
+## 6. Modelos de imagen caros: bloqueados en código
+
+- **Por qué existe:** dos facturas desastrosas ($500+ y $200+) en otros proyectos por modelos caros.
+- **Qué se hizo:** `src/lib/robot/model-guard.ts`: lista blanca (Seedream 4 $0.03, Flux Schnell,
+  Pexels $0) con tope $0.05 por imagen, lista negra explícita (gpt-image, DALL·E, Imagen, Flux Pro,
+  Ideogram v2/v3, Recraft, SD3, Midjourney…) y `assertImageModelAllowed()` delante de cada llamada en
+  `images.ts`. Tope diario `settings.daily_budget_usd` con `assertBudget()` antes de cada nota.
+- **Candado:** `tests/unit/robot-core.test.ts` → «bloqueo de modelos caros»: cada modelo de la lista
+  negra lanza `ModelBlockedError`, uno desconocido también, y ningún modelo de la lista blanca supera
+  el tope; `tests/unit/robot-pipeline.test.ts` → con el tope gastado la corrida se salta.
+- **Qué NO tocar:** no agregar modelos a la lista blanca sin autorización escrita de Richard con el
+  costo por imagen; no quitar el `assert` «porque el panel ya valida».

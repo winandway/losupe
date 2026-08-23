@@ -198,6 +198,11 @@ describe("otros", () => {
       "/llms.txt",
       `/${INDEXNOW_KEY}.txt`,
       "/manifest.webmanifest",
+      "/panel",
+      "/panel/entrar",
+      "/panel/accion/entrar",
+      "/media/notas/x.jpg",
+      "/datos/buscar",
     ]) {
       expect(langRedirectTarget(new URL(`${BASE}${p}`), "en"), p).toBeNull();
     }

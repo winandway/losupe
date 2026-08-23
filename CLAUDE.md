@@ -12,15 +12,17 @@
   proyecto y no se crean.
 - **Datos heredados:** MundosCrypto (`~/mudoscrypto-vscode/elpatron`) es solo fuente de lectura
   (CSV exportado + imágenes públicas). Su Supabase **no se toca**.
-- Llaves de IA (Gemini, fal.ai, Pexels, Brave) entran como variables de entorno del sitio en el
-  panel; nunca en el repo.
+- Llaves de IA (Gemini, fal.ai, Pexels, Brave), `ADMIN_PASSWORD` del panel, Turnstile y `CRON_SECRET`
+  entran como variables de entorno del sitio en el panel de YaDominios; nunca en el repo. Nombres
+  exactos en `.env.example`.
 
 ## Reglas de este proyecto
 
 - Bilingüe siempre: todo texto visible vive en `src/i18n/{es,en}.ts` con las mismas claves (hay
   una prueba que lo exige). El inglés se escribe como nativo, no traducción literal.
 - Nada de rutas `/api/` (chocan con estáticos en YaDominios). Rutas de backend: `/__scheduled`,
-  `/media/...`, `/datos/...`.
+  `/__health`, `/media/...` (R2), `/datos/...`, y el panel en `/panel/...` (acciones en
+  `/panel/accion/...`). Todas están excluidas de la redirección de idioma (`lang-redirect.ts`).
 - `schema.sql` es idempotente (`IF NOT EXISTS`, `INSERT OR IGNORE`) y **sin punto y coma dentro de
   textos**. Contenido largo va por `scripts/db-remote-import.ts`, no en `schema.sql`.
 - Contenido: nunca copiar; el robot cita fuentes (`sources_json`) y marca `ai_assisted`;
@@ -37,6 +39,8 @@
 ## Bloques
 
 1. Cimientos y portal — hecho (22 ago 2026).
-2. Robot redactor — fuentes, curaduría 70/30, redacción ES/EN, imágenes, revisión, panel.
+2. Robot redactor + encargos — hecho en código (23 ago 2026): panel `/panel`, cola de patrocinadores,
+   pipeline Gemini/Seedream/Pexels, candados de costo. Falta que Richard ponga las llaves. Tutorial:
+   `docs/robot-y-encargos.md`.
 3. Google y posicionamiento — Publisher Center, IndexNow, autores, Core Web Vitals.
 4. Suscriptores y boletín — registro, confirmación, boletín cada 4 días (Resend).

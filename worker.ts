@@ -4,8 +4,9 @@
 // - Redirección de idioma (/ → /es o /en según Accept-Language) antes de llegar a Next.
 // - Markdown para agentes (Accept: text/markdown) y cabeceras Link (RFC 8288).
 // - Manifiestos de descubrimiento en /.well-known/* y clave de IndexNow.
-// - GET /__health    → estado de la base (diagnóstico, sin datos sensibles).
+// - GET /__health    → estado de la base y del robot (diagnóstico, sin datos sensibles).
 // - GET /__scheduled → lo llama el programador de YaDominios Cloud (cabecera x-yad-cron).
+// - GET /media/*     → imágenes de las notas guardadas en R2 (env.BUCKET).
 
 // @ts-ignore `.open-next/worker.js` se genera en el build (opennextjs-cloudflare build)
 import { default as nextHandler } from "./.open-next/worker.js";
@@ -25,6 +26,7 @@ import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow"
 import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { legacyRedirectTarget } from "./src/lib/legacy-redirects";
+import { robotStatus } from "./src/lib/robot/pipeline";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
 import { createSchemaGuard } from "./src/lib/schema-guard";
 import { rebuildSearchIndex } from "./src/lib/search";
@@ -85,10 +87,31 @@ export default {
 
     if (isHealth) {
       const report = await buildHealthReport(env.DB, schema);
-      return Response.json(report, {
-        status: report.ok ? 200 : 503,
-        headers: { "Cache-Control": "no-store" },
-      });
+      let robot: unknown = null;
+      if (env.DB) {
+        robot = await robotStatus(env).catch((e: unknown) => ({
+          error: e instanceof Error ? e.message : String(e),
+        }));
+      }
+      return Response.json(
+        { ...report, robot },
+        {
+          status: report.ok ? 200 : 503,
+          headers: { "Cache-Control": "no-store" },
+        },
+      );
+    }
+
+    // Imágenes de las notas (R2). Clave = ruta sin el prefijo /media/.
+    if (pathname.startsWith("/media/") && request.method === "GET" && env.BUCKET) {
+      const key = decodeURIComponent(pathname.slice("/media/".length));
+      const object = key ? await env.BUCKET.get(key) : null;
+      if (!object) return new Response("Not found", { status: 404 });
+      const headers = new Headers();
+      object.writeHttpMetadata(headers);
+      headers.set("etag", object.httpEtag);
+      if (!headers.has("Cache-Control")) headers.set("Cache-Control", STATIC_CACHE);
+      return new Response(object.body, { headers });
     }
 
     if (pathname === "/__scheduled") {
