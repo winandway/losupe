@@ -1,6 +1,7 @@
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { formatDate, nowIso } from "@/lib/dates";
+import { HeroVideo } from "./HeroVideo";
 import { SearchForm } from "./SearchForm";
 
 export const HERO_VIDEO = "/video/hero.mp4";
@@ -13,26 +14,16 @@ export function HeroBanner({ lang, dict }: { lang: Lang; dict: Dict }) {
       aria-label={dict.hero.title}
       className="relative h-[240px] w-full overflow-hidden bg-ink md:h-[300px] lg:h-[320px]"
     >
-      <video
-        className="absolute inset-0 h-full w-full object-cover motion-reduce:hidden"
-        autoPlay
-        muted
-        loop
-        playsInline
-        preload="metadata"
-        poster={HERO_POSTER}
-        title={dict.hero.videoTitle}
-        aria-hidden="true"
-        tabIndex={-1}
-      >
-        <source src={HERO_VIDEO} type="video/mp4" />
-      </video>
       <img
         src={HERO_POSTER}
         alt=""
         aria-hidden="true"
-        className="absolute inset-0 hidden h-full w-full object-cover motion-reduce:block"
+        width={1280}
+        height={427}
+        fetchPriority="low"
+        className="absolute inset-0 h-full w-full object-cover"
       />
+      <HeroVideo src={HERO_VIDEO} poster={HERO_POSTER} title={dict.hero.videoTitle} />
       <div
         aria-hidden="true"
         className="absolute inset-0 bg-gradient-to-t from-ink/90 via-ink/45 to-ink/10 md:bg-gradient-to-r md:from-ink/90 md:via-ink/60 md:to-ink/20"

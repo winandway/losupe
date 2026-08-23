@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { SECTIONS } from "@/lib/sections";
-import { aboutPath, homePath, rssPath, searchPath, sectionPath } from "@/lib/urls";
+import { aboutPath, homePath, rssPath, searchPath, sectionPath, staticPath } from "@/lib/urls";
 import { Logo } from "./Logo";
 
 export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: number }) {
@@ -49,6 +49,21 @@ export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: nu
               <a href={rssPath(lang)} className="hover:underline">
                 {dict.footer.feeds}
               </a>
+            </li>
+            <li>
+              <Link href={staticPath("editorial", lang)} className="hover:underline">
+                {dict.footer.editorial}
+              </Link>
+            </li>
+            <li>
+              <Link href={staticPath("privacy", lang)} className="hover:underline">
+                {dict.footer.privacy}
+              </Link>
+            </li>
+            <li>
+              <Link href={staticPath("terms", lang)} className="hover:underline">
+                {dict.footer.terms}
+              </Link>
             </li>
           </ul>
         </div>

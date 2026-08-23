@@ -7,15 +7,16 @@ fuentes, elige temas, redacta notas nuevas, las ilustra y las publica. Todo vive
 Nace de **MundosCrypto** (portal de criptomonedas): su archivo de noticias se conserva en la
 sección Cripto.
 
-| Pieza               | Tecnología                                                                                 |
-| ------------------- | ------------------------------------------------------------------------------------------ |
-| Sitio               | Next.js 16 (App Router) + Tailwind 4, empaquetado con OpenNext                             |
-| Plataforma          | YaDominios Cloud (`env.DB` D1, `env.BUCKET` R2, `env.ASSETS`, crons)                       |
-| Idiomas             | `/es/...` y `/en/...` con selector de banderas y respaldo al español                       |
-| Robot               | `GET /__scheduled` (programador de YaDominios) → `src/lib/robot/`                          |
-| Base autogestionada | El worker crea el esquema y siembra las noticias heredadas solo; estado en `GET /__health` |
-| Pruebas             | Vitest + Testing Library + msw (unitarias) · Playwright (humo e2e)                         |
-| Calidad/seguridad   | TypeScript estricto, ESLint + plugin security, gitleaks, CI                                |
+| Pieza               | Tecnología                                                                                            |
+| ------------------- | ----------------------------------------------------------------------------------------------------- |
+| Sitio               | Next.js 16 (App Router) + Tailwind 4, empaquetado con OpenNext                                        |
+| Plataforma          | YaDominios Cloud (`env.DB` D1, `env.BUCKET` R2, `env.ASSETS`, crons)                                  |
+| Idiomas             | `/es/...` y `/en/...` con selector de banderas y respaldo al español                                  |
+| Robot               | `GET /__scheduled` (programador de YaDominios) → `src/lib/robot/`                                     |
+| Base autogestionada | El worker crea el esquema y siembra las noticias heredadas solo; estado en `GET /__health`            |
+| Agentes de IA       | Markdown con `Accept: text/markdown`, `llms.txt`, Content Signals, `/.well-known/*`, WebMCP, IndexNow |
+| Pruebas             | Vitest + Testing Library + msw (unitarias) · Playwright (humo e2e)                                    |
+| Calidad/seguridad   | TypeScript estricto, ESLint + plugin security, gitleaks, CI                                           |
 
 ## Mapa del repo
 
@@ -86,6 +87,7 @@ a mano: `GET /__scheduled?key=<CRON_SECRET>`.
 4. **Suscriptores y boletín** — registro, confirmación, boletín cada 4 días.
 
 Plan completo: [docs/plan-losupe-2026-08-22.pdf](docs/plan-losupe-2026-08-22.pdf).
+SEO y descubrimiento por IA (checklist vivo): [docs/seo-y-descubrimiento.md](docs/seo-y-descubrimiento.md).
 
 ---
 

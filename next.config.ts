@@ -7,11 +7,11 @@ const isDev = process.env.NODE_ENV === "development";
 // el resto queda cerrado (sin orígenes externos salvo imágenes https y videos de YouTube).
 const csp = [
   "default-src 'self'",
-  `script-src 'self' 'unsafe-inline'${isDev ? " 'unsafe-eval'" : ""}`,
+  `script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com${isDev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "img-src 'self' data: blob: https:",
   "font-src 'self' data:",
-  "connect-src 'self'",
+  "connect-src 'self' https://cloudflareinsights.com https://static.cloudflareinsights.com",
   "media-src 'self' https:",
   "frame-src https://www.youtube-nocookie.com https://www.youtube.com",
   "object-src 'none'",

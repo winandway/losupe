@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader } from "next/font/google";
 import "../globals.css";
 import { Footer } from "@/components/Footer";
@@ -6,22 +6,29 @@ import { Header } from "@/components/Header";
 import { getDict, toLang } from "@/i18n";
 import { getBaseUrl } from "@/lib/site";
 import { homePath, rssPath } from "@/lib/urls";
+import { WebMcp } from "@/components/WebMcp";
 
 const inter = Inter({
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
   variable: "--font-inter",
   display: "swap",
 });
 
 const newsreader = Newsreader({
-  subsets: ["latin", "latin-ext"],
+  subsets: ["latin"],
+  weight: ["700", "800"],
   variable: "--font-newsreader",
   display: "swap",
-  axes: ["opsz"],
 });
 
 // Todo el sitio se sirve dinámico desde D1: siempre fresco, nada prerenderizado con datos viejos.
 export const dynamic = "force-dynamic";
+
+export const viewport: Viewport = {
+  themeColor: "#0b1f3a",
+  width: "device-width",
+  initialScale: 1,
+};
 
 type Props = {
   children: React.ReactNode;
@@ -47,6 +54,7 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
       type: "website",
       siteName: dict.brand.name,
       locale: dict.ogLocale,
+      alternateLocale: lang === "es" ? ["en_US"] : ["es_US"],
       url: homePath(lang),
       title,
       description: dict.brand.description,
@@ -67,6 +75,7 @@ export default async function RootLayout({ children, params }: Props) {
           {children}
         </main>
         <Footer lang={lang} dict={dict} />
+        <WebMcp lang={lang} />
       </body>
     </html>
   );

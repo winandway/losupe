@@ -96,6 +96,9 @@ export const en: Dict = {
     feeds: "RSS in English",
     rights: "All rights reserved.",
     developedBy: "Developed by",
+    editorial: "Editorial policy",
+    privacy: "Privacy",
+    terms: "Terms and conditions",
   },
   notFound: {
     title: "We couldn't find that page",
@@ -106,6 +109,147 @@ export const en: Dict = {
     prev: "Previous",
     next: "Next",
     label: "Pagination",
+  },
+  legal: {
+    updated: "Last updated: August 23, 2026",
+    contact:
+      "Requests for corrections, right of reply, or about personal data are handled in writing at losupe's contact email (we will publish it in the footer as soon as the mailbox is active).",
+    editorial: {
+      title: "Editorial policy",
+      intro:
+        "This is how losupe decides what to publish, how it writes, and how it responds when it gets something wrong. We wrote it so that any reader, advertiser, or search engine knows what to expect.",
+      sections: [
+        {
+          h: "What we publish",
+          p: [
+            "Short news stories and guides that stay useful over time, in five sections: economy, sales and motivation, technology and artificial intelligence, crypto, and artists and trends. Everything is published in Spanish and English.",
+          ],
+        },
+        {
+          h: "How we work",
+          p: [
+            "We read several sources before writing and cite where every fact comes from. We don't copy: every story is written from scratch, in plain language, with no filler. Figures that come from a company or a person are attributed as such. We keep information and opinion apart.",
+          ],
+        },
+        {
+          h: "Artificial intelligence, with rules",
+          p: [
+            "Part of our writing is done with help from an in-house AI system that reads sources, drafts stories, and illustrates them. The editorial team sets the topics, reviews what gets published, and is accountable for it. Every AI-assisted story says so at the bottom. No figure without a source, no invented quotes.",
+          ],
+        },
+        {
+          h: "Authors and bylines",
+          p: [
+            "Stories carry the byline of a real person with their own page, who is accountable for what is published. Collective pieces are signed by the losupe editorial team.",
+          ],
+        },
+        {
+          h: "Corrections",
+          p: [
+            "When we get something wrong, we fix it quickly and publicly: the story is updated and the date of the change appears at the bottom. If the error changes the meaning of the story, we explain it.",
+          ],
+        },
+        {
+          h: "Independence and sponsorship",
+          p: [
+            "We do not publish advertising disguised as news. If we ever publish sponsored content or affiliate links, they will be clearly and visibly labeled.",
+          ],
+        },
+        {
+          h: "Images and rights",
+          p: [
+            "We use our own images, AI-generated images (labeled as such), or free stock images with credit, plus screenshots of the sites we cite, with the source indicated.",
+          ],
+        },
+        {
+          h: "Use of our content by AI systems",
+          p: [
+            "We declare our preferences with Content Signals in robots.txt: search engines and assistants may index, read, and cite us with a link (search=yes, ai-input=yes), and we do not authorize using our content to train models (ai-train=no).",
+          ],
+        },
+      ],
+    },
+    privacy: {
+      title: "Privacy policy",
+      intro:
+        "Here is what data is processed when you visit losupe.com, why, and what you can do about it. In short: we don't require an account, we don't use our own tracking cookies, and we don't sell data.",
+      sections: [
+        {
+          h: "What data is processed",
+          p: [
+            "We currently do not require an account or sign-up. The site search does not store your queries linked to you. The platform that hosts the site (YaDominios Cloud, on Cloudflare's network) processes technical data such as IP address, browser type, and country for security, performance, and aggregate visit statistics (no cookies, no individual profiles).",
+          ],
+        },
+        {
+          h: "Email newsletter",
+          p: [
+            "Once the newsletter exists, we will only email people who subscribe and confirm their address. Every email will include a one-click unsubscribe link. We do not sell or share the list.",
+          ],
+        },
+        {
+          h: "Links to other sites",
+          p: [
+            "Stories link to external sources. We are not responsible for those sites' privacy policies.",
+          ],
+        },
+        {
+          h: "Your rights",
+          p: [
+            "You can request access to, correction of, or deletion of any data we hold about you. We handle requests in writing.",
+          ],
+        },
+        {
+          h: "Children",
+          p: [
+            "losupe is not directed at children under 13 and does not knowingly collect data from children.",
+          ],
+        },
+        {
+          h: "Changes",
+          p: ["If this policy changes, we will update the date shown above."],
+        },
+      ],
+    },
+    terms: {
+      title: "Terms and conditions",
+      intro: "By using losupe.com you accept these terms. They are short on purpose.",
+      sections: [
+        {
+          h: "Informational content",
+          p: [
+            "What we publish is journalism and general information. It is not financial, legal, medical, or investment advice. Check with a professional before making decisions.",
+          ],
+        },
+        {
+          h: "What you can do with the content",
+          p: [
+            "Read it, share it with a link, and quote short excerpts with attribution to losupe. Reproducing full stories, bulk scraping, or using them to train AI models without written permission is not allowed.",
+          ],
+        },
+        {
+          h: "Intellectual property",
+          p: [
+            "losupe's texts, brand, and design belong to losupe. Third-party images appear with credit and belong to their authors.",
+          ],
+        },
+        {
+          h: "Accuracy and liability",
+          p: [
+            "We work to get everything right and correct it when we don't, but the content is provided without warranties. We are not liable for decisions made based on what we publish.",
+          ],
+        },
+        {
+          h: "Third-party links",
+          p: ["Linked sites are the responsibility of their owners."],
+        },
+        {
+          h: "Changes and governing law",
+          p: [
+            "We may update these terms; the date above indicates the current version. They are governed by the laws of the United States.",
+          ],
+        },
+      ],
+    },
   },
   languages: {
     es: "Español",

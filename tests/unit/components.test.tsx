@@ -77,10 +77,10 @@ describe("Header, botonera y selector de idioma", () => {
     expect(english).toHaveAttribute("href", "/en/economy?page=2");
     expect(screen.getByRole("link", { name: "Español" })).toHaveAttribute("aria-current", "true");
   });
-  it("HeroBanner trae el video, el póster y el buscador grande", () => {
+  it("HeroBanner trae el póster del video y el buscador grande", () => {
     const { container } = render(<HeroBanner lang="en" dict={en} />);
-    expect(container.querySelector('video source[src="/video/hero.mp4"]')).not.toBeNull();
-    expect(container.querySelector("video")).toHaveAttribute("poster", "/video/hero-poster.jpg");
+    // El video se carga después del evento load (componente cliente); el póster va de una.
+    expect(container.querySelector('img[src="/video/hero-poster.jpg"]')).not.toBeNull();
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "What's happening, explained.",
     );

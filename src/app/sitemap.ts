@@ -4,7 +4,7 @@ import { getDb } from "@/lib/db";
 import { listForSitemap } from "@/lib/queries";
 import { isSectionId, SECTIONS } from "@/lib/sections";
 import { getBaseUrl } from "@/lib/site";
-import { aboutPath, absoluteUrl, articlePath, homePath, sectionPath } from "@/lib/urls";
+import { aboutPath, absoluteUrl, articlePath, homePath, sectionPath, staticPath } from "@/lib/urls";
 
 export const dynamic = "force-dynamic";
 
@@ -27,9 +27,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       changeFrequency: "monthly",
       priority: 0.3,
       alternates: {
-        languages: { es: absoluteUrl(base, aboutPath("es")), en: absoluteUrl(base, aboutPath("en")) },
+        languages: {
+          es: absoluteUrl(base, aboutPath("es")),
+          en: absoluteUrl(base, aboutPath("en")),
+        },
       },
     });
+    for (const key of ["editorial", "privacy", "terms"] as const) {
+      entries.push({
+        url: absoluteUrl(base, staticPath(key, lang)),
+        changeFrequency: "yearly",
+        priority: 0.2,
+        alternates: {
+          languages: {
+            es: absoluteUrl(base, staticPath(key, "es")),
+            en: absoluteUrl(base, staticPath(key, "en")),
+          },
+        },
+      });
+    }
     for (const s of SECTIONS) {
       entries.push({
         url: absoluteUrl(base, sectionPath(lang, s.id)),
@@ -46,7 +62,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   // Agrupa traducciones por artículo para declarar hreflang.
-  const byArticle = new Map<string, { es?: string; en?: string; updated: string; section: string }>();
+  const byArticle = new Map<
+    string,
+    { es?: string; en?: string; updated: string; section: string }
+  >();
   for (const r of rows) {
     const entry = byArticle.get(r.id) ?? { updated: r.updated_at, section: r.section_id };
     if (r.lang === "es") entry.es = r.slug;

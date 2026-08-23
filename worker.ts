@@ -1,16 +1,28 @@
 // Worker de producción: envuelve el servidor Next (OpenNext) y agrega lo que Next no puede hacer
 // en esta plataforma:
-// - Garantiza el esquema de la base (por si la plataforma no ejecutó schema.sql).
+// - Garantiza el esquema de la base y siembra el contenido empaquetado.
 // - Redirección de idioma (/ → /es o /en según Accept-Language) antes de llegar a Next.
+// - Markdown para agentes (Accept: text/markdown) y cabeceras Link (RFC 8288).
+// - Manifiestos de descubrimiento en /.well-known/* y clave de IndexNow.
 // - GET /__health    → estado de la base (diagnóstico, sin datos sensibles).
 // - GET /__scheduled → lo llama el programador de YaDominios Cloud (cabecera x-yad-cron).
-// - scheduled()      → por si el worker corre con Cron Triggers nativos de Cloudflare.
 
 // @ts-ignore `.open-next/worker.js` se genera en el build (opennextjs-cloudflare build)
 import { default as nextHandler } from "./.open-next/worker.js";
 import { SCHEMA_SQL } from "./src/lib/schema-sql";
 import { CONTENT_SEEDS } from "./src/lib/seed-content";
+import { buildLinkHeader } from "./src/lib/agent-discovery";
+import { renderMarkdown, wantsMarkdown } from "./src/lib/agent-markdown";
+import {
+  buildAiCatalog,
+  buildApiCatalog,
+  buildSkillMarkdown,
+  buildSkillsIndex,
+  SKILL_NAME,
+} from "./src/lib/agent-manifests";
 import { buildHealthReport } from "./src/lib/health";
+import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow";
+import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
 import { createSchemaGuard } from "./src/lib/schema-guard";
@@ -19,11 +31,51 @@ import { createSchemaGuard } from "./src/lib/schema-guard";
 // la base se crea y se siembra sola, sin pasos manuales.
 const schemaGuard = createSchemaGuard(SCHEMA_SQL, { seeds: CONTENT_SEEDS });
 
+const STATIC_PREFIXES = ["/img/", "/video/", "/brand/"];
+const STATIC_CACHE = "public, max-age=86400, stale-while-revalidate=604800";
+
+function json(data: unknown, contentType = "application/json; charset=utf-8"): Response {
+  return new Response(JSON.stringify(data, null, 2), {
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
+}
+
+function text(body: string, contentType = "text/plain; charset=utf-8"): Response {
+  return new Response(body, {
+    headers: {
+      "Content-Type": contentType,
+      "Cache-Control": "public, max-age=3600",
+      "Access-Control-Allow-Origin": "*",
+    },
+  });
+}
+
+function originOf(request: Request): string {
+  const url = new URL(request.url);
+  const host = request.headers.get("x-forwarded-host") ?? url.host;
+  const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
+  return `${proto}://${host}`;
+}
+
 export default {
   async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
-    const isHealth = url.pathname === "/__health";
+    const { pathname } = url;
+    const base = originOf(request);
+    const isHealth = pathname === "/__health";
     const schema = await schemaGuard.ensure(env.DB, { force: isHealth });
+
+    // Avisar a los buscadores (IndexNow) cuando se siembra una nota editorial nueva.
+    const freshSeeds = (schema.seeds ?? []).filter(
+      (s) => s.applied && s.id !== "legacy-mundoscrypto",
+    );
+    if (freshSeeds.length > 0) {
+      ctx.waitUntil(pingIndexNow(base, [`${base}/sitemap.xml`, `${base}/news-sitemap.xml`]));
+    }
 
     if (isHealth) {
       const report = await buildHealthReport(env.DB, schema);
@@ -33,8 +85,21 @@ export default {
       });
     }
 
-    if (url.pathname === "/__scheduled") {
+    if (pathname === "/__scheduled") {
       return handleScheduledRequest(request, env);
+    }
+
+    // Descubrimiento para agentes.
+    if (pathname === indexNowKeyPath()) return text(INDEXNOW_KEY);
+    if (pathname === "/.well-known/api-catalog") {
+      return json(buildApiCatalog(base), "application/linkset+json; charset=utf-8");
+    }
+    if (pathname === "/.well-known/ai-catalog.json") return json(buildAiCatalog(base));
+    if (pathname === "/.well-known/agent-skills/index.json") {
+      return json(await buildSkillsIndex(base));
+    }
+    if (pathname === `/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`) {
+      return text(buildSkillMarkdown(base), "text/markdown; charset=utf-8");
     }
 
     const target = langRedirectTarget(url, request.headers.get("accept-language"));
@@ -45,7 +110,44 @@ export default {
       });
     }
 
-    return nextHandler.fetch(request, env, ctx);
+    // Markdown para agentes: misma URL, Accept: text/markdown.
+    const first = pathname.split("/")[1] ?? "";
+    const lang = isLang(first) ? first : null;
+    if (lang && request.method === "GET" && wantsMarkdown(request) && env.DB) {
+      const md = await renderMarkdown(env.DB, base, pathname, url.searchParams);
+      if (md) {
+        return new Response(md, {
+          headers: {
+            "Content-Type": "text/markdown; charset=utf-8",
+            "x-markdown-tokens": String(Math.ceil(md.length / 4)),
+            Vary: "Accept",
+            "Cache-Control": "public, max-age=300",
+            Link: buildLinkHeader(base, pathname, lang),
+          },
+        });
+      }
+    }
+
+    const response: Response = await nextHandler.fetch(request, env, ctx);
+
+    // Cabeceras útiles para agentes y caché de estáticos.
+    const contentType = response.headers.get("content-type") ?? "";
+    const isHtml = contentType.includes("text/html");
+    const isStatic = STATIC_PREFIXES.some((p) => pathname.startsWith(p));
+    if (!isHtml && !isStatic) return response;
+
+    const headers = new Headers(response.headers);
+    if (isHtml) {
+      headers.set("Link", buildLinkHeader(base, pathname, lang));
+      const vary = headers.get("Vary");
+      if (lang) headers.set("Vary", vary ? `${vary}, Accept` : "Accept");
+    }
+    if (isStatic && response.status === 200) headers.set("Cache-Control", STATIC_CACHE);
+    return new Response(response.body, {
+      status: response.status,
+      statusText: response.statusText,
+      headers,
+    });
   },
 
   async scheduled(_event: ScheduledController, env: CloudflareEnv, ctx: ExecutionContext) {

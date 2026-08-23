@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { z } from "zod";
 import { ArticleCard } from "@/components/ArticleCard";
 import { SearchForm } from "@/components/SearchForm";
-import { getDict, toLang } from "@/i18n";
+import { getDict } from "@/i18n";
+import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { searchArticles } from "@/lib/queries";
 import { searchPath } from "@/lib/urls";
@@ -16,7 +17,7 @@ type Props = {
 const querySchema = z.string().trim().min(2).max(80);
 
 export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
-  const lang = toLang((await params).lang);
+  const lang = await requireLang(params);
   const dict = getDict(lang);
   return {
     title: dict.search.title,
@@ -26,7 +27,7 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
 }
 
 export default async function SearchPage({ params, searchParams }: Props) {
-  const lang = toLang((await params).lang);
+  const lang = await requireLang(params);
   const dict = getDict(lang);
   const raw = (await searchParams).q;
   const parsed = querySchema.safeParse(Array.isArray(raw) ? raw[0] : raw);

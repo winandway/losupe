@@ -9,7 +9,8 @@ import { Prose } from "@/components/Prose";
 import { SectionBadge } from "@/components/SectionBadge";
 import { SectionHeading } from "@/components/SectionHeading";
 import { ShareLinks } from "@/components/ShareLinks";
-import { getDict, toLang, otherLang } from "@/i18n";
+import { getDict, otherLang, type Lang } from "@/i18n";
+import { requireLang } from "@/lib/params";
 import { formatDate } from "@/lib/dates";
 import { getDb } from "@/lib/db";
 import { getArticleBySlug, listRelated, type ArticleFull } from "@/lib/queries";
@@ -21,14 +22,14 @@ import { absoluteUrl, articlePath, homePath, sectionPath } from "@/lib/urls";
 type Props = { params: Promise<{ lang: string; section: string; slug: string }> };
 
 async function load(params: Props["params"]) {
-  const { lang: rawLang, section: sectionSlug, slug } = await params;
-  const lang = toLang(rawLang);
+  const lang = await requireLang(params);
+  const { section: sectionSlug, slug } = await params;
   const db = await getDb();
   const article = await getArticleBySlug(db, lang, decodeURIComponent(slug));
   return { lang, sectionSlug, slug, db, article };
 }
 
-function canonicalPathFor(lang: ReturnType<typeof toLang>, article: ArticleFull): string {
+function canonicalPathFor(lang: Lang, article: ArticleFull): string {
   const slugInLang = article.translations[lang] ?? article.slug;
   return articlePath(lang, article.sectionId, slugInLang);
 }
@@ -45,18 +46,21 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     languages.en = articlePath("en", article.sectionId, article.translations.en);
   if (languages.es) languages["x-default"] = languages.es;
   const description = article.metaDescription ?? article.excerpt;
+  // Sin traducción: la página muestra el español, así que la canónica es la del español.
+  const canonicalUrl = article.fallback && languages.es ? languages.es : canonical;
   return {
     title: article.metaTitle ?? article.title,
     description,
-    alternates: { canonical, languages },
+    alternates: { canonical: canonicalUrl, languages },
     // Sin traducción todavía: la página en el otro idioma muestra el español y no se indexa aparte.
     robots: article.fallback ? { index: false, follow: true } : undefined,
     openGraph: {
       type: "article",
       title: article.title,
       description,
-      url: canonical,
+      url: canonicalUrl,
       locale: dict.ogLocale,
+      alternateLocale: lang === "es" ? ["en_US"] : ["es_US"],
       publishedTime: article.publishedAt,
       modifiedTime: article.updatedAt,
       authors: [article.authorName],

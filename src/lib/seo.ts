@@ -1,5 +1,5 @@
 import type { Lang } from "@/i18n/config";
-import type { ArticleFull } from "./queries";
+import type { ArticleFull, Author } from "./queries";
 import { getSection } from "./sections";
 import { absoluteUrl, articlePath, authorPath, homePath, sectionPath } from "./urls";
 
@@ -86,5 +86,26 @@ export function sectionAlternates(sectionId: ArticleFull["sectionId"]) {
     es: sectionPath("es", sectionId),
     en: sectionPath("en", sectionId),
     "x-default": sectionPath("es", sectionId),
+  };
+}
+
+/** Página de perfil de autor (E-E-A-T): quién firma, con su bio y su página. */
+export function personJsonLd(base: string, lang: Lang, author: Author, brand: string) {
+  const url = absoluteUrl(base, authorPath(lang, author.id));
+  const person = {
+    "@type": author.kind === "newsroom" ? "Organization" : "Person",
+    name: author.name,
+    url,
+    description: author.bio ?? undefined,
+    jobTitle: author.kind === "person" ? (author.role ?? undefined) : undefined,
+    image: author.avatarUrl ? absoluteUrl(base, author.avatarUrl) : undefined,
+    worksFor: { "@type": "NewsMediaOrganization", name: brand, url: base },
+  };
+  return {
+    "@context": "https://schema.org",
+    "@type": "ProfilePage",
+    mainEntity: person,
+    url,
+    inLanguage: lang,
   };
 }

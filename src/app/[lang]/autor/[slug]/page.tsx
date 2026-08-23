@@ -1,9 +1,13 @@
 import { Container } from "@/components/Container";
+import { JsonLd } from "@/components/JsonLd";
+import { personJsonLd } from "@/lib/seo";
+import { getBaseUrl } from "@/lib/site";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Pagination } from "@/components/Pagination";
-import { getDict, toLang } from "@/i18n";
+import { getDict } from "@/i18n";
+import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { getAuthor, listPaged } from "@/lib/queries";
 import { authorPath } from "@/lib/urls";
@@ -14,8 +18,8 @@ type Props = {
 };
 
 export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
-  const { lang: rawLang, slug } = await params;
-  const lang = toLang(rawLang);
+  const lang = await requireLang(params);
+  const { slug } = await params;
   const db = await getDb();
   const author = await getAuthor(db, slug, lang);
   if (!author) return {};
@@ -30,8 +34,8 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
 }
 
 export default async function AuthorPage({ params, searchParams }: Props) {
-  const { lang: rawLang, slug } = await params;
-  const lang = toLang(rawLang);
+  const lang = await requireLang(params);
+  const { slug } = await params;
   const dict = getDict(lang);
   const db = await getDb();
   const author = await getAuthor(db, slug, lang);
@@ -43,9 +47,11 @@ export default async function AuthorPage({ params, searchParams }: Props) {
     Number.parseInt((Array.isArray(rawPage) ? rawPage[0] : rawPage) ?? "1", 10) || 1,
   );
   const result = await listPaged(db, lang, page, { authorId: author.id });
+  const base = await getBaseUrl();
 
   return (
     <Container className="py-6 md:py-8">
+      <JsonLd data={personJsonLd(base, lang, author, dict.brand.name)} />
       <header className="mb-10 flex items-start gap-5">
         <div
           aria-hidden="true"

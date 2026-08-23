@@ -33,7 +33,14 @@ export async function runScheduled(env: RobotEnv, trigger: RunTrigger): Promise<
     `INSERT INTO runs (id, trigger, status, step, started_at, finished_at, summary_json)
      VALUES (?1, ?2, ?3, ?4, ?5, ?5, ?6)`,
   )
-    .bind(runId, trigger, status, paused ? "paused" : "discover", startedAt, JSON.stringify({ reason }))
+    .bind(
+      runId,
+      trigger,
+      status,
+      paused ? "paused" : "discover",
+      startedAt,
+      JSON.stringify({ reason }),
+    )
     .run();
   return { ok: true, runId, status, reason, startedAt };
 }

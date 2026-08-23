@@ -1,12 +1,13 @@
 import { Container } from "@/components/Container";
 import type { Metadata } from "next";
-import { getDict, toLang } from "@/i18n";
+import { getDict } from "@/i18n";
+import { requireLang } from "@/lib/params";
 import { aboutPath } from "@/lib/urls";
 
 type Props = { params: Promise<{ lang: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const lang = toLang((await params).lang);
+  const lang = await requireLang(params);
   const dict = getDict(lang);
   return {
     title: dict.about.title,
@@ -19,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function AboutPage({ params }: Props) {
-  const lang = toLang((await params).lang);
+  const lang = await requireLang(params);
   const dict = getDict(lang);
   return (
     <Container className="py-6 md:py-8">

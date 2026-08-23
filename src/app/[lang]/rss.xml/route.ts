@@ -1,4 +1,4 @@
-import { getDict, toLang } from "@/i18n";
+import { getDict, isLang } from "@/i18n";
 import { getDb } from "@/lib/db";
 import { listLatest } from "@/lib/queries";
 import { buildRss } from "@/lib/rss";
@@ -9,7 +9,9 @@ import { absoluteUrl, articlePath, homePath, rssPath } from "@/lib/urls";
 export const dynamic = "force-dynamic";
 
 export async function GET(request: Request, ctx: { params: Promise<{ lang: string }> }) {
-  const lang = toLang((await ctx.params).lang);
+  const { lang: raw } = await ctx.params;
+  if (!isLang(raw)) return new Response("Not found", { status: 404 });
+  const lang = raw;
   const dict = getDict(lang);
   const base = baseUrlFromRequest(request);
   const db = await getDb();

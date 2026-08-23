@@ -4,7 +4,8 @@ import { Container } from "@/components/Container";
 import { HeroBanner } from "@/components/HeroBanner";
 import { JsonLd } from "@/components/JsonLd";
 import { SectionHeading } from "@/components/SectionHeading";
-import { getDict, toLang } from "@/i18n";
+import { getDict } from "@/i18n";
+import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listLatest, listLatestPerSection } from "@/lib/queries";
 import { SECTIONS } from "@/lib/sections";
@@ -15,7 +16,7 @@ import { searchPath, sectionPath } from "@/lib/urls";
 type Props = { params: Promise<{ lang: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const lang = toLang((await params).lang);
+  const lang = await requireLang(params);
   const dict = getDict(lang);
   return {
     title: { absolute: `${dict.brand.name} — ${dict.brand.tagline}` },
@@ -24,7 +25,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function HomePage({ params }: Props) {
-  const lang = toLang((await params).lang);
+  const lang = await requireLang(params);
   const dict = getDict(lang);
   const [db, base] = await Promise.all([getDb(), getBaseUrl()]);
   const [latest, perSection] = await Promise.all([

@@ -2,6 +2,7 @@ import { isLang, pickLangFromAcceptLanguage } from "@/i18n/config";
 
 // Rutas que no llevan prefijo de idioma y nunca se redirigen.
 const SKIP_PREFIXES = [
+  "/.well-known/",
   "/_next/",
   "/img/",
   "/brand/",
@@ -17,6 +18,7 @@ const SKIP_EXACT = new Set([
   "/news-sitemap.xml",
   "/favicon.ico",
   "/manifest.webmanifest",
+  "/llms.txt",
   "/icon.png",
   "/apple-icon.png",
   "/opengraph-image.png",

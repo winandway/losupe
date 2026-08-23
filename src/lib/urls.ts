@@ -1,10 +1,13 @@
-import { isLang, type Lang } from "@/i18n/config";
+import { isLang, type Lang } from "../i18n/config";
 import { sectionByAnySlug, sectionSlug, type SectionId } from "./sections";
 
 export const ROUTE_WORDS = {
   author: { es: "autor", en: "author" },
   search: { es: "buscar", en: "search" },
   about: { es: "acerca", en: "about" },
+  editorial: { es: "politica-editorial", en: "editorial-policy" },
+  privacy: { es: "privacidad", en: "privacy" },
+  terms: { es: "terminos", en: "terms" },
 } as const;
 
 type RouteKey = keyof typeof ROUTE_WORDS;
@@ -32,6 +35,10 @@ export function searchPath(lang: Lang, q?: string): string {
 
 export function aboutPath(lang: Lang): string {
   return `/${lang}/${ROUTE_WORDS.about[lang]}`;
+}
+
+export function staticPath(key: RouteKey, lang: Lang): string {
+  return `/${lang}/${ROUTE_WORDS[key][lang]}`;
 }
 
 export function rssPath(lang: Lang): string {

@@ -29,6 +29,18 @@ const ROUTES_200 = [
   "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
   "/en/sales/pedro-llerena-launches-mercatren-1-3-million-products-store-taking-on-amazon",
   "/img/notas/mercatren/home.jpg",
+  "/llms.txt",
+  "/manifest.webmanifest",
+  "/.well-known/api-catalog",
+  "/.well-known/ai-catalog.json",
+  "/.well-known/agent-skills/index.json",
+  "/.well-known/agent-skills/losupe-news/SKILL.md",
+  "/es/politica-editorial",
+  "/en/editorial-policy",
+  "/es/privacidad",
+  "/en/privacy",
+  "/es/terminos",
+  "/en/terms",
 ];
 
 for (const route of ROUTES_200) {
@@ -37,6 +49,55 @@ for (const route of ROUTES_200) {
     expect(res.status(), route).toBe(200);
   });
 }
+
+test("rutas desconocidas dan 404 de verdad (no la portada)", async ({ request }) => {
+  for (const p of ["/auth.md", "/foo.txt", "/cualquier-cosa", "/es/nada-de-nada"]) {
+    const res = await request.get(p, { maxRedirects: 5 });
+    expect(res.status(), p).toBe(404);
+  }
+});
+
+test("señales para buscadores y agentes de IA", async ({ request }) => {
+  const robots = await request.get("/robots.txt");
+  const robotsTxt = await robots.text();
+  expect(robots.headers()["content-type"]).toContain("text/plain");
+  expect(robotsTxt).toContain("Content-Signal: search=yes, ai-input=yes, ai-train=no");
+  expect(robotsTxt).toContain("User-agent: GPTBot");
+  expect(robotsTxt).toContain("Sitemap: ");
+
+  const llms = await request.get("/llms.txt");
+  expect(llms.headers()["content-type"]).toContain("text/plain");
+  expect(await llms.text()).toContain("# losupe");
+
+  const catalog = await request.get("/.well-known/api-catalog");
+  expect(catalog.headers()["content-type"]).toContain("application/linkset+json");
+  expect(((await catalog.json()) as { linkset: unknown[] }).linkset.length).toBe(1);
+
+  const skills = await request.get("/.well-known/agent-skills/index.json");
+  expect(((await skills.json()) as { skills: { sha256: string }[] }).skills[0]?.sha256).toMatch(
+    /^[0-9a-f]{64}$/,
+  );
+
+  const html = await request.get("/es");
+  expect(html.headers()["link"]).toContain('rel="api-catalog"');
+  expect(html.headers()["link"]).toContain('type="text/markdown"');
+  expect(html.headers()["content-security-policy"]).toContain("static.cloudflareinsights.com");
+
+  const md = await request.get("/es", { headers: { accept: "text/markdown" } });
+  expect(md.headers()["content-type"]).toContain("text/markdown");
+  expect(md.headers()["x-markdown-tokens"]).toMatch(/^\d+$/);
+  expect(await md.text()).toContain("# losupe");
+
+  const story = await request.get(
+    "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+    { headers: { accept: "text/markdown" } },
+  );
+  expect(story.headers()["content-type"]).toContain("text/markdown");
+  expect(await story.text()).toContain("# «Dejamos el miedo a un lado»");
+
+  const img = await request.get("/img/notas/mercatren/home.jpg");
+  expect(img.headers()["cache-control"]).toContain("max-age=86400");
+});
 
 test("la raíz redirige al idioma del navegador", async ({ request }) => {
   const es = await request.get("/", {

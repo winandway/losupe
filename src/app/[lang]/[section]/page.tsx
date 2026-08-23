@@ -4,7 +4,8 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Pagination } from "@/components/Pagination";
 import { SectionHeading } from "@/components/SectionHeading";
-import { getDict, toLang } from "@/i18n";
+import { getDict } from "@/i18n";
+import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listPaged } from "@/lib/queries";
 import { sectionByAnySlug, sectionBySlug } from "@/lib/sections";
@@ -23,8 +24,8 @@ function parsePage(value: string | string[] | undefined): number {
 }
 
 export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
-  const { lang: rawLang, section: slug } = await params;
-  const lang = toLang(rawLang);
+  const lang = await requireLang(params);
+  const { section: slug } = await params;
   const section = sectionBySlug(lang, slug);
   if (!section) return {};
   return {
@@ -39,8 +40,8 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
 }
 
 export default async function SectionPage({ params, searchParams }: Props) {
-  const { lang: rawLang, section: slug } = await params;
-  const lang = toLang(rawLang);
+  const lang = await requireLang(params);
+  const { section: slug } = await params;
   const dict = getDict(lang);
 
   const section = sectionBySlug(lang, slug);

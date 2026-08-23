@@ -22,9 +22,14 @@ export function Byline({
   compact?: boolean;
 }) {
   return (
-    <p className={`flex flex-wrap items-center gap-x-2 text-muted ${compact ? "text-xs" : "text-sm"}`}>
+    <p
+      className={`flex flex-wrap items-center gap-x-2 text-muted ${compact ? "text-xs" : "text-sm"}`}
+    >
       {!compact && <span>{dict.article.by}</span>}
-      <Link href={authorPath(lang, authorId)} className="font-semibold text-ink hover:underline">
+      <Link
+        href={authorPath(lang, authorId)}
+        className="inline-block py-1 font-semibold text-ink hover:underline"
+      >
         {authorName}
       </Link>
       <span aria-hidden="true">·</span>
