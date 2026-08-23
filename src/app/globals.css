@@ -84,6 +84,14 @@ body {
   height: auto;
   border-radius: 12px;
 }
+.prose video {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 70vh;
+  border-radius: 12px;
+  background: #000;
+}
 .prose table {
   width: 100%;
   border-collapse: collapse;

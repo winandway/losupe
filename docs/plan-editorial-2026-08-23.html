@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="es"><head><meta charset="utf-8"><title>losupe.com — Plan editorial</title>
+<style>
+@page { size: A4 landscape; margin: 0; }
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Inter", "Helvetica Neue", Arial, sans-serif; color: #0b1f3a; }
+.page { width: 297mm; height: 210mm; padding: 14mm 16mm; page-break-after: always; position: relative; overflow: hidden; }
+.page:last-child { page-break-after: auto; }
+.cover { background: #0b1f3a; color: #fff; display: flex; flex-direction: column; justify-content: space-between; }
+.cover h1 { font-size: 44px; margin: 0; line-height: 1.05; font-weight: 800; }
+.cover p { font-size: 18px; color: #c9d3e3; max-width: 70%; }
+.tag { display: inline-block; background: #2ee6a6; color: #04342c; font-weight: 700; font-size: 12px; padding: 4px 10px; border-radius: 999px; letter-spacing: .06em; text-transform: uppercase; }
+h2 { font-size: 26px; margin: 0 0 6mm; font-weight: 800; }
+h2 small { display:block; font-size: 12px; color: #5b6b82; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 4px; }
+.grid { display: grid; gap: 6mm; }
+.g3 { grid-template-columns: repeat(3, 1fr); }
+.g2 { grid-template-columns: repeat(2, 1fr); }
+.g4 { grid-template-columns: repeat(4, 1fr); }
+.card { border: 1.5px solid #e6e2d6; border-radius: 14px; padding: 5mm 6mm; background: #fff; }
+.card h3 { margin: 0 0 2mm; font-size: 15px; }
+.card p, .card li { font-size: 12.5px; line-height: 1.45; margin: 0; color: #1f2a3d; }
+.card ul { margin: 0; padding-left: 16px; }
+.num { font-size: 34px; font-weight: 800; color: #0f6e56; line-height: 1; }
+.muted { color: #5b6b82; }
+.foot { position: absolute; bottom: 8mm; left: 16mm; right: 16mm; display: flex; justify-content: space-between; font-size: 10px; color: #5b6b82; }
+table { width: 100%; border-collapse: collapse; font-size: 12px; }
+th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid #e6e2d6; vertical-align: top; }
+th { font-size: 11px; letter-spacing: .06em; text-transform: uppercase; color: #5b6b82; }
+.pill { display:inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 700; }
+.ok { background: #e1f5ee; color: #085041; } .next { background: #faeeda; color: #633806; } .later { background: #f1efe8; color: #444441; }
+.flow { display: flex; align-items: stretch; gap: 4mm; }
+.flow .card { flex: 1; }
+.flow .arrow { align-self: center; font-size: 22px; color: #0f6e56; }
+.teal { color: #0f6e56; }
+</style></head><body>
+
+<section class="page cover">
+  <div><span class="tag">Plan editorial · 23 de agosto de 2026</span></div>
+  <div>
+    <h1>Cómo funciona el diario<br>losupe.com</h1>
+    <p>Cuántas notas salen, de qué, de dónde salen las tendencias, cómo se escriben y cómo crecemos. Preparado para Richard · Windoce LLC.</p>
+  </div>
+  <div style="display:flex; justify-content:space-between; font-size:12px; color:#c9d3e3;"><span>losupe.com · bilingüe ES / EN · YaDominios Cloud</span><span>1 / 5</span></div>
+</section>
+
+<section class="page">
+  <h2><small>Dónde estamos</small>El plan de arranque, bloque por bloque</h2>
+  <div class="grid g4">
+    <div class="card"><span class="pill ok">Hecho</span><h3 style="margin-top:3mm">1 · Cimientos y portal</h3><p>Sitio bilingüe, base de datos, 33 notas heredadas, buscador con sugerencias, frente con video, logo, celular tipo diario.</p></div>
+    <div class="card"><span class="pill ok">Hecho · en prueba</span><h3 style="margin-top:3mm">2 · Robot redactor + encargos</h3><p>Panel, cola de patrocinadores, redacción ES/EN con Gemini, fotos y video de Pexels, revisión, publicación. Llaves ya puestas.</p></div>
+    <div class="card"><span class="pill next">Siguiente</span><h3 style="margin-top:3mm">3 · Google y posicionamiento</h3><p>Search Console, Publisher Center, ficha de Magaly (foto y bio), velocidad. Arranca en cuanto salgan las primeras notas revisadas.</p></div>
+    <div class="card"><span class="pill later">Después</span><h3 style="margin-top:3mm">4 · Suscriptores y boletín</h3><p>Registro, confirmación y boletín cada 4 días con lo mejor de la semana.</p></div>
+  </div>
+  <h2 style="margin-top:10mm"><small>Los números</small>Cuántas notas y de qué</h2>
+  <div class="grid g4">
+    <div class="card"><div class="num">6</div><p><strong>notas al día</strong> para arrancar, una cada 2 horas (7 am–7 pm hora del este), cada una en español e inglés.</p></div>
+    <div class="card"><div class="num">50 / 50</div><p><strong>duraderas / actualidad.</strong> Guías que sirven dentro de un año + noticias y tendencias del día. Ajustable desde el panel.</p></div>
+    <div class="card"><div class="num">2·1·1·1·1</div><p><strong>cupo por sección:</strong> Economía 2 · Ventas y motivación 1 · Tecnología e IA 1 · Cripto 1 · Artistas y tendencias 1.</p></div>
+    <div class="card"><div class="num">→ 10 → 15</div><p><strong>crecimiento:</strong> a 10/día cuando Search Console muestre que indexa bien (30 días); 12–15/día en el mes 3 con boletín.</p></div>
+  </div>
+  <p class="muted" style="font-size:12px; margin-top:5mm">Por qué 6 y no 30: Google castiga el contenido «a escala» sin revisión humana y premia la experiencia real del autor. Seis notas revisadas y firmadas valen más que treinta sin mirar. Los encargos entran en el mismo cupo; si un mes hay muchos, se sube el cupo para que las universales no se apaguen.</p>
+  <div class="foot"><span>losupe.com · plan editorial</span><span>2 / 5</span></div>
+</section>
+
+<section class="page">
+  <h2><small>De dónde salen los temas</small>Tendencias y fuentes</h2>
+  <div class="flow">
+    <div class="card"><h3>1 · Google Trends</h3><p>Lo más buscado hoy en EE. UU. (español e inglés). Se leen en cada corrida. Fuera deportes, apuestas y sucesos; cada tendencia se clasifica en una sección y se toma el artículo de la fuente más confiable.</p></div>
+    <div class="arrow">→</div>
+    <div class="card"><h3>2 · Bing Noticias y RSS de medios</h3><p>Economía, emprendimiento, IA, artistas por tema; CoinDesk, Cointelegraph, The Verge, Google AI, Entrepreneur, Billboard… Se administran en Panel → Fuentes.</p></div>
+    <div class="arrow">→</div>
+    <div class="card"><h3>3 · Brave News</h3><p>Búsqueda de noticias por palabras clave para ampliar material cuando una tendencia lo pide (llave BRAVE_API_KEY).</p></div>
+    <div class="arrow">→</div>
+    <div class="card"><h3>4 · Medios de confianza</h3><p>The New York Times, WSJ, Reuters, AP, Bloomberg, CNBC, BBC, El País, Reserva Federal, IRS… Si una noticia sale en treinta sitios, nos apoyamos en uno de estos y lo nombramos.</p></div>
+  </div>
+  <h2 style="margin-top:10mm"><small>Cada corrida</small>Cómo funciona el robot</h2>
+  <div class="flow">
+    <div class="card"><h3>Turno</h3><p>Alterna: un encargo de patrocinador, una nota universal, un encargo…</p></div>
+    <div class="arrow">→</div>
+    <div class="card"><h3>Investiga</h3><p>Encargo: lee el sitio de la empresa. Universal: lee la fuente y 1–2 hermanas, la más confiable primero.</p></div>
+    <div class="arrow">→</div>
+    <div class="card"><h3>Redacta</h3><p>Gemini escribe ES y EN con las reglas de voz y fuentes; el sistema valida formato, limpia y rechaza si copió.</p></div>
+    <div class="arrow">→</div>
+    <div class="card"><h3>Ilustra</h3><p>Foto de Pexels (o Seedream si se activa); video corto de Pexels solo cuando suma.</p></div>
+    <div class="arrow">→</div>
+    <div class="card"><h3>Revisión</h3><p>Queda en Panel → Notas. Magaly/Richard lee y publica. Luego IndexNow avisa a los buscadores.</p></div>
+  </div>
+  <div class="foot"><span>losupe.com · plan editorial</span><span>3 / 5</span></div>
+</section>
+
+<section class="page">
+  <h2><small>La voz</small>Cómo se escribe cada nota</h2>
+  <div class="grid g3">
+    <div class="card"><h3 class="teal">Humana</h3><p>Cálida, cercana, relajada; como quien le explica algo importante a un amigo. Sin frialdad corporativa ni grandilocuencia. «Pensar en grande con los pies en la tierra». Español neutro de EE. UU.; el inglés se escribe de nuevo, nativo.</p></div>
+    <div class="card"><h3 class="teal">Con la fuente nombrada</h3><p>«Según The New York Times», «como reportó Reuters», con enlace en la misma frase. El titular y el enfoque son nuestros; la información viene de donde la leímos y se dice. En los encargos la fuente es la empresa y nosotros.</p></div>
+    <div class="card"><h3 class="teal">Firmada por Magaly</h3><p>Cada nota tiene que estar a la altura de su firma: original (se comprueba que no copia), sin nada inventado, cifras atribuidas. Por eso al arranque todo pasa por revisión antes de publicarse.</p></div>
+  </div>
+  <h2 style="margin-top:10mm"><small>Las series que no se vencen</small>Temas duraderos por sección</h2>
+  <table>
+    <tr><th style="width:22%">Sección</th><th>Ejemplos de guías duraderas</th></tr>
+    <tr><td><strong>Economía</strong></td><td>Cómo declarar impuestos si trabajas por tu cuenta · Qué significa la tasa de la Fed para tu tarjeta · Cómo enviar remesas pagando menos · Seguro Social: qué cambia este año</td></tr>
+    <tr><td><strong>Ventas y motivación</strong></td><td>5 maneras de vender en línea sin bodega · Cómo fijar precios sin perder clientes · Ingresos extra realistas en 2026 · Qué aprender de una empresa para tu negocio</td></tr>
+    <tr><td><strong>Tecnología e IA</strong></td><td>Cómo usar ChatGPT / Gemini / Claude para una tarea concreta · Herramientas de IA gratis para… · Qué es [término], explicado en claro · Cómo proteger tus cuentas</td></tr>
+    <tr><td><strong>Cripto</strong></td><td>Cómo comprar bitcoin paso a paso · Qué es una stablecoin · Impuestos cripto en EE. UU. · Errores de principiante con billeteras</td></tr>
+    <tr><td><strong>Artistas y tendencias</strong></td><td>Quién es [artista] y por qué todos lo buscan · Los estrenos del mes · Cómo funciona la música en streaming · Lo más buscado de la semana, explicado</td></tr>
+  </table>
+  <div class="foot"><span>losupe.com · plan editorial</span><span>4 / 5</span></div>
+</section>
+
+<section class="page">
+  <h2><small>Ritmo</small>Cómo crecemos sin perder calidad</h2>
+  <div class="grid g4">
+    <div class="card"><h3>1 · Prueba <span class="muted">(ahora)</span></h3><p>Richard corre las primeras notas en el panel, las lee y publica a mano. Ajustamos tono, fuentes y temas.</p></div>
+    <div class="card"><h3>2 · Rodaje <span class="muted">(semanas 1–4)</span></h3><p>6 al día con revisión. Search Console y Publisher Center. Foto y bio de Magaly. Medimos qué se indexa y qué posiciona.</p></div>
+    <div class="card"><h3>3 · Velocidad <span class="muted">(mes 2)</span></h3><p>10 al día. Publicación automática de universales con revisión por muestreo. Encargos activos con sus patrocinadores.</p></div>
+    <div class="card"><h3>4 · Escala <span class="muted">(mes 3+)</span></h3><p>12–15 al día, boletín cada 4 días, más fuentes y series. Ingresos por encargos + audiencia.</p></div>
+  </div>
+  <h2 style="margin-top:10mm"><small>Qué hace falta de Richard</small>En orden</h2>
+  <div class="grid g2">
+    <div class="card"><ul>
+      <li><strong>Probar</strong> las primeras notas en el panel y decir qué tono o temas ajustar.</li>
+      <li><strong>Confirmar los números</strong> (6/día, 50/50, cupos por sección) o pedir otros: se cambian en Panel → Ajustes.</li>
+    </ul></div>
+    <div class="card"><ul>
+      <li><strong>Bloque 3:</strong> entrar a Google Search Console con su cuenta, agregar losupe.com y pasar el código de verificación (etiqueta HTML); lo mismo en Bing Webmaster. Foto y bio de Magaly.</li>
+      <li><strong>Patrocinadores reales:</strong> nombre, sitio, notas contratadas e ideas, para encolar.</li>
+    </ul></div>
+  </div>
+  <p class="muted" style="font-size:11px; margin-top:6mm">Reglas fijas: la publicidad nunca supera al contenido; toda nota patrocinada va marcada; ningún modelo caro de IA corre (bloqueo en código); tope diario de gasto; nada de deportes, apuestas, sucesos violentos ni política partidista.</p>
+  <div class="foot"><span>losupe.com · plan editorial · Developed by Windoce LLC</span><span>5 / 5</span></div>
+</section>
+</body></html>

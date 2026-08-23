@@ -1,6 +1,8 @@
 import { decodeEntities, stripHtml } from "@/lib/html";
 import { SECTIONS, type SectionId } from "@/lib/sections";
 import { BOT_USER_AGENT, fetchPage } from "./research";
+import { bestTrendArticle, classifyTrend, parseTrendsFeed } from "./trends";
+import { trustLevel } from "./trusted-sources";
 import type { SourceDoc } from "./writer";
 
 /**
@@ -106,7 +108,7 @@ export async function discoverCandidates(
   const now = opts.now ?? new Date();
   const minDate = new Date(now.getTime() - (opts.maxAgeDays ?? 3) * 86_400_000).toISOString();
   const { results: sources } = await db
-    .prepare(`SELECT * FROM sources WHERE active = 1 AND kind = 'rss'`)
+    .prepare(`SELECT * FROM sources WHERE active = 1 AND kind IN ('rss', 'trends')`)
     .all<SourceRow>();
   let fetched = 0;
   let added = 0;
@@ -121,31 +123,62 @@ export async function discoverCandidates(
         signal: AbortSignal.timeout(12_000),
       });
       if (!res.ok) throw new Error(`respondió ${res.status}`);
-      const items = parseFeed(await res.text());
+      const xml = await res.text();
       fetched += 1;
-      const stmts = items
-        .filter((it) => !it.publishedAt || it.publishedAt >= minDate)
-        .map((it, i) => {
-          const ageHours = it.publishedAt
-            ? Math.max(0, (now.getTime() - Date.parse(it.publishedAt)) / 3_600_000)
-            : 48;
-          const score = Number(s.weight) * 10 - ageHours / 6 - i * 0.2;
-          return db
-            .prepare(
-              `INSERT OR IGNORE INTO candidates (id, source_id, section_id, url, title, summary, lang, published_at, score) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
-            )
-            .bind(
-              crypto.randomUUID(),
-              s.id,
-              s.section_id,
-              it.url,
-              it.title.slice(0, 300),
-              it.summary,
-              s.lang,
-              it.publishedAt,
-              score,
-            );
-        });
+      const stmts =
+        s.kind === "trends"
+          ? parseTrendsFeed(xml)
+              .map((t) => {
+                const section = classifyTrend(`${t.trend} ${t.news.map((n) => n.title).join(" ")}`);
+                const art = bestTrendArticle(t);
+                if (!section || !art) return null;
+                // Tendencia = lo más buscado hoy: puntaje alto, más alto cuanto más tráfico y más confiable la fuente.
+                const score =
+                  40 +
+                  Math.min(20, Math.log10(Math.max(1, t.traffic)) * 4) +
+                  trustLevel(art.url) * 3;
+                return db
+                  .prepare(
+                    `INSERT OR IGNORE INTO candidates (id, source_id, section_id, url, title, summary, lang, published_at, score) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+                  )
+                  .bind(
+                    crypto.randomUUID(),
+                    s.id,
+                    section,
+                    art.url,
+                    art.title.slice(0, 300),
+                    `Tendencia en Google (${t.traffic ? `${t.traffic}+ búsquedas` : "hoy"}): «${t.trend}». Fuente: ${art.source}`,
+                    s.lang,
+                    t.publishedAt ?? now.toISOString(),
+                    score,
+                  );
+              })
+              .filter((x): x is NonNullable<typeof x> => x !== null)
+          : parseFeed(xml)
+              .filter((it) => !it.publishedAt || it.publishedAt >= minDate)
+              .map((it, i) => {
+                const ageHours = it.publishedAt
+                  ? Math.max(0, (now.getTime() - Date.parse(it.publishedAt)) / 3_600_000)
+                  : 48;
+                // Peso de la fuente + frescura + confianza del medio de destino (Bing trae medios mezclados).
+                const score =
+                  Number(s.weight) * 10 - ageHours / 6 - i * 0.2 + trustLevel(it.url) * 3;
+                return db
+                  .prepare(
+                    `INSERT OR IGNORE INTO candidates (id, source_id, section_id, url, title, summary, lang, published_at, score) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
+                  )
+                  .bind(
+                    crypto.randomUUID(),
+                    s.id,
+                    s.section_id,
+                    it.url,
+                    it.title.slice(0, 300),
+                    it.summary,
+                    s.lang,
+                    it.publishedAt,
+                    score,
+                  );
+              });
       if (stmts.length > 0) {
         const results = await db.batch(stmts);
         added += results.filter((r) => (r.meta?.changes ?? 0) > 0).length;
@@ -280,7 +313,8 @@ export async function gatherSources(
       )
       .bind(candidate.sectionId, candidate.id, ...keywords.map((k) => `%${k}%`))
       .all<{ url: string; title: string }>();
-    for (const r of results) {
+    const byTrust = [...results].sort((a, b) => trustLevel(b.url) - trustLevel(a.url));
+    for (const r of byTrust) {
       const page = await fetchPage(r.url, { fetchImpl, maxChars: 6_000 });
       if (page && page.text.length > 400)
         docs.push({ title: page.title || r.title, url: page.url, text: page.text });

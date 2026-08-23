@@ -146,3 +146,88 @@ export async function illustrate(
   }
   return { image: null, errors };
 }
+
+export const PEXELS_VIDEO_ENDPOINT = "https://api.pexels.com/videos/search";
+
+export type StockVideo = {
+  src: string;
+  poster: string | null;
+  credit: string;
+  pageUrl: string;
+  duration: number;
+  width: number;
+  height: number;
+};
+
+/**
+ * Video corto de archivo en Pexels (gratis, con crédito). No se copia a R2: se enlaza el archivo
+ * que Pexels sirve. Se elige HD apaisado de entre 5 y 40 segundos.
+ */
+export async function findPexelsVideo(
+  keywords: readonly string[],
+  apiKey: string | undefined,
+  fetchImpl: typeof fetch = fetch,
+): Promise<StockVideo | null> {
+  if (!apiKey || keywords.length === 0) return null;
+  const url = new URL(PEXELS_VIDEO_ENDPOINT);
+  url.searchParams.set("query", keywords.slice(0, 3).join(" "));
+  url.searchParams.set("per_page", "8");
+  url.searchParams.set("orientation", "landscape");
+  url.searchParams.set("size", "medium");
+  const res = await fetchImpl(url, {
+    headers: { Authorization: apiKey },
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!res.ok) throw new Error(`Pexels (videos) respondió ${res.status}`);
+  const body = (await res.json()) as {
+    videos?: {
+      url?: string;
+      image?: string;
+      duration?: number;
+      user?: { name?: string };
+      video_files?: {
+        link?: string;
+        quality?: string;
+        width?: number;
+        height?: number;
+        file_type?: string;
+      }[];
+    }[];
+  };
+  const pick = (body.videos ?? [])
+    .filter((v) => (v.duration ?? 0) >= 5 && (v.duration ?? 0) <= 40)
+    .map((v) => {
+      const files = (v.video_files ?? [])
+        .filter(
+          (f) =>
+            f.link &&
+            (f.file_type ?? "video/mp4").includes("mp4") &&
+            (f.width ?? 0) >= (f.height ?? 0),
+        )
+        .sort((a, b) => Math.abs((a.width ?? 0) - 1280) - Math.abs((b.width ?? 0) - 1280));
+      const f = files[0];
+      return f
+        ? {
+            src: f.link!,
+            poster: v.image ?? null,
+            credit: `Video: ${v.user?.name ?? "Pexels"} / Pexels`,
+            pageUrl: v.url ?? "https://www.pexels.com",
+            duration: v.duration ?? 0,
+            width: f.width ?? 0,
+            height: f.height ?? 0,
+          }
+        : null;
+    })
+    .filter((x): x is StockVideo => x !== null);
+  return pick[0] ?? null;
+}
+
+/** Inserta el video como <figure> después del primer párrafo de la nota. */
+export function embedVideo(contentHtml: string, video: StockVideo, caption: string): string {
+  const figure = `\n<figure class="nota-video"><video controls preload="metadata" playsinline${
+    video.poster ? ` poster="${video.poster}"` : ""
+  } src="${video.src}" width="${video.width || 1280}" height="${video.height || 720}"></video><figcaption>${caption} · ${video.credit}</figcaption></figure>\n`;
+  const i = contentHtml.indexOf("</p>");
+  if (i < 0) return contentHtml + figure;
+  return contentHtml.slice(0, i + 4) + figure + contentHtml.slice(i + 4);
+}

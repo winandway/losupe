@@ -9,7 +9,7 @@ import {
   getSpendToday,
   recordSpend,
 } from "./budget";
-import { illustrate } from "./images";
+import { embedVideo, findPexelsVideo, illustrate } from "./images";
 import { saveArticle } from "./publish";
 import {
   decideNextKind,
@@ -88,6 +88,7 @@ export type RobotStatus = {
   missing: string[];
   budget: { limitUsd: number; spentTodayUsd: number };
   quota: { notesPerDay: number; today: number };
+  evergreenRatio: number;
   queue: QueueSummary;
   lastRun: {
     id: string;
@@ -107,7 +108,7 @@ export async function isRobotPaused(db: D1Database): Promise<boolean> {
 
 export async function robotStatus(env: RobotEnv, now = new Date()): Promise<RobotStatus> {
   const db = env.DB;
-  const [paused, auto, limit, spent, today, queue, perDay, last] = await Promise.all([
+  const [paused, auto, limit, spent, today, queue, perDay, ratio, last] = await Promise.all([
     isRobotPaused(db),
     getSetting(db, "robot_auto_publish"),
     getDailyBudgetUsd(db),
@@ -115,6 +116,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
     robotNotesToday(db, now),
     queueSummary(db, now),
     getSetting(db, "notes_per_day"),
+    getSetting(db, "evergreen_ratio"),
     db.prepare(`SELECT * FROM runs ORDER BY started_at DESC LIMIT 1`).first<{
       id: string;
       status: string;
@@ -155,6 +157,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
       notesPerDay: Number(perDay ?? "6") || 6,
       today: Object.values(today).reduce((a, b) => a + b, 0),
     },
+    evergreenRatio: Math.min(1, Math.max(0, Number(ratio ?? "0.5") || 0)),
     queue,
     lastRun: last
       ? {
@@ -168,6 +171,34 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
         }
       : null,
   };
+}
+
+/** Si el redactor pidió video y hay Pexels, lo busca y lo incrusta en ambos idiomas (sin romper nada si falla). */
+async function maybeAddVideo(
+  env: RobotEnv,
+  draft: import("./writer").Draft,
+  fetchImpl: typeof fetch,
+): Promise<{ draft: import("./writer").Draft; video: string | null }> {
+  if (!draft.wants_video || !env.PEXELS_API_KEY || draft.video_keywords.length === 0) {
+    return { draft, video: null };
+  }
+  try {
+    const video = await findPexelsVideo(draft.video_keywords, env.PEXELS_API_KEY, fetchImpl);
+    if (!video) return { draft, video: null };
+    return {
+      draft: {
+        ...draft,
+        es: {
+          ...draft.es,
+          content_html: embedVideo(draft.es.content_html, video, "Video de archivo"),
+        },
+        en: { ...draft.en, content_html: embedVideo(draft.en.content_html, video, "Stock video") },
+      },
+      video: video.src,
+    };
+  } catch {
+    return { draft, video: null };
+  }
 }
 
 async function startRun(db: D1Database, runId: string, trigger: string, startedAt: string) {
@@ -385,10 +416,12 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           pages: research.pages,
         });
         const sourceTexts = research.pages.map((p) => p.text);
-        const { draft, usage } = await writeDraft(prompt, sourceTexts, {
+        const written = await writeDraft(prompt, sourceTexts, {
           apiKey: env.GEMINI_API_KEY,
           fetchImpl,
         });
+        const usage = written.usage;
+        const { draft } = await maybeAddVideo(env, written.draft, fetchImpl);
         await recordSpend(
           db,
           {
@@ -497,11 +530,13 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           kind: noteKind,
           sources: docs,
         });
-        const { draft, usage } = await writeDraft(
+        const written = await writeDraft(
           prompt,
           docs.map((d) => d.text),
           { apiKey: env.GEMINI_API_KEY, fetchImpl },
         );
+        const usage = written.usage;
+        const { draft } = await maybeAddVideo(env, written.draft, fetchImpl);
         await recordSpend(
           db,
           {

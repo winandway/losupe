@@ -258,7 +258,7 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('notes_per_day', '6'),
   ('languages', 'es,en'),
   ('timezone', 'America/New_York'),
-  ('evergreen_ratio', '0.7'),
+  ('evergreen_ratio', '0.5'),
   ('robot_auto_publish', '0'),
   ('robot_last_kind', 'universal'),
   ('robot_notes_per_run', '1');
@@ -275,4 +275,6 @@ INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VA
   ('coindesk', 'cripto', 'CoinDesk', 'https://www.coindesk.com/arc/outboundfeeds/rss/', 'rss', 'en', 2),
   ('cointelegraph-es', 'cripto', 'Cointelegraph en español', 'https://es.cointelegraph.com/rss', 'rss', 'es', 2),
   ('billboard', 'artistas', 'Billboard', 'https://www.billboard.com/feed/', 'rss', 'en', 1),
-  ('bing-artistas-es', 'artistas', 'Bing Noticias: artistas y música (ES)', 'https://www.bing.com/news/search?q=artistas+m%C3%BAsica+estrenos&format=rss&setlang=es', 'rss', 'es', 2);
+  ('bing-artistas-es', 'artistas', 'Bing Noticias: artistas y música (ES)', 'https://www.bing.com/news/search?q=artistas+m%C3%BAsica+estrenos&format=rss&setlang=es', 'rss', 'es', 2),
+  ('google-trends-us-es', 'artistas', 'Google Trends: lo más buscado hoy en EE. UU. (ES)', 'https://trends.google.com/trending/rss?geo=US&hl=es-419', 'trends', 'es', 3),
+  ('google-trends-us-en', 'artistas', 'Google Trends: top searches today in the U.S. (EN)', 'https://trends.google.com/trending/rss?geo=US&hl=en-US', 'trends', 'en', 3);

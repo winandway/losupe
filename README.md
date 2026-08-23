@@ -97,6 +97,10 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   modelos caros bloqueados en código. Tutorial completo: [docs/robot-y-encargos.md](docs/robot-y-encargos.md).
 - Llaves (en YaDominios Cloud → Variables de entorno): `ADMIN_PASSWORD`, `GEMINI_API_KEY`,
   `FAL_KEY` o `PEXELS_API_KEY`, opcionales `BRAVE_API_KEY`, `TURNSTILE_*`, `CRON_SECRET`.
+- Temas: Google Trends (RSS público, ES/EN, filtrado y clasificado por sección), Bing Noticias, RSS
+  de medios y Brave; medios de confianza en `src/lib/robot/trusted-sources.ts` (el redactor los
+  nombra: «según The New York Times»). Video corto de Pexels cuando suma. Plan de funcionamiento:
+  [docs/plan-editorial.md](docs/plan-editorial.md) (PDF: `docs/plan-editorial-2026-08-23.pdf`).
 
 ## Publicar una nota a mano (sin el robot)
 

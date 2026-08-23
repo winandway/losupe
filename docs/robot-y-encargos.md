@@ -55,9 +55,11 @@ flowchart LR
 - **Encargos**: patrocinadores (crear/editar), ideas en cola (agregar, ordenar, cancelar, reencolar),
   enlace a cada nota publicada.
 - **Notas**: notas del robot en revisión (publicar / descartar) y publicadas (despublicar).
-- **Fuentes**: canales RSS para las notas universales (encender/apagar, agregar). Vienen 11 de
-  arranque (Bing Noticias por tema, The Verge, Google AI blog, CoinDesk, Cointelegraph ES, Billboard,
-  Entrepreneur).
+- **Fuentes**: canales RSS para las notas universales (encender/apagar, agregar). Vienen 13 de
+  arranque: **Google Trends** (lo más buscado hoy en EE. UU., ES y EN; el robot descarta deportes,
+  apuestas y sucesos, clasifica por sección y toma la fuente más confiable), Bing Noticias por tema,
+  The Verge, Google AI blog, CoinDesk, Cointelegraph ES, Billboard, Entrepreneur.
+- **Ajustes** (Inicio): notas por día, porcentaje de guías duraderas frente a actualidad, tope diario.
 - Idioma del panel con el botón **EN/ES** (cookie), todo el texto vive en `src/i18n/{es,en}.ts → panel`.
 
 ![Entrar](img/capturas/panel-entrar.png)

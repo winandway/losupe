@@ -441,6 +441,14 @@ test("panel: crear patrocinador, encolar ideas, ver cola y ejecutar sin llave av
   // El resumen de la portada del panel muestra la cola
   await page.goto("/panel");
   await expect(page.getByText(/encargos en cola/)).toBeVisible();
+  // Ajustes del robot: se guardan y se reflejan
+  await page.getByLabel("Notas por día (robot + encargos)").fill("6");
+  await page.getByLabel("Porcentaje de notas duraderas (guías) frente a actualidad").fill("50");
+  await page.getByRole("button", { name: "Guardar ajustes" }).click();
+  await expect(page.getByText("Ajustes guardados.")).toBeVisible();
+  await expect(
+    page.getByLabel("Porcentaje de notas duraderas (guías) frente a actualidad"),
+  ).toHaveValue("50");
   // Ejecutar ahora sin GEMINI_API_KEY: la corrida queda en error y lo dice
   await page.getByRole("button", { name: "Ejecutar ahora (1 nota)" }).click();
   await expect(page.getByRole("alert")).toContainText(/GEMINI_API_KEY/);
