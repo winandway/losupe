@@ -63,7 +63,7 @@ export default async function RootLayout({ children, params }: Props) {
     <html lang={lang} className={`${inter.variable} ${newsreader.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         <Header lang={lang} dict={dict} />
-        <main id="contenido" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 md:py-8">
+        <main id="contenido" className="flex-1">
           {children}
         </main>
         <Footer lang={lang} dict={dict} />

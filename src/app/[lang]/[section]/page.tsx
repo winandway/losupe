@@ -1,3 +1,4 @@
+import { Container } from "@/components/Container";
 import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -29,7 +30,10 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
   return {
     title: section.name[lang],
     description: section.description[lang],
-    alternates: { canonical: sectionPath(lang, section.id), languages: sectionAlternates(section.id) },
+    alternates: {
+      canonical: sectionPath(lang, section.id),
+      languages: sectionAlternates(section.id),
+    },
     openGraph: { title: section.name[lang], description: section.description[lang] },
   };
 }
@@ -53,7 +57,7 @@ export default async function SectionPage({ params, searchParams }: Props) {
   if (page > 1 && result.items.length === 0) notFound();
 
   return (
-    <>
+    <Container className="py-6 md:py-8">
       <header className="mb-8">
         <SectionHeading as="h1" title={section.name[lang]} color={section.color} />
         <p className="max-w-2xl text-muted">{section.description[lang]}</p>
@@ -63,7 +67,9 @@ export default async function SectionPage({ params, searchParams }: Props) {
       </header>
 
       {result.items.length === 0 ? (
-        <p className="rounded-2xl bg-paper px-6 py-10 text-center text-muted">{dict.section.empty}</p>
+        <p className="rounded-2xl bg-paper px-6 py-10 text-center text-muted">
+          {dict.section.empty}
+        </p>
       ) : (
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {result.items.map((a, i) => (
@@ -78,6 +84,6 @@ export default async function SectionPage({ params, searchParams }: Props) {
         pages={result.pages}
         dict={dict}
       />
-    </>
+    </Container>
   );
 }

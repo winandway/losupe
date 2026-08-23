@@ -159,9 +159,14 @@ INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en)
   ('kevin-rondon', 'Kevin Rondón', 'person',
    'Periodista especializado en criptomonedas y mercados. Escribió para MundosCrypto, el portal que dio origen a losupe.',
    'Journalist covering cryptocurrencies and markets. He wrote for MundosCrypto, the portal that became losupe.',
-   'Periodista de cripto y mercados', 'Crypto and markets journalist');
+   'Periodista de cripto y mercados', 'Crypto and markets journalist'),
+  ('magaly-molina', 'Magaly Molina', 'person',
+   'Editora de losupe. Firma y revisa las notas de economía, ventas, tecnología e inteligencia artificial, cripto y tendencias que publicamos cada mañana.',
+   'Editor at losupe. She writes and reviews the economy, sales, technology and AI, crypto, and trends stories we publish every morning.',
+   'Editora', 'Editor');
 
 INSERT OR IGNORE INTO settings (key, value) VALUES
+  ('default_author', 'magaly-molina'),
   ('robot_paused', '1'),
   ('daily_budget_usd', '1.00'),
   ('notes_per_day', '6'),

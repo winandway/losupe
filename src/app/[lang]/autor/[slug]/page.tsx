@@ -1,3 +1,4 @@
+import { Container } from "@/components/Container";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -37,11 +38,14 @@ export default async function AuthorPage({ params, searchParams }: Props) {
   if (!author) notFound();
 
   const rawPage = (await searchParams).page;
-  const page = Math.max(1, Number.parseInt((Array.isArray(rawPage) ? rawPage[0] : rawPage) ?? "1", 10) || 1);
+  const page = Math.max(
+    1,
+    Number.parseInt((Array.isArray(rawPage) ? rawPage[0] : rawPage) ?? "1", 10) || 1,
+  );
   const result = await listPaged(db, lang, page, { authorId: author.id });
 
   return (
-    <>
+    <Container className="py-6 md:py-8">
       <header className="mb-10 flex items-start gap-5">
         <div
           aria-hidden="true"
@@ -63,7 +67,9 @@ export default async function AuthorPage({ params, searchParams }: Props) {
         {dict.author.articlesBy} {author.name}
       </h2>
       {result.items.length === 0 ? (
-        <p className="rounded-2xl bg-paper px-6 py-10 text-center text-muted">{dict.section.empty}</p>
+        <p className="rounded-2xl bg-paper px-6 py-10 text-center text-muted">
+          {dict.section.empty}
+        </p>
       ) : (
         <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
           {result.items.map((a) => (
@@ -71,7 +77,12 @@ export default async function AuthorPage({ params, searchParams }: Props) {
           ))}
         </div>
       )}
-      <Pagination basePath={authorPath(lang, author.id)} page={result.page} pages={result.pages} dict={dict} />
-    </>
+      <Pagination
+        basePath={authorPath(lang, author.id)}
+        page={result.page}
+        pages={result.pages}
+        dict={dict}
+      />
+    </Container>
   );
 }

@@ -54,6 +54,16 @@ npm run test:e2e        # prueba de humo contra el preview (:8787)
 `yapanel-build` → YaDominios Cloud (conectado a esa rama) republica solo.
 Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadominios.md).
 
+## Marca y frente
+
+- Video del frente: `public/video/hero.mp4` (franja 3:1, 1600×533, 12 s en bucle sin corte, 1.8 MB) y póster
+  `hero-poster.jpg`. Origen: Mixkit «Aerial view of the glass corporate buildings of a big city»
+  (licencia Mixkit Free, sin atribución obligatoria), recortado y comprimido con ffmpeg.
+- Autores: `equipo-losupe` (redacción), `kevin-rondon` (archivo de MundosCrypto) y **`magaly-molina`**
+  (firma por defecto de lo nuevo: `settings.default_author`).
+- Esquema versionado por huella: si `schema.sql` cambia, el worker lo reaplica solo
+  (`settings.schema_hash`), así que agregar un autor o una columna es editar `schema.sql` y publicar.
+
 ## Variables de entorno
 
 Ver `.env.example`. Ninguna es obligatoria para arrancar. `CRON_SECRET` permite disparar el robot

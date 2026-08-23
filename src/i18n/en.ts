@@ -19,6 +19,14 @@ export const en: Dict = {
     language: "Language",
     skip: "Skip to content",
   },
+  hero: {
+    kicker: "Today's edition",
+    title: "What's happening, explained.",
+    subtitle:
+      "Economy, sales, tech and AI, crypto, and trends. Clear stories every morning, in English and Spanish.",
+    searchPlaceholder: "What do you want to know today?",
+    videoTitle: "Background video: aerial view of a city",
+  },
   home: {
     latest: "Latest",
     topStory: "Today's top story",
@@ -35,7 +43,8 @@ export const en: Dict = {
     updated: "Updated",
     minutes: (m: number) => `${m} min read`,
     sources: "Sources",
-    aiNotice: "Written with help from artificial intelligence and reviewed by the losupe editorial team.",
+    aiNotice:
+      "Written with help from artificial intelligence and reviewed by the losupe editorial team.",
     fallbackNotice: "This article is available in Spanish only for now.",
     legacyNotice: "Originally published on MundosCrypto, the site that became losupe.",
     related: "You may also like",

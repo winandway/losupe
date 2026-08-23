@@ -17,6 +17,14 @@ export const es = {
     language: "Idioma",
     skip: "Saltar al contenido",
   },
+  hero: {
+    kicker: "Edición de hoy",
+    title: "Lo que pasa, explicado.",
+    subtitle:
+      "Economía, ventas, tecnología e IA, cripto y tendencias. Notas claras cada mañana, en español e inglés.",
+    searchPlaceholder: "¿Qué quieres saber hoy?",
+    videoTitle: "Video de fondo: vista aérea de una ciudad",
+  },
   home: {
     latest: "Lo último",
     topStory: "Lo más importante de hoy",
@@ -45,8 +53,7 @@ export const es = {
   },
   section: {
     count: (n: number) => (n === 1 ? "1 nota" : `${n} notas`),
-    empty:
-      "Todavía no hay notas en esta sección. El robot redactor empieza a publicar muy pronto.",
+    empty: "Todavía no hay notas en esta sección. El robot redactor empieza a publicar muy pronto.",
     page: (n: number) => `Página ${n}`,
   },
   search: {

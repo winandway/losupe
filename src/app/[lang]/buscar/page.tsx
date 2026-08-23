@@ -1,3 +1,4 @@
+import { Container } from "@/components/Container";
 import type { Metadata } from "next";
 import { z } from "zod";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -35,11 +36,13 @@ export default async function SearchPage({ params, searchParams }: Props) {
   const results = q ? await searchArticles(await getDb(), lang, q) : [];
 
   return (
-    <>
+    <Container className="py-6 md:py-8">
       <h1 className="font-display text-3xl font-bold text-ink md:text-4xl">{dict.search.title}</h1>
       <div className="mt-5 max-w-2xl">
         <SearchForm lang={lang} dict={dict} defaultValue={q} autoFocus={!q} />
-        {typedSomething && !q ? <p className="mt-2 text-sm text-coral">{dict.search.hint}</p> : null}
+        {typedSomething && !q ? (
+          <p className="mt-2 text-sm text-coral">{dict.search.hint}</p>
+        ) : null}
       </div>
 
       {q ? (
@@ -56,6 +59,6 @@ export default async function SearchPage({ params, searchParams }: Props) {
           ) : null}
         </section>
       ) : null}
-    </>
+    </Container>
   );
 }

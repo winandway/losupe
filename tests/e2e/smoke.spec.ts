@@ -23,6 +23,9 @@ const ROUTES_200 = [
   "/apple-icon.png",
   "/opengraph-image.png",
   "/favicon.ico",
+  "/video/hero.mp4",
+  "/video/hero-poster.jpg",
+  "/es/autor/magaly-molina",
 ];
 
 for (const route of ROUTES_200) {
@@ -74,6 +77,22 @@ test("el robot solo responde al programador", async ({ request }) => {
   const body = (await ok.json()) as { ok: boolean; status: string };
   expect(body.ok).toBe(true);
   expect(["skipped", "pending"]).toContain(body.status);
+});
+
+test("portada: franja de video, buscador grande y botonera", async ({ page }) => {
+  await page.goto("/es");
+  await expect(page.locator('video source[src="/video/hero.mp4"]')).toHaveCount(1);
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("Lo que pasa, explicado.");
+  await expect(page.getByPlaceholder("¿Qué quieres saber hoy?")).toBeVisible();
+  const botonera = page.getByRole("navigation", { name: "Secciones" });
+  await expect(botonera.getByRole("link", { name: "Portada" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+  await expect(botonera.getByRole("link", { name: "Cripto" })).toHaveAttribute(
+    "href",
+    "/es/cripto",
+  );
 });
 
 test("portada: noticias heredadas, selector de idioma y artículo abre", async ({ page }) => {

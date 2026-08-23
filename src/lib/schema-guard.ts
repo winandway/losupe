@@ -24,9 +24,44 @@ export type SchemaStatus = {
   binding: boolean;
   hadTables: boolean;
   applied: boolean;
+  /** true cuando las tablas existían pero el esquema cambió y se volvió a aplicar. */
+  upgraded?: boolean;
   error?: string;
   seed?: SeedStatus;
 };
+
+export const SCHEMA_HASH_KEY = "schema_hash";
+
+/** Huella corta del texto del esquema (FNV-1a 32 bits). Cambia cuando cambia schema.sql. */
+export function hashSchema(sql: string): string {
+  let h = 0x811c9dc5;
+  for (let i = 0; i < sql.length; i++) {
+    h ^= sql.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
+  }
+  return h.toString(16).padStart(8, "0");
+}
+
+export async function getStoredSchemaHash(db: D1Database): Promise<string | null> {
+  try {
+    const row = await db
+      .prepare(`SELECT value FROM settings WHERE key = ?1`)
+      .bind(SCHEMA_HASH_KEY)
+      .first<{ value: string }>();
+    return row?.value ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function storeSchemaHash(db: D1Database, hash: string): Promise<void> {
+  await db
+    .prepare(
+      `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, datetime('now'))`,
+    )
+    .bind(SCHEMA_HASH_KEY, hash)
+    .run();
+}
 
 export const LEGACY_SEED_FLAG = "legacy_seeded";
 
@@ -98,8 +133,18 @@ export async function ensureSchema(
 ): Promise<SchemaStatus> {
   if (!db) return { binding: false, hadTables: false, applied: false, error: "env.DB no existe" };
   try {
-    if (await hasCoreTables(db)) return { binding: true, hadTables: true, applied: false };
+    const hash = hashSchema(schemaSql);
+    if (await hasCoreTables(db)) {
+      // Tablas presentes: si el esquema cambió desde la última vez, se vuelve a aplicar (es idempotente).
+      const stored = await getStoredSchemaHash(db);
+      // eslint-disable-next-line security/detect-possible-timing-attacks -- la huella del esquema no es un secreto
+      if (stored === hash) return { binding: true, hadTables: true, applied: false };
+      await applySchema(db, schemaSql);
+      await storeSchemaHash(db, hash);
+      return { binding: true, hadTables: true, applied: true, upgraded: true };
+    }
     await applySchema(db, schemaSql);
+    await storeSchemaHash(db, hash);
     return { binding: true, hadTables: false, applied: true };
   } catch (error) {
     return {
