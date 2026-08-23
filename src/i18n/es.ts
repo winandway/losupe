@@ -277,6 +277,7 @@ export const es = {
     nav: {
       dashboard: "Inicio",
       sponsors: "Encargos",
+      orders: "Pedidos",
       notes: "Notas",
       sources: "Fuentes",
       logout: "Cerrar sesión",
@@ -321,6 +322,42 @@ export const es = {
       saveSettings: "Guardar ajustes",
       howItWorks:
         "Cada corrida alterna una nota de encargo (patrocinador) con una nota universal (fuentes públicas). Si falta una llave o se llega al tope diario, la corrida lo dice aquí.",
+    },
+    orders: {
+      title: "Pedidos",
+      intro:
+        "Lo que llega de la página pública «Publica tu noticia». Marca «Pagado» cuando cobres y luego «Mandar a la cola»: se crea el patrocinador con sus notas y el robot empieza a escribir.",
+      newOnes: "Nuevos",
+      paidOnes: "Pagados",
+      queuedOnes: "En cola",
+      revenue: "Facturado",
+      empty: "Todavía no hay pedidos.",
+      company: "Empresa",
+      plan: "Paquete",
+      contact: "Contacto",
+      status: "Estado",
+      notes: "notas",
+      markPaid: "Marcar pagado",
+      toQueue: "Mandar a la cola",
+      seeSponsor: "Ver patrocinador",
+      cancel: "Cancelar",
+      publicPage: "Página pública",
+      planPrices: "Precios",
+      markedPaid: "Pedido marcado como pagado.",
+      canceled: "Pedido cancelado.",
+      plans: {
+        basica: "Básica",
+        destacada: "Destacada",
+        paquete: "Paquete 4",
+        anual: "Anual",
+      },
+      statuses: {
+        new: "Nuevo",
+        paid: "Pagado",
+        queued: "En cola",
+        done: "Publicado",
+        canceled: "Cancelado",
+      },
     },
     sponsors: {
       title: "Encargos (notas patrocinadas)",
@@ -421,6 +458,83 @@ export const es = {
       settingsSaved: "Ajustes guardados.",
       error: "Algo salió mal",
     },
+  },
+  publish: {
+    nav: "Publica tu noticia",
+    title: "Publica la noticia de tu negocio en losupe",
+    subtitle:
+      "Cuéntanos qué quieres contar y nosotros escribimos la nota, en español y en inglés, con tu información y tu enlace. Lista en menos de un día, para que la encuentren en Google y la lean las personas.",
+    howTitle: "Cómo funciona",
+    steps: [
+      "Eliges el paquete y nos dejas tu sitio web.",
+      "Leemos tu sitio y escribimos la nota con tus datos, en español e inglés.",
+      "La revisa nuestra editora y se publica marcada como contenido patrocinado.",
+      "Te enviamos el enlace para que lo compartas donde quieras.",
+    ],
+    plansTitle: "Paquetes",
+    perNote: "por nota",
+    notes: "notas",
+    popular: "El más pedido",
+    plans: {
+      basica: {
+        name: "Básica",
+        detail: "Una nota bilingüe con tu enlace, foto de archivo y publicación permanente.",
+      },
+      destacada: {
+        name: "Destacada",
+        detail:
+          "Todo lo de la Básica, más portada durante 48 horas, video corto y aviso a los buscadores.",
+      },
+      paquete: {
+        name: "Paquete 4",
+        detail: "Cuatro notas para publicar cuando quieras durante el año, con tus temas.",
+      },
+      anual: {
+        name: "Anual",
+        detail: "Doce notas al año (una por mes) y perfil de tu empresa en el sitio.",
+      },
+    },
+    formTitle: "Pide tu nota",
+    company: "Nombre de tu empresa",
+    website: "Sitio web (con https://)",
+    contactName: "Tu nombre",
+    email: "Correo electrónico",
+    phone: "WhatsApp o teléfono (opcional)",
+    plan: "Paquete",
+    section: "Sección donde encaja",
+    lang: "Idioma principal",
+    brief: "Cuéntanos de tu empresa",
+    briefHint:
+      "Qué haces, para quién, qué te distingue. Con esto y tu sitio web escribimos la nota.",
+    ideas: "Ideas de titular (opcional, una por línea)",
+    submit: "Enviar mi pedido",
+    legal:
+      "Sin compromiso: recibimos tu pedido y te escribimos con el enlace de pago. La nota se publica marcada como contenido patrocinado, como manda la buena práctica periodística.",
+    okTitle: "¡Recibimos tu pedido!",
+    okBody:
+      "Te escribimos al correo que dejaste con el enlace de pago y los siguientes pasos. Si tienes prisa, respóndenos ese correo y le damos prioridad.",
+    okBack: "Volver a la portada",
+    errorTitle: "Revisa los datos",
+    errorBody: "Faltó algo o el sitio web no es válido. Corrígelo e inténtalo de nuevo.",
+    faqTitle: "Preguntas frecuentes",
+    faq: [
+      {
+        q: "¿La nota se ve como publicidad?",
+        a: "Se publica con la etiqueta «Contenido patrocinado» y el nombre de tu empresa, como en cualquier medio serio. Está escrita como información útil, no como un anuncio.",
+      },
+      {
+        q: "¿Puedo revisar la nota antes?",
+        a: "Sí. Te enviamos el borrador y la publicamos cuando nos digas.",
+      },
+      {
+        q: "¿En cuánto tiempo sale?",
+        a: "Normalmente el mismo día, y como máximo en 48 horas desde el pago.",
+      },
+      {
+        q: "¿Queda para siempre?",
+        a: "Sí, la nota queda publicada de forma permanente y con su enlace propio.",
+      },
+    ],
   },
   languages: {
     es: "Español",

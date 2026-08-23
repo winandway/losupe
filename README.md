@@ -102,6 +102,14 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   nombra: «según The New York Times»). Video corto de Pexels cuando suma. Plan de funcionamiento:
   [docs/plan-editorial.md](docs/plan-editorial.md) (PDF: `docs/plan-editorial-2026-08-23.pdf`).
 
+## Monetización
+
+- **Idea 1 en marcha:** página pública de venta `/es/publica` y `/en/publish` («Publica tu noticia»):
+  el negocio elige paquete, deja su sitio y su brief; el pedido entra a **Panel → Pedidos** y con un
+  clic se convierte en patrocinador + encargos en la cola del robot. Precios en `src/lib/orders.ts`
+  (`PLANS`). Cobro manual por ahora; Stripe cuando Richard lo autorice.
+- Roadmap de las 10 ideas y su estado: [docs/monetizacion.md](docs/monetizacion.md).
+
 ## Publicar una nota a mano (sin el robot)
 
 1. Crea `seed/content/AAAA-MM-DD-tema.mjs` copiando `seed/content/2026-08-23-mercatren.mjs` (artículo + `i18n.es` + `i18n.en`, imágenes en `public/img/notas/...`).

@@ -28,6 +28,8 @@ const ROUTES_200 = [
   "/video/hero-v2-poster.jpg",
   "/datos/buscar?q=bit&lang=es",
   "/es/autor/magaly-molina",
+  "/es/publica",
+  "/en/publish",
   "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
   "/en/sales/venezuelan-entrepreneur-launches-mercatren-online-store-1-3-million-products-united-states",
   "/img/notas/mercatren/home.jpg",
@@ -327,6 +329,53 @@ test("la nota de Mercatren es la principal, firmada por Magaly Molina y con avis
     "href",
     "https://mercatren.com/es",
   );
+});
+
+test("publica tu noticia: el pedido llega al panel y se convierte en encargo", async ({ page }) => {
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/es/publica");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Publica");
+  await expect(page.getByText("El más pedido")).toBeVisible();
+  const company = `Panadería Prueba ${Date.now()}`;
+  await page.getByLabel("Nombre de tu empresa").fill(company);
+  await page.getByLabel("Sitio web (con https://)").fill("https://example.com");
+  await page.getByLabel("Correo electrónico").fill("prueba@example.com");
+  await page.getByLabel("Paquete").selectOption("basica");
+  await page.getByLabel("Cuéntanos de tu empresa").fill("Vendemos pan artesanal a domicilio.");
+  await page.getByRole("button", { name: "Enviar mi pedido" }).click();
+  await expect(page).toHaveURL(/\/es\/publica\?estado=ok$/);
+  await expect(page.getByRole("heading", { name: /Recibimos tu pedido/ })).toBeVisible();
+
+  // Aparece en el panel y se manda a la cola
+  await page.goto("/panel/entrar");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.goto("/panel/pedidos");
+  const row = page.locator("tr", { hasText: company });
+  await expect(row).toBeVisible();
+  await expect(row.getByText("Nuevo")).toBeVisible();
+  await row.getByRole("button", { name: "Marcar pagado" }).click();
+  await expect(page.getByText("Pedido marcado como pagado.")).toBeVisible();
+  await page
+    .locator("tr", { hasText: company })
+    .getByRole("button", { name: "Mandar a la cola" })
+    .click();
+  await expect(page).toHaveURL(/\/panel\/encargos\/[0-9a-f-]+\?ok=created$/);
+  await expect(page.getByRole("heading", { name: company })).toBeVisible();
+  await expect(page.getByText(/En cola/).first()).toBeVisible();
+  // El pedido queda enlazado y el patrocinador se cancela para no ensuciar la cola local
+  await page.getByLabel("Estado").selectOption("canceled");
+  await page.getByRole("button", { name: "Guardar" }).click();
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+});
+
+test("el formulario público rechaza datos inválidos sin perder al cliente", async ({ request }) => {
+  const res = await request.post("/datos/pedido", {
+    form: { company: "X", website: "no-es-url", email: "malo", plan: "basica", lang: "es" },
+    maxRedirects: 0,
+  });
+  expect(res.status()).toBe(303);
+  expect(res.headers()["location"]).toContain("estado=error");
 });
 
 test("las URL viejas de la nota de Mercatren redirigen (301) a las nuevas", async ({ request }) => {

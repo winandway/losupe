@@ -30,6 +30,7 @@ export function Header({ lang, dict }: { lang: Lang; dict: Dict }) {
     { key: "about", label: dict.nav.about, href: aboutPath(lang) },
   ];
   const secondary: MenuLink[] = [
+    { key: "publish", label: dict.publish.nav, href: staticPath("publish", lang) },
     { key: "search", label: dict.nav.search, href: searchPath(lang) },
     { key: "rss", label: dict.footer.feeds, href: rssPath(lang), external: true },
     { key: "editorial", label: dict.footer.editorial, href: staticPath("editorial", lang) },

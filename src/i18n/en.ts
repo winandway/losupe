@@ -279,6 +279,7 @@ export const en: Dict = {
     nav: {
       dashboard: "Home",
       sponsors: "Assignments",
+      orders: "Orders",
       notes: "Stories",
       sources: "Sources",
       logout: "Sign out",
@@ -323,6 +324,42 @@ export const en: Dict = {
       saveSettings: "Save settings",
       howItWorks:
         "Each run alternates one sponsored assignment with one universal story (public sources). If a key is missing or the daily budget is reached, the run says so here.",
+    },
+    orders: {
+      title: "Orders",
+      intro:
+        "What comes in from the public «Publish your story» page. Mark «Paid» once you collect, then «Send to queue»: the sponsor is created with its stories and the robot starts writing.",
+      newOnes: "New",
+      paidOnes: "Paid",
+      queuedOnes: "Queued",
+      revenue: "Billed",
+      empty: "No orders yet.",
+      company: "Company",
+      plan: "Package",
+      contact: "Contact",
+      status: "Status",
+      notes: "stories",
+      markPaid: "Mark as paid",
+      toQueue: "Send to queue",
+      seeSponsor: "View sponsor",
+      cancel: "Cancel",
+      publicPage: "Public page",
+      planPrices: "Prices",
+      markedPaid: "Order marked as paid.",
+      canceled: "Order canceled.",
+      plans: {
+        basica: "Basic",
+        destacada: "Featured",
+        paquete: "4-pack",
+        anual: "Annual",
+      },
+      statuses: {
+        new: "New",
+        paid: "Paid",
+        queued: "Queued",
+        done: "Published",
+        canceled: "Canceled",
+      },
     },
     sponsors: {
       title: "Assignments (sponsored stories)",
@@ -423,6 +460,83 @@ export const en: Dict = {
       settingsSaved: "Settings saved.",
       error: "Something went wrong",
     },
+  },
+  publish: {
+    nav: "Publish your story",
+    title: "Publish your business story on losupe",
+    subtitle:
+      "Tell us what you want to share and we write the story, in English and Spanish, with your information and your link. Ready in under a day, so people and Google can find it.",
+    howTitle: "How it works",
+    steps: [
+      "Pick a package and give us your website.",
+      "We read your site and write the story with your details, in English and Spanish.",
+      "Our editor reviews it and it goes live, labeled as sponsored content.",
+      "We send you the link so you can share it anywhere.",
+    ],
+    plansTitle: "Packages",
+    perNote: "per story",
+    notes: "stories",
+    popular: "Most popular",
+    plans: {
+      basica: {
+        name: "Basic",
+        detail: "One bilingual story with your link, a stock photo, and permanent publication.",
+      },
+      destacada: {
+        name: "Featured",
+        detail:
+          "Everything in Basic, plus 48 hours on the homepage, a short video, and a ping to search engines.",
+      },
+      paquete: {
+        name: "4-pack",
+        detail: "Four stories to publish whenever you want during the year, on your topics.",
+      },
+      anual: {
+        name: "Annual",
+        detail: "Twelve stories a year (one a month) and a company profile on the site.",
+      },
+    },
+    formTitle: "Request your story",
+    company: "Company name",
+    website: "Website (with https://)",
+    contactName: "Your name",
+    email: "Email",
+    phone: "WhatsApp or phone (optional)",
+    plan: "Package",
+    section: "Best-fit section",
+    lang: "Main language",
+    brief: "Tell us about your company",
+    briefHint:
+      "What you do, who it is for, what sets you apart. We write the story from this and your website.",
+    ideas: "Headline ideas (optional, one per line)",
+    submit: "Send my request",
+    legal:
+      "No commitment: we receive your request and email you the payment link. The story runs labeled as sponsored content, as good journalism requires.",
+    okTitle: "We got your request!",
+    okBody:
+      "We'll email you the payment link and next steps. In a hurry? Reply to that email and we'll move you up.",
+    okBack: "Back to the homepage",
+    errorTitle: "Check your details",
+    errorBody: "Something was missing or the website is not valid. Fix it and try again.",
+    faqTitle: "Frequently asked questions",
+    faq: [
+      {
+        q: "Does it look like an ad?",
+        a: "It runs with a \u00abSponsored content\u00bb label and your company name, like any serious outlet. It reads as useful information, not as an ad.",
+      },
+      {
+        q: "Can I review it first?",
+        a: "Yes. We send you the draft and publish it when you say so.",
+      },
+      {
+        q: "How fast does it go live?",
+        a: "Usually the same day, and within 48 hours of payment at the latest.",
+      },
+      {
+        q: "Does it stay online?",
+        a: "Yes, the story stays published permanently with its own link.",
+      },
+    ],
   },
   languages: {
     es: "Español",

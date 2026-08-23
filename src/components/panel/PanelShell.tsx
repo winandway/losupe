@@ -13,13 +13,14 @@ export function PanelShell({
 }: {
   lang: Lang;
   dict: Dict;
-  active: "dashboard" | "sponsors" | "notes" | "sources";
+  active: "dashboard" | "orders" | "sponsors" | "notes" | "sources";
   children: React.ReactNode;
   flash?: { ok?: string; error?: string };
 }) {
   const p = dict.panel;
   const items = [
     { key: "dashboard", href: "/panel", label: p.nav.dashboard },
+    { key: "orders", href: "/panel/pedidos", label: p.nav.orders },
     { key: "sponsors", href: "/panel/encargos", label: p.nav.sponsors },
     { key: "notes", href: "/panel/notas", label: p.nav.notes },
     { key: "sources", href: "/panel/fuentes", label: p.nav.sources },

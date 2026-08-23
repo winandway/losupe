@@ -8,6 +8,7 @@ export const ROUTE_WORDS = {
   editorial: { es: "politica-editorial", en: "editorial-policy" },
   privacy: { es: "privacidad", en: "privacy" },
   terms: { es: "terminos", en: "terms" },
+  publish: { es: "publica", en: "publish" },
 } as const;
 
 type RouteKey = keyof typeof ROUTE_WORDS;

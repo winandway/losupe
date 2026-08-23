@@ -229,6 +229,31 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip, at);
 
+
+-- Pedidos de la página pública «Publica tu noticia» (comunicados autoservicio).
+CREATE TABLE IF NOT EXISTS orders (
+  id TEXT PRIMARY KEY,
+  company TEXT NOT NULL,
+  website TEXT NOT NULL,
+  contact_name TEXT,
+  email TEXT NOT NULL,
+  phone TEXT,
+  plan TEXT NOT NULL DEFAULT 'basica',
+  notes_total INTEGER NOT NULL DEFAULT 1,
+  price_usd REAL NOT NULL DEFAULT 0,
+  section_id TEXT,
+  lang TEXT NOT NULL DEFAULT 'es',
+  brief TEXT,
+  ideas TEXT,
+  status TEXT NOT NULL DEFAULT 'new',
+  sponsor_id TEXT,
+  internal_notes TEXT,
+  ip TEXT,
+  created_at TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status, created_at DESC);
+
 -- Datos base (idempotentes).
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('economia', 1, 2),
