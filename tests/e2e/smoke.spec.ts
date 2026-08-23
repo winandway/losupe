@@ -61,6 +61,43 @@ test("rutas desconocidas dan 404 de verdad (no la portada)", async ({ request })
   }
 });
 
+test("los mapas del sitio son válidos para Google (XML, rutas y cabeceras)", async ({
+  request,
+}) => {
+  const res = await request.get("/sitemap.xml", { headers: { "user-agent": "Googlebot/2.1" } });
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toContain("xml");
+  // Se cachea y NO lleva el `Vary` de Next (confunde a buscadores y cachés)
+  expect(res.headers()["cache-control"]).toContain("max-age=600");
+  expect(res.headers()["vary"]).toBeUndefined();
+  const xml = await res.text();
+  expect(xml.startsWith("<?xml")).toBe(true);
+  expect(xml).toContain("http://www.sitemaps.org/schemas/sitemap/0.9");
+  // Sin caracteres que rompan el XML y sin URLs de otro dominio
+  const locs = [...xml.matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]!);
+  expect(locs.length).toBeGreaterThan(20);
+  expect(new Set(locs).size).toBe(locs.length);
+  expect(locs.every((l) => l.startsWith("http"))).toBe(true);
+  expect(xml.replace(/&(amp|lt|gt|quot|apos|#\d+);/g, "")).not.toContain("&");
+  // Las páginas que dan dinero y las secciones tienen que estar
+  for (const path of ["/es", "/en", "/es/publica", "/en/publish", "/es/cripto", "/en/crypto"]) {
+    expect(locs.some((l) => l.endsWith(path))).toBe(true);
+  }
+  // Nada que robots.txt bloquee
+  expect(locs.some((l) => l.includes("?q=") || l.includes("/__"))).toBe(false);
+
+  const news = await request.get("/news-sitemap.xml", {
+    headers: { "user-agent": "Googlebot-News/1.0" },
+  });
+  expect(news.status()).toBe(200);
+  expect((await news.text()).startsWith("<?xml")).toBe(true);
+
+  const robots = await request.get("/robots.txt");
+  const txt = await robots.text();
+  expect(txt).toMatch(/^Sitemap: https?:\/\/\S+\/sitemap\.xml$/m);
+  expect(txt).toMatch(/^Sitemap: https?:\/\/\S+\/news-sitemap\.xml$/m);
+});
+
 test("señales para buscadores y agentes de IA", async ({ request }) => {
   const robots = await request.get("/robots.txt");
   const robotsTxt = await robots.text();

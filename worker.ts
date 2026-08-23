@@ -37,6 +37,10 @@ const schemaGuard = createSchemaGuard(SCHEMA_SQL, { seeds: CONTENT_SEEDS });
 
 const STATIC_PREFIXES = ["/img/", "/video/", "/brand/"];
 const STATIC_CACHE = "public, max-age=86400, stale-while-revalidate=604800";
+// Mapas del sitio y robots: se cachean 10 minutos y se les quita el `Vary` de Next (son XML/texto
+// planos, iguales para todos; el `Vary: rsc, next-router-...` solo estorba a buscadores y cachés).
+const FEED_PATHS = new Set(["/sitemap.xml", "/news-sitemap.xml", "/robots.txt", "/llms.txt"]);
+const FEED_CACHE = "public, max-age=600, stale-while-revalidate=86400";
 
 function json(data: unknown, contentType = "application/json; charset=utf-8"): Response {
   return new Response(JSON.stringify(data, null, 2), {
@@ -172,7 +176,7 @@ export default {
     const contentType = response.headers.get("content-type") ?? "";
     const isHtml = contentType.includes("text/html");
     const isStatic = STATIC_PREFIXES.some((p) => pathname.startsWith(p));
-    if (!isHtml && !isStatic) return response;
+    if (!isHtml && !isStatic && !FEED_PATHS.has(pathname)) return response;
 
     const headers = new Headers(response.headers);
     if (isHtml) {
@@ -181,6 +185,10 @@ export default {
       if (lang) headers.set("Vary", vary ? `${vary}, Accept` : "Accept");
     }
     if (isStatic && response.status === 200) headers.set("Cache-Control", STATIC_CACHE);
+    if (FEED_PATHS.has(pathname) && response.status === 200) {
+      headers.set("Cache-Control", FEED_CACHE);
+      headers.delete("Vary");
+    }
     return new Response(response.body, {
       status: response.status,
       statusText: response.statusText,

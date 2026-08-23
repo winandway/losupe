@@ -126,3 +126,29 @@ diario…`, 23 ago 2026).
   `aria-current="page"`. Si la barra vuelve a quedar atrapada, el clic falla y la prueba se pone roja.
 - **Qué NO tocar:** no metas `backdrop-blur`, `filter` ni `transform` en ancestros de algo `fixed`.
   Si hace falta el efecto, el elemento fijo se saca de ese subárbol (o se pinta en un portal).
+
+## 8. El sitemap no puede caerse ni llegar «vacío» a Google
+
+- **Cómo se vio (23 ago 2026):** Search Console mostró `https://losupe.com/sitemap.xml` con
+  **«No se ha podido obtener»** y 0 páginas descubiertas.
+- **Causa real:** el sitemap en sí estaba bien (XML válido, 57 URLs, robots lo declara). Google lo
+  leyó **durante uno de los redespliegues del día** —ese día se publicó siete veces— y en esos
+  segundos el sitio no responde. Riesgo de fondo: el sitemap se arma consultando la base, así que un
+  fallo de la base devolvía **500** y Google lo habría marcado igual.
+- **Qué se hizo:**
+  1. `src/app/sitemap.ts`: si la base falla, **no revienta**: sale con las páginas fijas (portada,
+     secciones, legales, «Publica tu noticia») y deja el fallo en el registro (`console.error`), no
+     en silencio.
+  2. Se agregaron `/es/publica` y `/en/publish`, que faltaban.
+  3. `worker.ts`: `sitemap.xml`, `news-sitemap.xml`, `robots.txt` y `llms.txt` se sirven con
+     `Cache-Control: public, max-age=600, stale-while-revalidate=86400` y **sin la cabecera `Vary`
+     de Next** (`rsc, next-router-state-tree…`), que no pinta nada en un XML y confunde a las cachés
+     y a algunos rastreadores.
+- **Candado:** `tests/e2e/smoke.spec.ts` → «los mapas del sitio son válidos para Google»: 200,
+  tipo XML, empieza por `<?xml`, sin URLs repetidas, sin `&` sin escapar, sin rutas bloqueadas por
+  robots, con la portada, las secciones y las páginas de venta dentro, `max-age=600` y **sin `Vary`**;
+  además comprueba el news-sitemap y que robots.txt declare los dos mapas.
+- **Qué NO tocar:** que el sitemap nunca dependa de que la base responda para devolver 200. Si se
+  agrega una página pública nueva, se agrega también aquí (la prueba lo exige para las de venta).
+- **Nota operativa:** después de publicar varias veces seguidas conviene reenviar el sitemap en
+  Search Console; Google reintenta solo, pero el reenvío acelera.

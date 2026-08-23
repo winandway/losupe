@@ -9,8 +9,16 @@ import { aboutPath, absoluteUrl, articlePath, homePath, sectionPath, staticPath 
 export const dynamic = "force-dynamic";
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [base, db] = await Promise.all([getBaseUrl(), getDb()]);
-  const rows = await listForSitemap(db);
+  const base = await getBaseUrl();
+  // Si la base falla, el sitemap NO devuelve 500 (Google lo marcaría como «no se ha podido
+  // obtener» y dejaría de rastrear): sale con las páginas fijas y el fallo queda en el registro
+  // del worker y en el canario de /__health.
+  let rows: Awaited<ReturnType<typeof listForSitemap>> = [];
+  try {
+    rows = await listForSitemap(await getDb());
+  } catch (error) {
+    console.error("sitemap: la base no respondió", error);
+  }
 
   const entries: MetadataRoute.Sitemap = [];
   for (const lang of LANGS) {
@@ -30,6 +38,17 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         languages: {
           es: absoluteUrl(base, aboutPath("es")),
           en: absoluteUrl(base, aboutPath("en")),
+        },
+      },
+    });
+    entries.push({
+      url: absoluteUrl(base, staticPath("publish", lang)),
+      changeFrequency: "monthly",
+      priority: 0.6,
+      alternates: {
+        languages: {
+          es: absoluteUrl(base, staticPath("publish", "es")),
+          en: absoluteUrl(base, staticPath("publish", "en")),
         },
       },
     });
