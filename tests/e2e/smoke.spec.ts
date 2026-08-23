@@ -28,8 +28,8 @@ const ROUTES_200 = [
   "/video/hero-v2-poster.jpg",
   "/datos/buscar?q=bit&lang=es",
   "/es/autor/magaly-molina",
-  "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
-  "/en/sales/pedro-llerena-launches-mercatren-1-3-million-products-store-taking-on-amazon",
+  "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
+  "/en/sales/venezuelan-entrepreneur-launches-mercatren-online-store-1-3-million-products-united-states",
   "/img/notas/mercatren/home.jpg",
   "/llms.txt",
   "/manifest.webmanifest",
@@ -91,7 +91,7 @@ test("señales para buscadores y agentes de IA", async ({ request }) => {
   expect(await md.text()).toContain("# losupe");
 
   const story = await request.get(
-    "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+    "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
     { headers: { accept: "text/markdown" } },
   );
   expect(story.headers()["content-type"]).toContain("text/markdown");
@@ -175,7 +175,7 @@ test("buscador del frente: escribe y sugiere sin enviar (escritorio: desplegable
     await box.click();
     await page.getByRole("dialog").getByRole("combobox").fill("merca");
     await page.getByRole("dialog").getByRole("option").first().click();
-    await expect(page).toHaveURL(/\/es\/ventas\/pedro-llerena-lanza-mercatren/);
+    await expect(page).toHaveURL(/\/es\/ventas\/un-venezolano-lanza-mercatren/);
     return;
   }
   await box.fill("merca");
@@ -189,7 +189,7 @@ test("buscador del frente: escribe y sugiere sin enviar (escritorio: desplegable
   expect(await topmostIsInside(page, '[role="listbox"]')).toMatchObject({ ok: true });
   await box.press("ArrowDown");
   await box.press("Enter");
-  await expect(page).toHaveURL(/\/es\/ventas\/pedro-llerena-lanza-mercatren/);
+  await expect(page).toHaveURL(/\/es\/ventas\/un-venezolano-lanza-mercatren/);
 });
 
 test("celular: barra fija con logo, menú hamburguesa y secciones", async ({ page, isMobile }) => {
@@ -310,21 +310,47 @@ test("la nota de Mercatren es la principal, firmada por Magaly Molina y con avis
 }) => {
   await page.goto("/es");
   const hero = page.locator("article").first();
-  await expect(hero.locator("h2 a")).toHaveText(/Pedro Llerena lanza Mercatren/);
+  await expect(hero.locator("h2 a")).toHaveText(/un venezolano lanza Mercatren/);
+  await expect(hero.locator("h2 a")).not.toHaveText(/Amazon|Pedro/);
   await expect(hero.getByRole("link", { name: "Magaly Molina" })).toHaveAttribute(
     "href",
     "/es/autor/magaly-molina",
   );
   await page.goto(
-    "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+    "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
   );
   await expect(page.locator("article h1")).toHaveText(/Dejamos el miedo a un lado/);
+  await expect(page.locator("article h1")).not.toHaveText(/Amazon/);
   await expect(page.locator("article .prose figure img").first()).toBeVisible();
   await expect(page.getByText("Redacción asistida por inteligencia artificial")).toBeVisible();
   await expect(page.getByRole("link", { name: "Mercatren — sitio oficial" })).toHaveAttribute(
     "href",
     "https://mercatren.com/es",
   );
+});
+
+test("las URL viejas de la nota de Mercatren redirigen (301) a las nuevas", async ({ request }) => {
+  const es = await request.get(
+    "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+    { maxRedirects: 0 },
+  );
+  expect(es.status()).toBe(301);
+  expect(es.headers()["location"]).toBe(
+    "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
+  );
+  const en = await request.get(
+    "/en/sales/pedro-llerena-launches-mercatren-1-3-million-products-store-taking-on-amazon/",
+    { maxRedirects: 0 },
+  );
+  expect(en.status()).toBe(301);
+  expect(en.headers()["location"]).toContain(
+    "/en/sales/venezuelan-entrepreneur-launches-mercatren",
+  );
+  const followed = await request.get(
+    "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+  );
+  expect(followed.status()).toBe(200);
+  expect(await followed.text()).toContain("un venezolano lanza Mercatren");
 });
 
 test("el mismo artículo se abre en inglés con aviso de respaldo", async ({ page }) => {

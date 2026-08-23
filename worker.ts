@@ -24,6 +24,7 @@ import { buildHealthReport } from "./src/lib/health";
 import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow";
 import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
+import { legacyRedirectTarget } from "./src/lib/legacy-redirects";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
 import { createSchemaGuard } from "./src/lib/schema-guard";
 import { rebuildSearchIndex } from "./src/lib/search";
@@ -105,6 +106,15 @@ export default {
     }
     if (pathname === `/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`) {
       return text(buildSkillMarkdown(base), "text/markdown; charset=utf-8");
+    }
+
+    // URLs viejas de notas que cambiaron de slug → 301 a la nueva.
+    const legacy = legacyRedirectTarget(pathname);
+    if (legacy) {
+      return new Response(null, {
+        status: 301,
+        headers: { Location: legacy + url.search, "Cache-Control": "public, max-age=86400" },
+      });
     }
 
     const target = langRedirectTarget(url, request.headers.get("accept-language"));

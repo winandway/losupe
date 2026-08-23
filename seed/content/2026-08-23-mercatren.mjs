@@ -15,6 +15,7 @@ export default {
     image_credit: "Captura: mercatren.com",
     ai_assisted: 1,
     published_at: "2026-08-23T04:00:00.000Z",
+    updated_at: "2026-08-23T07:00:00.000Z",
     sources: [
       { title: "Mercatren — sitio oficial", url: "https://mercatren.com/es" },
       { title: "Mercatren — Cómo funciona", url: "https://mercatren.com/es/como-funciona" },
@@ -25,20 +26,20 @@ export default {
   },
   i18n: {
     es: {
-      slug: "pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+      slug: "un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
       title:
-        "«Dejamos el miedo a un lado»: Pedro Llerena lanza Mercatren, la tienda de 1,3 millones de productos que sale a competir con Amazon",
+        "«Dejamos el miedo a un lado»: un venezolano lanza Mercatren, la tienda en línea con 1,3 millones de productos que llega a todo Estados Unidos",
       excerpt:
-        "Un empresario colombo-venezolano radicado en Estados Unidos pone en marcha una tienda en línea con 1,3 millones de productos, entregas en los 50 estados y un modelo pensado para la diáspora: pagar desde aquí y recibir allá. La empresa habla de una inversión superior a 7,3 millones de dólares y ya prepara su llegada a Colombia y Chile.",
+        "Un emprendedor venezolano radicado en Estados Unidos pone en marcha una tienda en línea con 1,3 millones de productos, entregas en los 50 estados y un modelo pensado para la diáspora: pagar desde aquí y recibir allá. La empresa habla de una inversión superior a 7,3 millones de dólares y prepara, por etapas, su llegada a Colombia y Chile.",
       meta_title:
-        "Mercatren: la startup de Pedro Llerena que sale a competir con Amazon con 1,3 millones de productos",
+        "Mercatren: la tienda en línea de un emprendedor venezolano que llega a Estados Unidos con 1,3 millones de productos",
       meta_description:
-        "Pedro Llerena, empresario colombo-venezolano en Estados Unidos, lanza Mercatren: 1,3 millones de productos, entregas en los 50 estados, pagos desde EE.UU. con entrega en Venezuela, y expansión a Colombia y Chile.",
-      tags: ["Mercatren", "Pedro Llerena", "emprendimiento", "comercio electrónico", "Venezuela", "Estados Unidos"],
+        "Un emprendedor venezolano en Estados Unidos lanza Mercatren: 1,3 millones de productos, entregas en los 50 estados, pagos desde EE.UU. con entrega en Venezuela, y próxima llegada a Colombia y Chile.",
+      tags: ["Mercatren", "emprendimiento", "comercio electrónico", "Venezuela", "Estados Unidos", "diáspora"],
       content_html: `
-<p>Durante años, lanzar una tienda en línea de catálogo general en Estados Unidos sonaba a misión imposible: en la cancha ya jugaban Amazon, eBay y un puñado de gigantes con bodegas, flotas y décadas de ventaja. <strong>Pedro Llerena</strong>, empresario colombo-venezolano radicado en Estados Unidos, decidió entrar de todos modos. Su apuesta se llama <strong>Mercatren</strong>, una tienda en línea que, según cifras de la propia compañía, ya reúne <strong>1,3 millones de productos</strong>, entrega en los <strong>50 estados</strong> del país y nace con un modelo poco común: permitir que una persona pague desde Estados Unidos y la mercancía se entregue en Venezuela.</p>
+<p>El comercio en línea de Estados Unidos tiene nombres conocidos y décadas de ventaja, y por eso pocos se animan a lanzar una tienda de catálogo general. Aun así, cada tanto aparece un proyecto que entra con una idea propia. <strong>Mercatren</strong> es uno de ellos: una tienda en línea fundada por <strong>Pedro Llerena</strong>, empresario venezolano radicado en Estados Unidos, que según cifras de la propia compañía ya reúne <strong>1,3 millones de productos</strong>, entrega en los <strong>50 estados</strong> del país y nace con un modelo poco común: permitir que una persona pague desde Estados Unidos y la mercancía se entregue en Venezuela.</p>
 
-<p>«Durante mucho tiempo nadie se atrevía a lanzar una tienda así por miedo a los grandes. Nosotros dejamos el miedo a un lado», dijo Llerena a losupe. La empresa asegura que el proyecto arranca con una inversión superior a los <strong>7,3 millones de dólares</strong> y que en los próximos meses abrirá <strong>mercatren.com.co</strong> en Colombia y <strong>mercatren.cl</strong> en Chile.</p>
+<p>«Durante mucho tiempo nadie se atrevía a lanzar una tienda así. Nosotros dejamos el miedo a un lado y lo hicimos paso a paso», dijo Llerena a losupe. La empresa asegura que el proyecto arranca con una inversión superior a los <strong>7,3 millones de dólares</strong> y que en los próximos meses abrirá <strong>mercatren.com.co</strong> en Colombia y <strong>mercatren.cl</strong> en Chile.</p>
 
 <h2>Qué es Mercatren y cómo funciona</h2>
 <p>La promesa del sitio cabe en una frase que la empresa repite en su portada: <em>«Compra en Estados Unidos, entrega donde la necesites»</em>. El funcionamiento, explicado en su propia documentación, es directo: el cliente elige un producto del catálogo, <strong>paga el precio publicado desde un banco de Estados Unidos</strong> (tarjeta, Zelle o transferencia para compras desde 200 dólares), indica la dirección de entrega y recibe factura y seguimiento del pedido.</p>
@@ -74,24 +75,24 @@ export default {
 
 <figure><img src="/img/notas/mercatren/tiendas.jpg" alt="Directorio de comercios en Mercatren" width="1400" height="875" loading="lazy" /><figcaption>El directorio de comercios ya mezcla tiendas de Estados Unidos y de Venezuela; la empresa anuncia Colombia y Chile como próximos mercados. Captura: mercatren.com</figcaption></figure>
 <h2>Por qué importa</h2>
-<p>Más allá del tamaño del catálogo, el lanzamiento dice algo sobre el momento del emprendimiento latino en Estados Unidos: un fundador colombo-venezolano que compite en el terreno de los gigantes con una propuesta construida para su propia comunidad. Que el modelo despegue dependerá de lo de siempre —servicio, cumplimiento y confianza—, pero el primer paso ya está dado. Como dice Llerena: el miedo quedó a un lado.</p>
+<p>Más allá del tamaño del catálogo, el lanzamiento dice algo sobre el momento del emprendimiento latino en Estados Unidos: un proyecto que entra a un mercado grande con una propuesta construida para su propia comunidad y con los pies en la tierra —factura en cada paso, precio final sin sorpresas y crecimiento por etapas—. Que el modelo despegue dependerá de lo de siempre: servicio, cumplimiento y confianza. Pero el primer paso ya está dado. Como dice su fundador: el miedo quedó a un lado.</p>
 `,
     },
     en: {
-      slug: "pedro-llerena-launches-mercatren-1-3-million-products-store-taking-on-amazon",
+      slug: "venezuelan-entrepreneur-launches-mercatren-online-store-1-3-million-products-united-states",
       title:
-        "“We set fear aside”: Pedro Llerena launches Mercatren, a 1.3-million-product store taking on Amazon",
+        "“We set fear aside”: a Venezuelan entrepreneur launches Mercatren, an online store with 1.3 million products and delivery across the U.S.",
       excerpt:
-        "A Colombian-Venezuelan entrepreneur based in the United States is launching an online store with 1.3 million products, delivery to all 50 states, and a model built for the diaspora: pay here, receive there. The company cites an investment of more than $7.3 million and is preparing to open in Colombia and Chile.",
+        "A Venezuelan entrepreneur based in the United States is launching an online store with 1.3 million products, delivery to all 50 states, and a model built for the diaspora: pay here, receive there. The company cites an investment of more than $7.3 million and plans a step-by-step expansion to Colombia and Chile.",
       meta_title:
-        "Mercatren: Pedro Llerena's startup takes on Amazon with 1.3 million products",
+        "Mercatren: a Venezuelan entrepreneur's online store arrives in the U.S. with 1.3 million products",
       meta_description:
-        "Pedro Llerena, a Colombian-Venezuelan entrepreneur in the U.S., launches Mercatren: 1.3 million products, delivery to all 50 states, U.S. payments with delivery in Venezuela, and expansion to Colombia and Chile.",
-      tags: ["Mercatren", "Pedro Llerena", "entrepreneurship", "e-commerce", "Venezuela", "United States"],
+        "A Venezuelan entrepreneur in the U.S. launches Mercatren: 1.3 million products, delivery to all 50 states, U.S. payments with delivery in Venezuela, and Colombia and Chile next.",
+      tags: ["Mercatren", "entrepreneurship", "e-commerce", "Venezuela", "United States", "diaspora"],
       content_html: `
-<p>For years, launching a general-catalog online store in the United States sounded like a lost cause: Amazon, eBay, and a handful of giants with warehouses, fleets, and decades of head start already owned the field. <strong>Pedro Llerena</strong>, a Colombian-Venezuelan entrepreneur based in the U.S., decided to step in anyway. His bet is called <strong>Mercatren</strong>, an online store that, according to the company's own figures, already lists <strong>1.3 million products</strong>, delivers to all <strong>50 states</strong>, and launches with an unusual twist: it lets someone pay from the United States and have the goods delivered in Venezuela.</p>
+<p>Online retail in the United States has well-known names and decades of head start, which is why few people dare to launch a general-catalog store. Every so often, though, a project shows up with an idea of its own. <strong>Mercatren</strong> is one of them: an online store founded by <strong>Pedro Llerena</strong>, a Venezuelan entrepreneur based in the U.S., that, according to the company's own figures, already lists <strong>1.3 million products</strong>, delivers to all <strong>50 states</strong>, and launches with an unusual twist: it lets someone pay from the United States and have the goods delivered in Venezuela.</p>
 
-<p>“For a long time nobody dared to launch a store like this because of the big players. We set fear aside,” Llerena told losupe. The company says the project starts with an investment of more than <strong>$7.3 million</strong> and that <strong>mercatren.com.co</strong> in Colombia and <strong>mercatren.cl</strong> in Chile will open in the coming months.</p>
+<p>“For a long time nobody dared to launch a store like this. We set fear aside and did it step by step,” Llerena told losupe. The company says the project starts with an investment of more than <strong>$7.3 million</strong> and that <strong>mercatren.com.co</strong> in Colombia and <strong>mercatren.cl</strong> in Chile will open in the coming months.</p>
 
 <h2>What Mercatren is and how it works</h2>
 <p>The promise fits in the line the company repeats on its homepage: <em>“Buy in the United States, delivered wherever you need it.”</em> The mechanics, laid out in its own documentation, are straightforward: the customer picks a product from the catalog, <strong>pays the published price from a U.S. bank</strong> (card, Zelle, or bank transfer for purchases of $200 or more), enters a delivery address, and receives an invoice and order tracking.</p>
@@ -127,7 +128,7 @@ export default {
 
 <figure><img src="/img/notas/mercatren/tiendas.jpg" alt="Store directory on Mercatren" width="1400" height="875" loading="lazy" /><figcaption>The store directory already mixes U.S. and Venezuelan businesses; the company names Colombia and Chile as its next markets. Screenshot: mercatren.com</figcaption></figure>
 <h2>Why it matters</h2>
-<p>Beyond the size of the catalog, the launch says something about this moment for Latino entrepreneurship in the United States: a Colombian-Venezuelan founder competing on the giants' turf with a product built for his own community. Whether the model takes off will depend on the usual things — service, delivery, and trust — but the first step has been taken. As Llerena puts it: fear was set aside.</p>
+<p>Beyond the size of the catalog, the launch says something about this moment for Latino entrepreneurship in the United States: a project entering a big market with a product built for its own community and its feet on the ground — an invoice at every step, a final price with no surprises, and growth in stages. Whether the model takes off will depend on the usual things: service, delivery, and trust. But the first step has been taken. As its founder puts it: fear was set aside.</p>
 `,
     },
   },
