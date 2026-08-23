@@ -94,15 +94,15 @@ plataformas y traiga gente al sitio. Ver `docs/redes-y-video.md` para las APIs y
 
 ## Estado
 
-| #   | Idea                          | Estado    | Qué falta                                           |
-| --- | ----------------------------- | --------- | --------------------------------------------------- |
-| 1   | Comunicados autoservicio      | **Hecho** | Que Richard fije precios finales y pruebe un pedido |
-| 2   | Niveles y precio fundador     | Siguiente | Decidir precios                                     |
-| 3   | Patrocinio de sección/boletín | Pendiente | Depende del boletín (bloque 4)                      |
-| 4   | Menciones en guías            | Pendiente | —                                                   |
-| 5   | Widget para sitios            | Pendiente | —                                                   |
-| 6   | Boletín por WhatsApp          | Pendiente | Proveedor de envío                                  |
-| 7   | Radar SaaS                    | Pendiente | —                                                   |
-| 8   | Sala de prensa white label    | Pendiente | —                                                   |
-| 9   | Acceso premium para IA        | Pendiente | —                                                   |
-| 10  | Shorts y audio                | Pendiente | Llaves de voz/render (ver docs/redes-y-video.md)    |
+| #   | Idea                          | Estado    | Qué falta                                                    |
+| --- | ----------------------------- | --------- | ------------------------------------------------------------ |
+| 1   | Comunicados autoservicio      | **Hecho** | Que Richard fije precios finales y pruebe un pedido          |
+| 2   | Niveles y precio fundador     | Siguiente | Decidir precios                                              |
+| 3   | Patrocinio de sección/boletín | Pendiente | Depende del boletín (bloque 4)                               |
+| 4   | Menciones en guías            | Pendiente | —                                                            |
+| 5   | Widget para sitios            | Pendiente | —                                                            |
+| 6   | Boletín por WhatsApp          | Pendiente | Proveedor de envío                                           |
+| 7   | Radar SaaS                    | Pendiente | —                                                            |
+| 8   | Sala de prensa white label    | Pendiente | —                                                            |
+| 9   | Acceso premium para IA        | Pendiente | —                                                            |
+| 10  | Shorts y audio                | Pendiente | Llave de JSON2Video (\$16.95/mes); ver docs/redes-y-video.md |
