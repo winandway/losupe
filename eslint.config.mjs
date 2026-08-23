@@ -36,6 +36,8 @@ const eslintConfig = defineConfig([
     "playwright-report/**",
     "test-results/**",
     "public/**",
+    "src/lib/schema-sql.ts",
+    "src/lib/seed-legacy.ts",
   ]),
 ]);
 

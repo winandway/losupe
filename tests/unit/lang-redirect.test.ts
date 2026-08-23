@@ -26,6 +26,7 @@ describe("redirección de idioma en el worker", () => {
       "/img/legacy/a.webp",
       "/brand/logo-512.png",
       "/__scheduled",
+      "/__health",
       "/noticia/viejo-slug",
       "/archivo.pdf",
     ]) {

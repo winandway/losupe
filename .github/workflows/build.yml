@@ -27,7 +27,7 @@ jobs:
           cache: npm
 
       - name: Instalar y compilar (OpenNext)
-        run: npm ci && npx opennextjs-cloudflare build
+        run: npm ci && npm run schema:embed && npx opennextjs-cloudflare build
 
       - name: Empaquetar en un solo _worker.js
         run: |

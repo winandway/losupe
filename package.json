@@ -17,18 +17,19 @@
     "test:e2e": "playwright test",
     "audit": "npm audit --audit-level=high",
     "secrets": "gitleaks detect --source . --no-banner --redact",
-    "verify": "npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run audit && npm run secrets",
-    "cf:build": "opennextjs-cloudflare build",
-    "preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "verify": "npm run schema:embed && npm run typecheck && npm run lint && npm run test:coverage && npm run build && npm run audit && npm run secrets",
+    "cf:build": "npm run schema:embed && opennextjs-cloudflare build",
+    "preview": "npm run schema:embed && opennextjs-cloudflare build && opennextjs-cloudflare preview",
     "cf-typegen": "wrangler types --env-interface CloudflareEnv cloudflare-env.d.ts",
     "db:local": "bash scripts/db-local.sh",
     "import:mundoscrypto": "tsx scripts/import-mundoscrypto.ts",
-    "prepare": "husky"
+    "prepare": "husky",
+    "schema:embed": "node scripts/embed-schema.mjs"
   },
   "lint-staged": {
     "*.{ts,tsx,mjs,js}": [
       "prettier --write",
-      "eslint --fix --max-warnings=0"
+      "eslint --fix --max-warnings=0 --no-warn-ignored"
     ],
     "*.{json,md,css,yml,yaml}": [
       "prettier --write --ignore-unknown"

@@ -19,7 +19,7 @@ export default defineConfig({
       provider: "v8",
       reporter: ["text", "html", "lcov"],
       include: ["src/lib/**", "src/i18n/**", "src/components/**", "src/env.ts"],
-      exclude: ["src/lib/db.ts", "src/**/*.test.{ts,tsx}", "src/**/*.d.ts"],
+      exclude: ["src/lib/db.ts", "src/lib/schema-sql.ts", "src/lib/seed-legacy.ts", "src/**/*.test.{ts,tsx}", "src/**/*.d.ts"],
       // Umbral mínimo. Solo sube, nunca baja.
       thresholds: {
         lines: 60,

@@ -14,3 +14,5 @@ seed
 package-lock.json
 cloudflare-env.d.ts
 next-env.d.ts
+src/lib/schema-sql.ts
+src/lib/seed-legacy.ts

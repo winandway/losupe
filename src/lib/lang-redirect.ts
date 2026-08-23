@@ -1,7 +1,16 @@
 import { isLang, pickLangFromAcceptLanguage } from "@/i18n/config";
 
 // Rutas que no llevan prefijo de idioma y nunca se redirigen.
-const SKIP_PREFIXES = ["/_next/", "/img/", "/brand/", "/media/", "/datos/", "/__scheduled", "/noticia/"];
+const SKIP_PREFIXES = [
+  "/_next/",
+  "/img/",
+  "/brand/",
+  "/media/",
+  "/datos/",
+  "/__scheduled",
+  "/__health",
+  "/noticia/",
+];
 const SKIP_EXACT = new Set([
   "/robots.txt",
   "/sitemap.xml",

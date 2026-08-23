@@ -33,10 +33,16 @@ for (const route of ROUTES_200) {
 }
 
 test("la raíz redirige al idioma del navegador", async ({ request }) => {
-  const es = await request.get("/", { maxRedirects: 0, headers: { "accept-language": "es-CO,es;q=0.9" } });
+  const es = await request.get("/", {
+    maxRedirects: 0,
+    headers: { "accept-language": "es-CO,es;q=0.9" },
+  });
   expect(es.status()).toBe(307);
   expect(es.headers()["location"]).toMatch(/\/es$/);
-  const en = await request.get("/", { maxRedirects: 0, headers: { "accept-language": "en-US,en;q=0.9" } });
+  const en = await request.get("/", {
+    maxRedirects: 0,
+    headers: { "accept-language": "en-US,en;q=0.9" },
+  });
   expect(en.headers()["location"]).toMatch(/\/en$/);
 });
 
@@ -49,6 +55,15 @@ test("cabeceras de seguridad presentes", async ({ request }) => {
   expect(h["strict-transport-security"]).toContain("max-age=");
   expect(h["referrer-policy"]).toBe("strict-origin-when-cross-origin");
   expect(h["x-powered-by"]).toBeUndefined();
+});
+
+test("/__health reporta la base en verde", async ({ request }) => {
+  const res = await request.get("/__health");
+  expect(res.status()).toBe(200);
+  const body = (await res.json()) as { ok: boolean; db: { binding: boolean; articles: number } };
+  expect(body.ok).toBe(true);
+  expect(body.db.binding).toBe(true);
+  expect(body.db.articles).toBeGreaterThan(0);
 });
 
 test("el robot solo responde al programador", async ({ request }) => {
@@ -64,7 +79,10 @@ test("el robot solo responde al programador", async ({ request }) => {
 test("portada: noticias heredadas, selector de idioma y artículo abre", async ({ page }) => {
   await page.goto("/es");
   await expect(page.getByRole("link", { name: "English" })).toHaveAttribute("href", /^\/en/);
-  await expect(page.getByRole("link", { name: "Windoce LLC" })).toHaveAttribute("href", "https://windoce.com");
+  await expect(page.getByRole("link", { name: "Windoce LLC" })).toHaveAttribute(
+    "href",
+    "https://windoce.com",
+  );
   const first = page.locator("article h2 a, article h3 a").first();
   await expect(first).toBeVisible();
   const href = await first.getAttribute("href");

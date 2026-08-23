@@ -30,6 +30,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Incrustar esquema
+        run: npm run schema:embed
+
       - name: Tipos
         run: npm run typecheck
 

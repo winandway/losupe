@@ -7,21 +7,24 @@ fuentes, elige temas, redacta notas nuevas, las ilustra y las publica. Todo vive
 Nace de **MundosCrypto** (portal de criptomonedas): su archivo de noticias se conserva en la
 sección Cripto.
 
-| Pieza            | Tecnología                                                           |
-| ---------------- | -------------------------------------------------------------------- |
-| Sitio            | Next.js 16 (App Router) + Tailwind 4, empaquetado con OpenNext       |
-| Plataforma       | YaDominios Cloud (`env.DB` D1, `env.BUCKET` R2, `env.ASSETS`, crons) |
-| Idiomas          | `/es/...` y `/en/...` con selector de banderas y respaldo al español |
-| Robot            | `GET /__scheduled` (programador de YaDominios) → `src/lib/robot/`    |
-| Pruebas          | Vitest + Testing Library + msw (unitarias) · Playwright (humo e2e)   |
-| Calidad/seguridad| TypeScript estricto, ESLint + plugin security, gitleaks, CI          |
+| Pieza               | Tecnología                                                                                 |
+| ------------------- | ------------------------------------------------------------------------------------------ |
+| Sitio               | Next.js 16 (App Router) + Tailwind 4, empaquetado con OpenNext                             |
+| Plataforma          | YaDominios Cloud (`env.DB` D1, `env.BUCKET` R2, `env.ASSETS`, crons)                       |
+| Idiomas             | `/es/...` y `/en/...` con selector de banderas y respaldo al español                       |
+| Robot               | `GET /__scheduled` (programador de YaDominios) → `src/lib/robot/`                          |
+| Base autogestionada | El worker crea el esquema y siembra las noticias heredadas solo; estado en `GET /__health` |
+| Pruebas             | Vitest + Testing Library + msw (unitarias) · Playwright (humo e2e)                         |
+| Calidad/seguridad   | TypeScript estricto, ESLint + plugin security, gitleaks, CI                                |
 
 ## Mapa del repo
 
 ```
-schema.sql                 Esquema D1 idempotente (YaDominios lo corre en cada publicación)
-seed/legacy-mundoscrypto.sql  Noticias heredadas (se cargan una vez; ver docs/publicar-en-yadominios.md)
-worker.ts                  Worker de producción: envuelve Next (OpenNext) y agrega /__scheduled
+schema.sql                 Esquema D1 idempotente (se incrusta en el worker; también lo corre YaDominios)
+seed/legacy-mundoscrypto.sql  Noticias heredadas (se incrustan y se siembran solas una vez)
+scripts/embed-schema.mjs   Genera src/lib/schema-sql.ts y src/lib/seed-legacy.ts (antes de cada build)
+worker.ts                  Worker de producción: envuelve Next (OpenNext), garantiza la base,
+                           redirige por idioma y agrega /__health y /__scheduled
 yadominios.json            Config que se publica (crons, flags)
 wrangler.jsonc             Bindings locales para next dev / preview
 src/app/[lang]/...         Portada, sección, artículo, autor, buscar, acerca, rss.xml, 404
@@ -71,6 +74,6 @@ Plan completo: [docs/plan-losupe-2026-08-22.pdf](docs/plan-losupe-2026-08-22.pdf
 
 ## Capturas (bloque 1)
 
-| Portada (móvil) | Nota (móvil) | Portada (escritorio) |
-| --- | --- | --- |
+| Portada (móvil)                          | Nota (móvil)                          | Portada (escritorio)                          |
+| ---------------------------------------- | ------------------------------------- | --------------------------------------------- |
 | ![](docs/img/capturas/portada-movil.png) | ![](docs/img/capturas/nota-movil.png) | ![](docs/img/capturas/portada-escritorio.png) |

@@ -36,6 +36,8 @@ export class FakeD1 {
       },
       run: async () => {
         record();
+        // Las escrituras también pasan por el respondedor, para que la prueba pueda reaccionar.
+        this.responder(sql, params);
         return { success: true, meta: {} };
       },
       raw: async () => [],

@@ -23,31 +23,30 @@ https://yadominios.com/docs/publicar-en-yadominios-cloud
 
 ![Croquis del formulario: nombre losupe, repo winandway/losupe, rama yapanel-build](img/croquis-yadominios-publicar.png)
 
-  Valores, casilla por casilla:
+Valores, casilla por casilla:
 
-  - **Nombre del sitio:** `losupe`
-  - **Repositorio:** `winandway/losupe`
-  - **Rama:** `yapanel-build` (no `main`)
+- **Nombre del sitio:** `losupe`
+- **Repositorio:** `winandway/losupe`
+- **Rama:** `yapanel-build` (no `main`)
 
 - **Cómo se comprueba:** `https://losupe.sitios.dev/es` abre la portada con las noticias
   heredadas (después del paso 3) y `https://losupe.sitios.dev/__scheduled` responde 404 (solo lo
   puede llamar el programador).
 
-## 3. Cargar las noticias heredadas (una sola vez)
+## 3. La base se crea y se siembra sola
 
-- **Qué es:** `schema.sql` crea las tablas y los datos base en cada publicación, pero las 33
-  noticias de MundosCrypto se cargan aparte con la API de la base (valores parametrizados, sin
-  riesgo al partir sentencias).
-- **Quién:** yo, con el token del sitio que me pasa Richard (panel → tarjeta del sitio → «Ver
-  token»; se muestra una sola vez y **nunca** se commitea).
-- **Qué pasa:**
-
-  ```bash
-  cd /Users/windocellc/losupe.com && YADOMINIOS_SITE=losupe YADOMINIOS_SITE_TOKEN=<token> npx tsx scripts/db-remote-import.ts seed/legacy-mundoscrypto.sql
-  ```
-
-- **Cómo se comprueba:** `https://losupe.sitios.dev/es/cripto` lista las notas y
-  `https://losupe.sitios.dev/sitemap.xml` las incluye.
+- **Qué es:** el worker lleva adentro el esquema (`schema.sql`) y la semilla con las 33 noticias
+  de MundosCrypto (`seed/legacy-mundoscrypto.sql`), incrustados en el build por
+  `scripts/embed-schema.mjs`. En la primera petición comprueba la base: si faltan tablas las crea,
+  y si la marca `legacy_seeded` no existe, siembra las noticias **una sola vez**. Después
+  reverifica cada 5 minutos con una consulta barata. No depende de que la plataforma ejecute
+  `schema.sql` ni de ningún token.
+- **Quién:** nadie; automático.
+- **Cómo se comprueba:** `https://losupe.sitios.dev/__health` responde `{"ok":true, ... "articles":33}`
+  y `https://losupe.sitios.dev/es/cripto` lista las notas. Si `ok` es `false`, el campo `error`
+  dice por qué (por ejemplo, el sitio no tiene base de datos en su plan).
+- **Plan B manual (solo si hiciera falta):** `scripts/db-remote-import.ts` carga un `.sql` por la
+  API HTTP del panel con el token del sitio (se muestra una sola vez y nunca se commitea).
 
 ## 4. Conectar el dominio losupe.com
 
