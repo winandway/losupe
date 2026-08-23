@@ -2,22 +2,22 @@ import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 import {
-  applyLegacySeed,
   applySchema,
+  applySeed,
   createSchemaGuard,
-  ensureLegacySeed,
   ensureSchema,
+  ensureSeed,
   getStoredSchemaHash,
   hasCoreTables,
   hashSchema,
-  isLegacySeeded,
-  LEGACY_SEED_FLAG,
+  isSeedApplied,
   SCHEMA_HASH_KEY,
   splitSql,
+  type ContentSeed,
 } from "@/lib/schema-guard";
 import { buildHealthReport } from "@/lib/health";
 import { SCHEMA_SQL } from "@/lib/schema-sql";
-import { LEGACY_SEED } from "@/lib/seed-legacy";
+import { CONTENT_SEEDS } from "@/lib/seed-content";
 import { FakeD1 } from "./fake-d1";
 
 const SCHEMA = readFileSync(resolve(process.cwd(), "schema.sql"), "utf8");
@@ -39,12 +39,14 @@ function fakeDb(opts: { tables?: number; hash?: string | null; seeded?: boolean 
     if (sql.includes("sqlite_master")) return [{ n: state.tables }];
     if (sql.includes("FROM settings")) {
       if (params[0] === SCHEMA_HASH_KEY) return state.hash ? [{ value: state.hash }] : [];
-      if (params[0] === LEGACY_SEED_FLAG) return state.seeded ? [{ value: "1" }] : [];
+      if (String(params[0]).startsWith("seed:") || params[0] === "legacy_seeded")
+        return state.seeded ? [{ value: "1" }] : [];
       return [];
     }
     if (sql.includes("INSERT OR REPLACE INTO settings")) {
       if (params[0] === SCHEMA_HASH_KEY) state.hash = String(params[1]);
-      if (params[0] === LEGACY_SEED_FLAG) state.seeded = true;
+      if (String(params[0]).startsWith("seed:") || params[0] === "legacy_seeded")
+        state.seeded = true;
       return [];
     }
     return [];
@@ -151,35 +153,46 @@ describe("ensureSchema", () => {
   });
 });
 
-describe("semilla heredada", () => {
-  const SEED = [
-    "INSERT OR IGNORE INTO authors (id, name) VALUES ('x', 'X')",
-    "INSERT OR IGNORE INTO articles (id) VALUES ('a')",
-  ];
+describe("semillas de contenido", () => {
+  const SEED: ContentSeed = {
+    id: "prueba",
+    flag: "seed:prueba:abc",
+    statements: [
+      "INSERT OR IGNORE INTO authors (id, name) VALUES ('x', 'X')",
+      "INSERT OR IGNORE INTO articles (id) VALUES ('a')",
+    ],
+  };
 
   it("siembra una sola vez y deja la marca en settings", async () => {
     const { db } = fakeDb({ tables: 5, hash: HASH });
-    const first = await ensureLegacySeed(db.asD1(), SEED);
-    expect(first).toEqual({ seeded: true, applied: true, statements: 2 });
+    const first = await ensureSeed(db.asD1(), SEED);
+    expect(first).toEqual({ id: "prueba", seeded: true, applied: true, statements: 2 });
     expect(db.batched).toHaveLength(2);
-    const second = await ensureLegacySeed(db.asD1(), SEED);
-    expect(second).toEqual({ seeded: true, applied: false, statements: 2 });
+    const second = await ensureSeed(db.asD1(), SEED);
+    expect(second).toEqual({ id: "prueba", seeded: true, applied: false, statements: 2 });
     expect(db.batched).toHaveLength(2);
-    expect(await isLegacySeeded(db.asD1())).toBe(true);
+    expect(await isSeedApplied(db.asD1(), SEED.flag)).toBe(true);
   });
 
   it("aplica en lotes del tamaño pedido", async () => {
     const { db } = fakeDb();
-    await applyLegacySeed(
+    await applySeed(
       db.asD1(),
-      Array.from({ length: 45 }, (_, i) => `INSERT OR IGNORE INTO t VALUES (${i})`),
+      {
+        id: "lotes",
+        flag: "seed:lotes",
+        statements: Array.from({ length: 45 }, (_, i) => `INSERT OR IGNORE INTO t VALUES (${i})`),
+      },
       20,
     );
     expect(db.batched).toHaveLength(45);
   });
 
-  it("sin semilla o con error no rompe", async () => {
-    expect(await ensureLegacySeed(new FakeD1().asD1(), [])).toEqual({
+  it("sin sentencias o con error no rompe", async () => {
+    expect(
+      await ensureSeed(new FakeD1().asD1(), { id: "vacia", flag: "seed:vacia", statements: [] }),
+    ).toEqual({
+      id: "vacia",
       seeded: true,
       applied: false,
       statements: 0,
@@ -189,32 +202,38 @@ describe("semilla heredada", () => {
         throw new Error("sin settings");
       },
     } as unknown as D1Database;
-    const r = await ensureLegacySeed(broken, SEED);
+    const r = await ensureSeed(broken, SEED);
     expect(r.seeded).toBe(false);
     expect(r.error).toContain("sin settings");
   });
 
   it("el guardián siembra después de crear el esquema y no lo repite", async () => {
     const { db, state } = fakeDb({ tables: 0 });
-    const guard = createSchemaGuard(SCHEMA, { seed: SEED, ttlMs: 0 });
+    const guard = createSchemaGuard(SCHEMA, { seeds: [SEED], ttlMs: 0 });
     const s1 = await guard.ensure(db.asD1());
     expect(s1.applied).toBe(true);
-    expect(s1.seed).toEqual({ seeded: true, applied: true, statements: 2 });
+    expect(s1.seeds).toEqual([{ id: "prueba", seeded: true, applied: true, statements: 2 }]);
     state.tables = 5; // ya existen las tablas y la huella coincide
     const s2 = await guard.ensure(db.asD1());
-    expect(s2.seed?.applied).toBe(false);
+    expect(s2.seeds?.[0]?.applied).toBe(false);
     expect(db.batched).toHaveLength(splitSql(SCHEMA).length + 2);
   });
 
-  it("la semilla real incrustada tiene las 33 noticias y cada sentencia es un INSERT completo", () => {
-    expect(LEGACY_SEED.length).toBeGreaterThanOrEqual(66);
-    for (const s of LEGACY_SEED) {
-      expect(s.startsWith("INSERT OR IGNORE INTO ")).toBe(true);
-      expect(s.endsWith(")")).toBe(true);
+  it("las semillas reales incrustadas: archivo de MundosCrypto (33 notas) y notas editoriales", () => {
+    const legacy = CONTENT_SEEDS.find((s) => s.id === "legacy-mundoscrypto");
+    expect(legacy?.flag).toBe("legacy_seeded");
+    expect(
+      legacy?.statements.filter((s) => s.startsWith("INSERT OR IGNORE INTO articles ")).length,
+    ).toBe(33);
+    for (const s of legacy?.statements ?? []) expect(s.endsWith(")")).toBe(true);
+    const editorial = CONTENT_SEEDS.filter((s) => s.id !== "legacy-mundoscrypto");
+    expect(editorial.length).toBeGreaterThanOrEqual(1);
+    for (const seed of editorial) {
+      expect(seed.flag.startsWith(`seed:${seed.id}:`)).toBe(true);
+      expect(seed.flag.split(":")[2]).toMatch(/^[0-9a-f]{8}$/);
+      expect(seed.statements[0]).toMatch(/^INSERT OR REPLACE INTO articles /);
+      expect(seed.statements.length).toBeGreaterThanOrEqual(3);
     }
-    expect(LEGACY_SEED.filter((s) => s.startsWith("INSERT OR IGNORE INTO articles ")).length).toBe(
-      33,
-    );
   });
 });
 

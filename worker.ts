@@ -9,15 +9,15 @@
 // @ts-ignore `.open-next/worker.js` se genera en el build (opennextjs-cloudflare build)
 import { default as nextHandler } from "./.open-next/worker.js";
 import { SCHEMA_SQL } from "./src/lib/schema-sql";
-import { LEGACY_SEED } from "./src/lib/seed-legacy";
+import { CONTENT_SEEDS } from "./src/lib/seed-content";
 import { buildHealthReport } from "./src/lib/health";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
 import { createSchemaGuard } from "./src/lib/schema-guard";
 
-// Esquema + semilla heredada (33 noticias de MundosCrypto) viajan dentro del worker:
-// la base se crea y se siembra sola la primera vez, sin pasos manuales.
-const schemaGuard = createSchemaGuard(SCHEMA_SQL, { seed: LEGACY_SEED });
+// Esquema + semillas (archivo de MundosCrypto y notas editoriales) viajan dentro del worker:
+// la base se crea y se siembra sola, sin pasos manuales.
+const schemaGuard = createSchemaGuard(SCHEMA_SQL, { seeds: CONTENT_SEEDS });
 
 export default {
   async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {

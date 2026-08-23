@@ -37,7 +37,8 @@ const eslintConfig = defineConfig([
     "test-results/**",
     "public/**",
     "src/lib/schema-sql.ts",
-    "src/lib/seed-legacy.ts",
+    "src/lib/seed-content.ts",
+    "seed/**",
   ]),
 ]);
 

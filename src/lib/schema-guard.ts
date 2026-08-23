@@ -1,7 +1,7 @@
 /**
- * Garantiza que la base tenga el esquema aunque la plataforma no haya ejecutado schema.sql.
- * Idempotente (el esquema usa IF NOT EXISTS / INSERT OR IGNORE) y se comprueba una vez por
- * instancia del worker.
+ * Garantiza que la base tenga el esquema aunque la plataforma no haya ejecutado schema.sql,
+ * y siembra contenido editorial empaquetado en el worker (una sola vez por semilla).
+ * Todo es idempotente y se comprueba una vez por instancia del worker (con reverificación).
  */
 
 /** Parte un archivo SQL en sentencias (una termina en ";" + salto de línea). Ignora comentarios. */
@@ -18,7 +18,21 @@ export function splitSql(sql: string): string[] {
     .filter((stmt) => stmt.length > 0);
 }
 
-export type SeedStatus = { seeded: boolean; applied: boolean; statements: number; error?: string };
+export type SeedStatus = {
+  id: string;
+  seeded: boolean;
+  applied: boolean;
+  statements: number;
+  error?: string;
+};
+
+export type ContentSeed = {
+  /** Identificador legible (p. ej. "legacy-mundoscrypto" o "2026-08-23-mercatren"). */
+  id: string;
+  /** Clave en `settings` que marca la semilla como aplicada. */
+  flag: string;
+  statements: readonly string[];
+};
 
 export type SchemaStatus = {
   binding: boolean;
@@ -27,12 +41,12 @@ export type SchemaStatus = {
   /** true cuando las tablas existían pero el esquema cambió y se volvió a aplicar. */
   upgraded?: boolean;
   error?: string;
-  seed?: SeedStatus;
+  seeds?: SeedStatus[];
 };
 
 export const SCHEMA_HASH_KEY = "schema_hash";
 
-/** Huella corta del texto del esquema (FNV-1a 32 bits). Cambia cuando cambia schema.sql. */
+/** Huella corta de un texto (FNV-1a 32 bits). Cambia cuando cambia el contenido. */
 export function hashSchema(sql: string): string {
   let h = 0x811c9dc5;
   for (let i = 0; i < sql.length; i++) {
@@ -42,11 +56,11 @@ export function hashSchema(sql: string): string {
   return h.toString(16).padStart(8, "0");
 }
 
-export async function getStoredSchemaHash(db: D1Database): Promise<string | null> {
+async function getSetting(db: D1Database, key: string): Promise<string | null> {
   try {
     const row = await db
       .prepare(`SELECT value FROM settings WHERE key = ?1`)
-      .bind(SCHEMA_HASH_KEY)
+      .bind(key)
       .first<{ value: string }>();
     return row?.value ?? null;
   } catch {
@@ -54,59 +68,53 @@ export async function getStoredSchemaHash(db: D1Database): Promise<string | null
   }
 }
 
-export async function storeSchemaHash(db: D1Database, hash: string): Promise<void> {
+async function setSetting(db: D1Database, key: string, value: string): Promise<void> {
   await db
     .prepare(
       `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, datetime('now'))`,
     )
-    .bind(SCHEMA_HASH_KEY, hash)
+    .bind(key, value)
     .run();
 }
 
-export const LEGACY_SEED_FLAG = "legacy_seeded";
-
-export async function isLegacySeeded(db: D1Database): Promise<boolean> {
-  const row = await db
-    .prepare(`SELECT value FROM settings WHERE key = ?1`)
-    .bind(LEGACY_SEED_FLAG)
-    .first<{ value: string }>();
-  return row?.value === "1";
+export async function getStoredSchemaHash(db: D1Database): Promise<string | null> {
+  return getSetting(db, SCHEMA_HASH_KEY);
 }
 
-/** Aplica la semilla en lotes y deja la marca para no repetirla nunca más en esa base. */
-export async function applyLegacySeed(
+export async function storeSchemaHash(db: D1Database, hash: string): Promise<void> {
+  await setSetting(db, SCHEMA_HASH_KEY, hash);
+}
+
+export async function isSeedApplied(db: D1Database, flag: string): Promise<boolean> {
+  return (await getSetting(db, flag)) === "1";
+}
+
+/** Aplica una semilla en lotes y deja la marca para no repetirla en esa base. */
+export async function applySeed(
   db: D1Database,
-  statements: readonly string[],
+  seed: ContentSeed,
   chunkSize = 20,
 ): Promise<number> {
-  for (let i = 0; i < statements.length; i += chunkSize) {
-    const chunk = statements.slice(i, i + chunkSize);
+  for (let i = 0; i < seed.statements.length; i += chunkSize) {
+    const chunk = seed.statements.slice(i, i + chunkSize);
     await db.batch(chunk.map((s) => db.prepare(s)));
   }
-  await db
-    .prepare(
-      `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, '1', datetime('now'))`,
-    )
-    .bind(LEGACY_SEED_FLAG)
-    .run();
-  return statements.length;
+  await setSetting(db, seed.flag, "1");
+  return seed.statements.length;
 }
 
-export async function ensureLegacySeed(
-  db: D1Database,
-  statements: readonly string[],
-): Promise<SeedStatus> {
-  if (statements.length === 0) return { seeded: true, applied: false, statements: 0 };
+export async function ensureSeed(db: D1Database, seed: ContentSeed): Promise<SeedStatus> {
+  const base = { id: seed.id, statements: seed.statements.length };
+  if (seed.statements.length === 0) return { ...base, seeded: true, applied: false };
   try {
-    if (await isLegacySeeded(db))
-      return { seeded: true, applied: false, statements: statements.length };
-    const n = await applyLegacySeed(db, statements);
-    return { seeded: true, applied: true, statements: n };
+    if (await isSeedApplied(db, seed.flag)) return { ...base, seeded: true, applied: false };
+    await applySeed(db, seed);
+    return { ...base, seeded: true, applied: true };
   } catch (error) {
     return {
+      ...base,
       seeded: false,
       applied: false,
-      statements: statements.length,
       error: error instanceof Error ? error.message : String(error),
     };
   }
@@ -159,18 +167,19 @@ export async function ensureSchema(
 /**
  * Memoriza la comprobación por instancia del worker: un éxito vale `ttlMs` (5 min por defecto),
  * después se vuelve a verificar con una consulta barata. `force` obliga a comprobar ya.
+ * Las semillas se confirman una vez por instancia (la marca en `settings` evita repetirlas).
  */
 export function createSchemaGuard(
   schemaSql: string,
-  opts: { ttlMs?: number; now?: () => number; seed?: readonly string[] } = {},
+  opts: { ttlMs?: number; now?: () => number; seeds?: readonly ContentSeed[] } = {},
 ) {
   const ttlMs = opts.ttlMs ?? 5 * 60 * 1000;
   const now = opts.now ?? (() => Date.now());
-  const seed = opts.seed ?? [];
+  const seeds = opts.seeds ?? [];
   let pending: Promise<SchemaStatus> | null = null;
   let last: SchemaStatus | null = null;
   let lastAt = 0;
-  let seedConfirmed = false;
+  const confirmed = new Set<string>();
   return {
     ensure(db: D1Database | undefined, { force = false } = {}): Promise<SchemaStatus> {
       const healthy = last?.binding && (last.hadTables || last.applied);
@@ -178,12 +187,23 @@ export function createSchemaGuard(
       if (!pending) {
         pending = ensureSchema(db, schemaSql)
           .then(async (status) => {
-            // Semilla heredada: una sola vez por base (marca en settings), nunca si el esquema falló.
-            if (db && status.binding && !status.error && seed.length > 0 && !seedConfirmed) {
-              status.seed = await ensureLegacySeed(db, seed);
-              seedConfirmed = status.seed.seeded;
-            } else if (seedConfirmed) {
-              status.seed = { seeded: true, applied: false, statements: seed.length };
+            if (db && status.binding && !status.error && seeds.length > 0) {
+              const results: SeedStatus[] = [];
+              for (const seed of seeds) {
+                if (confirmed.has(seed.id)) {
+                  results.push({
+                    id: seed.id,
+                    seeded: true,
+                    applied: false,
+                    statements: seed.statements.length,
+                  });
+                  continue;
+                }
+                const result = await ensureSeed(db, seed);
+                if (result.seeded) confirmed.add(seed.id);
+                results.push(result);
+              }
+              status.seeds = results;
             }
             return status;
           })

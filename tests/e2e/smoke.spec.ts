@@ -26,6 +26,9 @@ const ROUTES_200 = [
   "/video/hero.mp4",
   "/video/hero-poster.jpg",
   "/es/autor/magaly-molina",
+  "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+  "/en/sales/pedro-llerena-launches-mercatren-1-3-million-products-store-taking-on-amazon",
+  "/img/notas/mercatren/home.jpg",
 ];
 
 for (const route of ROUTES_200) {
@@ -105,10 +108,32 @@ test("portada: noticias heredadas, selector de idioma y artículo abre", async (
   const first = page.locator("article h2 a, article h3 a").first();
   await expect(first).toBeVisible();
   const href = await first.getAttribute("href");
-  expect(href).toMatch(/^\/es\/cripto\//);
+  expect(href).toMatch(/^\/es\/[a-z]+\/[a-z0-9-]+$/);
   await page.goto(href!);
   await expect(page.locator("article h1")).toBeVisible();
   await expect(page.locator('script[type="application/ld+json"]').first()).toHaveCount(1);
+});
+
+test("la nota de Mercatren es la principal, firmada por Magaly Molina y con aviso de IA", async ({
+  page,
+}) => {
+  await page.goto("/es");
+  const hero = page.locator("article").first();
+  await expect(hero.locator("h2 a")).toHaveText(/Pedro Llerena lanza Mercatren/);
+  await expect(hero.getByRole("link", { name: "Magaly Molina" })).toHaveAttribute(
+    "href",
+    "/es/autor/magaly-molina",
+  );
+  await page.goto(
+    "/es/ventas/pedro-llerena-lanza-mercatren-tienda-1-3-millones-de-productos-competir-amazon",
+  );
+  await expect(page.locator("article h1")).toHaveText(/Dejamos el miedo a un lado/);
+  await expect(page.locator("article .prose figure img").first()).toBeVisible();
+  await expect(page.getByText("Redacción asistida por inteligencia artificial")).toBeVisible();
+  await expect(page.getByRole("link", { name: "Mercatren — sitio oficial" })).toHaveAttribute(
+    "href",
+    "https://mercatren.com/es",
+  );
 });
 
 test("el mismo artículo se abre en inglés con aviso de respaldo", async ({ page }) => {
