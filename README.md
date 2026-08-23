@@ -22,7 +22,8 @@ sección Cripto.
 ```
 schema.sql                 Esquema D1 idempotente (se incrusta en el worker; también lo corre YaDominios)
 seed/legacy-mundoscrypto.sql  Noticias heredadas (se incrustan y se siembran solas una vez)
-scripts/embed-schema.mjs   Genera src/lib/schema-sql.ts y src/lib/seed-legacy.ts (antes de cada build)
+seed/content/*.mjs         Notas editoriales puntuales (ES/EN) que se publican al hacer push
+scripts/embed-schema.mjs   Genera src/lib/schema-sql.ts y src/lib/seed-content.ts (antes de cada build)
 worker.ts                  Worker de producción: envuelve Next (OpenNext), garantiza la base,
                            redirige por idioma y agrega /__health y /__scheduled
 yadominios.json            Config que se publica (crons, flags)
@@ -63,6 +64,14 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   (firma por defecto de lo nuevo: `settings.default_author`).
 - Esquema versionado por huella: si `schema.sql` cambia, el worker lo reaplica solo
   (`settings.schema_hash`), así que agregar un autor o una columna es editar `schema.sql` y publicar.
+
+## Publicar una nota a mano (sin panel todavía)
+
+1. Crea `seed/content/AAAA-MM-DD-tema.mjs` copiando `seed/content/2026-08-23-mercatren.mjs` (artículo + `i18n.es` + `i18n.en`, imágenes en `public/img/notas/...`).
+2. `npm run schema:embed` y `git push`. El worker la siembra en la primera visita (marca por huella: si editas la nota y vuelves a publicar, se actualiza).
+3. Comprueba en `/__health` que la semilla aparece con `seeded: true`.
+
+En el bloque 2 el robot y el panel escriben directo en la base; este camino queda para notas puntuales.
 
 ## Variables de entorno
 
