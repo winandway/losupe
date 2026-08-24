@@ -22,6 +22,14 @@ import { franjaActiva, marcaDeFranja, type Franja } from "./franjas";
 export const TICK_KEY = "robot_last_tick";
 export const TICK_TOKEN_KEY = "robot_tick_token";
 
+/**
+ * Cuántas veces se puede volver a intentar la nota DENTRO de su franja. Sin esto, una corrida que
+ * se corta a media escritura (pasa: el worker tiene su presupuesto de tiempo) se llevaba por
+ * delante la nota del turno, y nadie se enteraba hasta ver el hueco en la portada. Reintentar
+ * dentro de la franja NO es acumular turnos: pasada la ventana, el turno se pierde igual.
+ */
+export const MAX_INTENTOS_POR_FRANJA = 3;
+
 export type TickDecision =
   | { run: false; reason: "paused" | "fuera_de_horario" | "turno_hecho" | "no_db" | "error" }
   | { run: true; franja: Franja["key"]; marca: string };
@@ -46,7 +54,7 @@ export async function claimTick(
 
     const franja = franjaActiva(now);
     if (!franja) return { run: false, reason: "fuera_de_horario" };
-    const marca = marcaDeFranja(now, franja);
+    const base = marcaDeFranja(now, franja);
 
     // Primera vez: si la marca no existe, se crea vacía para que el turno pueda reclamarse.
     await db
@@ -55,6 +63,27 @@ export async function claimTick(
       )
       .bind(TICK_KEY)
       .run();
+
+    // ¿Este turno ya se intentó? Si la corrida anterior terminó bien, no hay nada que hacer. Si se
+    // cortó o falló, se puede volver a intentar DENTRO de la misma franja, hasta tres veces.
+    const actual =
+      (
+        await db
+          .prepare(`SELECT value FROM settings WHERE key = ?1`)
+          .bind(TICK_KEY)
+          .first<{ value: string }>()
+      )?.value ?? "";
+    let intento = 1;
+    if (actual === base || actual.startsWith(`${base}#`)) {
+      const previo = actual === base ? 1 : Number(actual.slice(base.length + 1)) || 1;
+      if (previo >= MAX_INTENTOS_POR_FRANJA) return { run: false, reason: "turno_hecho" };
+      const ultima = await db
+        .prepare(`SELECT status FROM runs ORDER BY started_at DESC LIMIT 1`)
+        .first<{ status: string }>();
+      if (ultima?.status !== "error") return { run: false, reason: "turno_hecho" };
+      intento = previo + 1;
+    }
+    const marca = intento === 1 ? base : `${base}#${intento}`;
 
     // Gana el turno quien logre escribir la marca de ESTA franja. El `value <> ?2` deja pasar a una
     // sola petición: las demás encuentran la marca ya puesta y se van.

@@ -344,9 +344,16 @@ diario…`, 23 ago 2026).
      capacidad»_. Solo se repite si todo el equipo ya publicó.
   5. El cron dispara las dos horas UTC posibles de cada franja (verano e invierno). No hay riesgo de
      nota doble: el segundo disparo encuentra el turno ya marcado.
+  6. **Reintento dentro de la franja** (añadido el mismo día, tras ver una corrida cortarse a media
+     escritura): si la corrida del turno termina en error, el turno se puede volver a reclamar hasta
+     tres veces DENTRO de su ventana, marcando `2026-08-24:mediodia#2`. Sin esto, un corte del
+     worker se llevaba por delante la nota del turno y nadie se enteraba hasta ver el hueco en la
+     portada — el fallo en silencio de siempre. Reintentar dentro de la franja no es acumular
+     turnos: pasada la ventana, se pierde igual.
 - **Candado:** `tests/unit/franjas.test.ts` (con las tres horas reales del fallo como caso de
-  prueba) y el bloque «piloto automático por franjas» de `tests/unit/correo-boletin.test.ts`; la
-  rotación, en `tests/unit/autores.test.ts` → «una firma por franja».
+  prueba) y los bloques «piloto automático por franjas» y «una corrida cortada no se lleva la nota
+  del turno» de `tests/unit/correo-boletin.test.ts`; la rotación, en `tests/unit/autores.test.ts`
+  → «una firma por franja».
 - **Comprobado en rojo:** quitando el `if (!franja) return …` de `claimTick`, la prueba «DE
   MADRUGADA NO CORRE» falla. Con el arreglo puesto, todo en verde.
 - **Qué NO tocar:** no vuelvas a contar el día con `toISOString().slice(0,10)` — eso es UTC y aquí

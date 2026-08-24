@@ -296,3 +296,65 @@ describe("recuperación de corridas cortadas y llamada interna", () => {
     expect(await getTickToken(db)).toBe(uno);
   });
 });
+
+describe("una corrida cortada no se lleva la nota del turno", () => {
+  const MEDIODIA = new Date("2026-08-24T16:30:00Z");
+
+  /** Base falsa que devuelve una marca de turno ya puesta y el estado de la última corrida. */
+  function db(marca: string, estadoUltima: string, changes = 1) {
+    const calls: { sql: string; params: unknown[] }[] = [];
+    return {
+      calls,
+      d1: {
+        prepare: (sql: string) => ({
+          bind: (...params: unknown[]) => ({
+            first: async () => {
+              calls.push({ sql, params });
+              return { value: marca };
+            },
+            run: async () => {
+              calls.push({ sql, params });
+              return { meta: { changes: sql.startsWith("UPDATE settings") ? changes : 1 } };
+            },
+          }),
+          first: async () =>
+            sql.includes("robot_paused")
+              ? { value: "0" }
+              : sql.includes("FROM runs")
+                ? { status: estadoUltima }
+                : { value: marca },
+        }),
+      } as unknown as D1Database,
+    };
+  }
+
+  it("si la corrida del turno se cortó, se vuelve a intentar en la misma franja", async () => {
+    const r = await claimTick(db("2026-08-24:mediodia", "error").d1, MEDIODIA);
+    expect(r).toEqual({ run: true, franja: "mediodia", marca: "2026-08-24:mediodia#2" });
+  });
+
+  it("si la corrida del turno salió bien, no se repite", async () => {
+    expect(await claimTick(db("2026-08-24:mediodia", "done").d1, MEDIODIA)).toEqual({
+      run: false,
+      reason: "turno_hecho",
+    });
+  });
+
+  it("no se reintenta sin fin: tres intentos y se acabó la franja", async () => {
+    expect(await claimTick(db("2026-08-24:mediodia#2", "error").d1, MEDIODIA)).toMatchObject({
+      run: true,
+      marca: "2026-08-24:mediodia#3",
+    });
+    expect(await claimTick(db("2026-08-24:mediodia#3", "error").d1, MEDIODIA)).toEqual({
+      run: false,
+      reason: "turno_hecho",
+    });
+  });
+
+  it("un turno de OTRA franja no cuenta como intento de esta", async () => {
+    expect(await claimTick(db("2026-08-24:manana#3", "error").d1, MEDIODIA)).toMatchObject({
+      run: true,
+      marca: "2026-08-24:mediodia",
+    });
+  });
+});
