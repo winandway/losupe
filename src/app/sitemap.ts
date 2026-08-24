@@ -52,7 +52,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
       },
     });
-    for (const key of ["editorial", "privacy", "terms"] as const) {
+    // Contacto va con prioridad de página institucional principal: es de las primeras que mira un
+    // revisor de Google Noticias.
+    for (const key of ["contact", "editorial", "privacy", "terms"] as const) {
       entries.push({
         url: absoluteUrl(base, staticPath(key, lang)),
         changeFrequency: "yearly",

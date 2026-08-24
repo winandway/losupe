@@ -45,6 +45,10 @@ export type Author = {
   bio: string | null;
   role: string | null;
   avatarUrl: string | null;
+  /** En qué es experta esta persona. Google mira esto para decidir si la nota la firma alguien que sabe. */
+  expertise: string | null;
+  /** Perfiles públicos. Van al JSON-LD como `sameAs`: es como Google verifica que la persona existe. */
+  links: { linkedin: string | null; x: string | null; email: string | null };
 };
 
 export type Paged<T> = { items: T[]; total: number; page: number; perPage: number; pages: number };
@@ -178,6 +182,11 @@ export function mapAuthor(
     role_es: string | null;
     role_en: string | null;
     avatar_url: string | null;
+    expertise_es?: string | null;
+    expertise_en?: string | null;
+    linkedin_url?: string | null;
+    x_url?: string | null;
+    public_email?: string | null;
   },
   lang: Lang,
 ): Author {
@@ -188,6 +197,12 @@ export function mapAuthor(
     bio: (lang === "en" ? row.bio_en : row.bio_es) ?? row.bio_es,
     role: (lang === "en" ? row.role_en : row.role_es) ?? row.role_es,
     avatarUrl: row.avatar_url,
+    expertise: (lang === "en" ? row.expertise_en : row.expertise_es) ?? row.expertise_es ?? null,
+    links: {
+      linkedin: row.linkedin_url ?? null,
+      x: row.x_url ?? null,
+      email: row.public_email ?? null,
+    },
   };
 }
 
@@ -375,7 +390,8 @@ export async function searchArticles(
 export async function getAuthor(db: D1Database, id: string, lang: Lang): Promise<Author | null> {
   const row = await db
     .prepare(
-      `SELECT id, name, kind, bio_es, bio_en, role_es, role_en, avatar_url
+      `SELECT id, name, kind, bio_es, bio_en, role_es, role_en, avatar_url,
+              expertise_es, expertise_en, linkedin_url, x_url, public_email
        FROM authors WHERE id = ?1 AND active = 1`,
     )
     .bind(id)
@@ -388,6 +404,11 @@ export async function getAuthor(db: D1Database, id: string, lang: Lang): Promise
       role_es: string | null;
       role_en: string | null;
       avatar_url: string | null;
+      expertise_es: string | null;
+      expertise_en: string | null;
+      linkedin_url: string | null;
+      x_url: string | null;
+      public_email: string | null;
     }>();
   return row ? mapAuthor(row, lang) : null;
 }
@@ -396,7 +417,8 @@ export async function getAuthor(db: D1Database, id: string, lang: Lang): Promise
 export async function listWriters(db: D1Database, lang: Lang): Promise<Author[]> {
   const { results } = await db
     .prepare(
-      `SELECT id, name, kind, bio_es, bio_en, role_es, role_en, avatar_url
+      `SELECT id, name, kind, bio_es, bio_en, role_es, role_en, avatar_url,
+              expertise_es, expertise_en, linkedin_url, x_url, public_email
        FROM authors
        WHERE active = 1 AND kind = 'person' AND sections_json IS NOT NULL AND sections_json != '[]'
        ORDER BY name`,

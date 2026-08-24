@@ -150,6 +150,7 @@ export function sectionAlternates(sectionId: ArticleFull["sectionId"]) {
 /** Página de perfil de autor (E-E-A-T): quién firma, con su bio y su página. */
 export function personJsonLd(base: string, lang: Lang, author: Author, brand: string) {
   const url = absoluteUrl(base, authorPath(lang, author.id));
+  const sameAs = [author.links.linkedin, author.links.x].filter((u): u is string => Boolean(u));
   const person = {
     "@type": author.kind === "newsroom" ? "Organization" : "Person",
     name: author.name,
@@ -163,8 +164,19 @@ export function personJsonLd(base: string, lang: Lang, author: Author, brand: st
       name: brand,
       url: base,
     },
-    knowsAbout: ["economía", "ventas", "tecnología", "inteligencia artificial", "criptomonedas"],
+    // Lo que esta persona sabe de verdad, no la lista genérica del medio. Es una de las señales que
+    // Google mira para decidir si la nota la firma alguien con experiencia en el tema.
+    knowsAbout: author.expertise
+      ? author.expertise
+          .split(",")
+          .map((t) => t.trim())
+          .filter(Boolean)
+      : ["economía", "ventas", "tecnología", "inteligencia artificial", "criptomonedas"],
     knowsLanguage: ["es", "en"],
+    // `sameAs` es COMO Google verifica que detrás de la firma hay una persona real: cruza estos
+    // perfiles con lo que ya sabe de ella. Sin esto, un nombre es solo un nombre.
+    ...(sameAs.length > 0 ? { sameAs } : {}),
+    ...(author.links.email ? { email: author.links.email } : {}),
   };
   return {
     "@context": "https://schema.org",

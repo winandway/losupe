@@ -9,6 +9,7 @@ export const ROUTE_WORDS = {
   privacy: { es: "privacidad", en: "privacy" },
   terms: { es: "terminos", en: "terms" },
   publish: { es: "publica", en: "publish" },
+  contact: { es: "contacto", en: "contact" },
 } as const;
 
 type RouteKey = keyof typeof ROUTE_WORDS;
@@ -36,6 +37,11 @@ export function searchPath(lang: Lang, q?: string): string {
 
 export function aboutPath(lang: Lang): string {
   return `/${lang}/${ROUTE_WORDS.about[lang]}`;
+}
+
+/** Página de contacto: es lo primero que mira Google Noticias para saber quién está detrás. */
+export function contactPath(lang: Lang): string {
+  return staticPath("contact", lang);
 }
 
 export function staticPath(key: RouteKey, lang: Lang): string {

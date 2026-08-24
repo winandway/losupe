@@ -4,7 +4,15 @@ import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { formatDate, nowIso } from "@/lib/dates";
 import { SECTIONS } from "@/lib/sections";
-import { aboutPath, homePath, rssPath, searchPath, sectionPath, staticPath } from "@/lib/urls";
+import {
+  aboutPath,
+  contactPath,
+  homePath,
+  rssPath,
+  searchPath,
+  sectionPath,
+  staticPath,
+} from "@/lib/urls";
 import { Botonera, type BotoneraItem } from "./Botonera";
 import { LangSwitcher } from "./LangSwitcher";
 import { Logo } from "./Logo";
@@ -28,6 +36,7 @@ export function Header({ lang, dict }: { lang: Lang; dict: Dict }) {
       color: s.color,
     })),
     { key: "about", label: dict.nav.about, href: aboutPath(lang) },
+    { key: "contact", label: dict.contact.title, href: contactPath(lang) },
   ];
   const secondary: MenuLink[] = [
     { key: "publish", label: dict.publish.nav, href: staticPath("publish", lang) },

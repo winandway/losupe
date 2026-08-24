@@ -5,7 +5,7 @@ import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listWriters } from "@/lib/queries";
-import { aboutPath, authorPath } from "@/lib/urls";
+import { aboutPath, authorPath, contactPath } from "@/lib/urls";
 
 type Props = { params: Promise<{ lang: string }> };
 
@@ -54,6 +54,12 @@ export default async function AboutPage({ params }: Props) {
                   </Link>
                 </p>
                 <p className="text-xs font-semibold uppercase tracking-wide text-muted">{w.role}</p>
+                {w.expertise ? (
+                  <p className="mt-1 text-xs text-muted">
+                    <span className="font-semibold text-ink">{dict.author.expertise}:</span>{" "}
+                    {w.expertise}
+                  </p>
+                ) : null}
                 {w.bio ? <p className="mt-1.5 line-clamp-4 text-sm text-muted">{w.bio}</p> : null}
               </div>
             </li>
@@ -82,6 +88,21 @@ export default async function AboutPage({ params }: Props) {
 
         <h2 className="mt-10 font-display text-2xl font-bold text-ink">{dict.about.originTitle}</h2>
         <p className="mt-3 leading-relaxed">{dict.about.originBody}</p>
+
+        {/* Quién responde y cómo escribirnos. Google Noticias mira esto antes que casi nada: un
+            medio sin editor identificable ni forma de contacto se lee como opaco. */}
+        <h2 className="mt-10 font-display text-2xl font-bold text-ink">
+          {dict.about.publisherTitle}
+        </h2>
+        <p className="mt-3 leading-relaxed">{dict.contact.publisher}</p>
+        <p className="mt-4">
+          <Link
+            href={contactPath(lang)}
+            className="inline-block rounded-full bg-accent px-6 py-3 text-sm font-extrabold uppercase tracking-wide text-ink hover:brightness-95"
+          >
+            {dict.about.contactCta}
+          </Link>
+        </p>
       </article>
     </Container>
   );

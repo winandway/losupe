@@ -287,6 +287,13 @@ ALTER TABLE subscribers ADD COLUMN mail_error TEXT;
 -- Cuantas veces se ha intentado escribir sobre este tema. Sin este contador, un tema que hace
 -- fallar la corrida se vuelve a elegir siempre y paraliza el diario (24 ago 2026).
 ALTER TABLE candidates ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;
+-- Credenciales publicas de cada firma. Google Noticias cruza estos perfiles para comprobar que
+-- detras de una nota hay una persona real y con experiencia (E-E-A-T). Van al JSON-LD como sameAs.
+ALTER TABLE authors ADD COLUMN linkedin_url TEXT;
+ALTER TABLE authors ADD COLUMN x_url TEXT;
+ALTER TABLE authors ADD COLUMN public_email TEXT;
+ALTER TABLE authors ADD COLUMN expertise_es TEXT;
+ALTER TABLE authors ADD COLUMN expertise_en TEXT;
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
 INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES
@@ -412,3 +419,16 @@ UPDATE run_items SET created_at = replace(created_at, ' ', 'T') || 'Z'
   WHERE substr(created_at, 11, 1) = ' ';
 UPDATE run_items SET updated_at = replace(updated_at, ' ', 'T') || 'Z'
   WHERE substr(updated_at, 11, 1) = ' ';
+
+-- Especialidad de cada firma, en palabras que Google entiende como areas de conocimiento. Se
+-- escribe aqui y no en el codigo para que se pueda ajustar sin publicar. Los perfiles de LinkedIn
+-- y X los rellena Richard cuando los tenga: son suyos, no se inventan.
+UPDATE authors SET expertise_es = 'Economía de Estados Unidos, inflación, empleo, tecnología e inteligencia artificial',
+                   expertise_en = 'US economy, inflation, jobs, technology and artificial intelligence'
+ WHERE id = 'andreea-blidar';
+UPDATE authors SET expertise_es = 'Cultura, tendencias, redes sociales, ventas y marketing digital',
+                   expertise_en = 'Culture, trends, social media, sales and digital marketing'
+ WHERE id = 'merry-melina';
+UPDATE authors SET expertise_es = 'Criptomonedas, blockchain, emprendimiento y pequeños negocios',
+                   expertise_en = 'Cryptocurrency, blockchain, entrepreneurship and small business'
+ WHERE id = 'pedro-llerena';

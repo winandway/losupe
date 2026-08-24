@@ -588,3 +588,39 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no vuelvas a dar el aviso cambiando el DOM que React controla; no recortes el
   titular ni el cuerpo; y si añades un formulario al panel, no hace falta que hagas nada — ya está
   cubierto.
+
+## 23. Lo que Google Noticias exige de un medio (transparencia y autoría)
+
+- **De dónde sale (24 ago 2026):** una revisión de losupe.com contra las directrices de Google
+  Noticias señaló que faltaban las señales que un medio serio tiene que dar antes de que lo acepten:
+  no había página de contacto, no se decía quién edita el medio, y las firmas —aunque enlazaban a su
+  perfil— no traían nada que Google pudiera cruzar para comprobar que detrás hay una persona real.
+- **Por qué importa de verdad:** no es cosmética. Google Noticias **penaliza la opacidad**, y la
+  actualización de E-E-A-T pesa la autoridad de quien firma. Un medio sin contacto visible ni autores
+  verificables no entra, por buenas que sean las notas.
+- **Qué se hizo exactamente:**
+  1. **Página de contacto** (`/es/contacto`, `/en/contact`) con correo visible, quién edita el medio
+     (Windoce LLC), para qué escribirnos y un formulario que llega de verdad a la redacción. Lleva
+     `ContactPage` en JSON-LD, respuesta inmediata (el correo sale por detrás) y trampa para robots.
+  2. **Autoría verificable:** columnas nuevas en `authors` (`linkedin_url`, `x_url`,
+     `public_email`, `expertise_es/en`), mostradas en el perfil y **publicadas como `sameAs`** en el
+     JSON-LD, que es literalmente cómo Google cruza una firma con una persona. La especialidad de
+     cada quien manda sobre la lista genérica del medio en `knowsAbout`.
+  3. **Contacto visible desde cualquier página**: en el pie y en el menú, en los dos idiomas, y en
+     `sitemap.xml`.
+  4. **Frescura de la portada:** convivían notas de hoy con archivo de diciembre del año anterior.
+     Ahora lo reciente manda arriba y lo de más de 30 días baja a su franja, «Del archivo», dicha con
+     todas las letras. Para el robot, un diario que parece parado no es un diario.
+- **Un fallo de seguridad que destapó la prueba:** el asunto del correo de contacto no se limpiaba.
+  Un salto de línea ahí permite **inyectar cabeceras** —incluida una copia oculta a un tercero—, que
+  es un truco viejo y conocido contra los formularios. `limpiarCabecera()` lo corta.
+- **Candado:** `tests/unit/google-noticias.test.ts` (rutas institucionales, validación del
+  formulario, `reply_to`, trampa de robots, escapado, y `sameAs` presente o ausente según haya
+  perfiles) y, en `tests/e2e/smoke.spec.ts`, «transparencia visible desde cualquier página» y «la
+  portada no mezcla lo de hoy con el archivo viejo».
+- **Qué NO tocar:** no quites el enlace de contacto del pie ni la mención de quién edita el medio; no
+  inventes perfiles de redes que no existan (un `sameAs` falso es peor que ninguno); y no vuelvas a
+  mezclar el archivo con la actualidad en la portada.
+- **Lo que falta y NO es trabajo de código:** el alta en Google Publisher Center, el correo de
+  contacto definitivo (hoy `contacto@losupe.com`, ajustable en `settings.contact_email`) y los
+  perfiles reales de LinkedIn/X del equipo. Esos datos son de Richard: no se inventan.

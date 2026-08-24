@@ -2,7 +2,15 @@ import Link from "next/link";
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { SECTIONS } from "@/lib/sections";
-import { aboutPath, homePath, rssPath, searchPath, sectionPath, staticPath } from "@/lib/urls";
+import {
+  aboutPath,
+  contactPath,
+  homePath,
+  rssPath,
+  searchPath,
+  sectionPath,
+  staticPath,
+} from "@/lib/urls";
 import { Logo } from "./Logo";
 
 export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: number }) {
@@ -38,6 +46,13 @@ export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: nu
             <li>
               <Link href={aboutPath(lang)} className="hover:underline">
                 {dict.nav.about}
+              </Link>
+            </li>
+            {/* Contacto visible: Google Noticias exige saber a quién se le escribe a un medio, y
+                penaliza la opacidad. No es un enlace más del pie. */}
+            <li>
+              <Link href={contactPath(lang)} className="hover:underline">
+                {dict.contact.title}
               </Link>
             </li>
             <li>

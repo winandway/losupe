@@ -76,6 +76,52 @@ export default async function AuthorPage({ params, searchParams }: Props) {
           </p>
           <h1 className="font-display text-3xl font-bold text-ink md:text-4xl">{author.name}</h1>
           {author.bio ? <p className="mt-2 max-w-2xl text-muted">{author.bio}</p> : null}
+          {author.expertise ? (
+            <p className="mt-2 text-sm text-muted">
+              <span className="font-semibold text-ink">{dict.author.expertise}:</span>{" "}
+              {author.expertise}
+            </p>
+          ) : null}
+          {/* Perfiles públicos. No son un adorno: es como Google comprueba que detrás de la firma
+              hay una persona real con trayectoria (van también en el JSON-LD, como `sameAs`). */}
+          {author.links.linkedin || author.links.x || author.links.email ? (
+            <ul className="mt-3 flex flex-wrap gap-2">
+              {author.links.linkedin ? (
+                <li>
+                  <a
+                    href={author.links.linkedin}
+                    target="_blank"
+                    rel="me noopener noreferrer"
+                    className="rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-paper"
+                  >
+                    LinkedIn
+                  </a>
+                </li>
+              ) : null}
+              {author.links.x ? (
+                <li>
+                  <a
+                    href={author.links.x}
+                    target="_blank"
+                    rel="me noopener noreferrer"
+                    className="rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-paper"
+                  >
+                    X
+                  </a>
+                </li>
+              ) : null}
+              {author.links.email ? (
+                <li>
+                  <a
+                    href={`mailto:${author.links.email}`}
+                    className="rounded-full border border-line px-3 py-1.5 text-xs font-bold text-ink hover:bg-paper"
+                  >
+                    {dict.author.writeTo}
+                  </a>
+                </li>
+              ) : null}
+            </ul>
+          ) : null}
           <p className="mt-2 text-xs text-muted">{dict.section.count(result.total)}</p>
         </div>
       </header>

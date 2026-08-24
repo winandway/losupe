@@ -8,6 +8,7 @@ import { SectionHeading } from "@/components/SectionHeading";
 import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
+import { separarPorFrescura } from "@/lib/frescura";
 import { listLatest, listLatestPerSection } from "@/lib/queries";
 import { SECTIONS } from "@/lib/sections";
 import { itemListJsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
@@ -38,7 +39,9 @@ export default async function HomePage({ params, searchParams }: Props) {
     listLatest(db, lang, { limit: 7 }),
     listLatestPerSection(db, lang, 6),
   ]);
-  const [hero, ...rest] = latest;
+  const [hero, ...restoBruto] = latest;
+  // Lo reciente arriba y el archivo abajo, en su propia franja (ver `frescura.ts`).
+  const { recientes: rest, archivo } = separarPorFrescura(restoBruto);
   // Los bloques de sección no repiten lo que ya salió arriba (principal + «Lo último»).
   const shown = new Set(latest.map((a) => a.id));
   const perSection = Object.fromEntries(
@@ -82,6 +85,18 @@ export default async function HomePage({ params, searchParams }: Props) {
             <SectionHeading title={dict.home.latest} />
             <div className="grid gap-5 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 [&>*+*]:border-t [&>*+*]:border-line [&>*+*]:pt-5 sm:[&>*+*]:border-0 sm:[&>*+*]:pt-0">
               {rest.map((a) => (
+                <ArticleCard key={a.id} article={a} lang={lang} dict={dict} />
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        {archivo.length > 0 ? (
+          <section className="mt-10 md:mt-12" aria-label={dict.home.archive}>
+            <SectionHeading title={dict.home.archive} />
+            <p className="-mt-2 mb-4 text-sm text-muted">{dict.home.archiveHint}</p>
+            <div className="grid gap-5 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3 [&>*+*]:border-t [&>*+*]:border-line [&>*+*]:pt-5 sm:[&>*+*]:border-0 sm:[&>*+*]:pt-0">
+              {archivo.map((a) => (
                 <ArticleCard key={a.id} article={a} lang={lang} dict={dict} />
               ))}
             </div>

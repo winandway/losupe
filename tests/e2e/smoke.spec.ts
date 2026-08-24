@@ -814,3 +814,46 @@ test("panel: al pulsar un botón se nota que está trabajando", async ({ page })
   expect(aviso.texto).toContain("Trabajando");
   expect(aviso.texto).toContain("minuto y medio");
 });
+
+test("Google Noticias: transparencia visible desde cualquier página", async ({ page }) => {
+  await page.goto("/es");
+  // Contacto tiene que estar a la vista en el pie, no escondido.
+  const pie = page.locator("footer");
+  await expect(pie.getByRole("link", { name: "Contacto" })).toHaveAttribute("href", "/es/contacto");
+
+  await page.goto("/es/contacto");
+  await expect(page.getByRole("heading", { level: 1, name: "Contacto" })).toBeVisible();
+  // Correo visible y quién edita el medio: es lo primero que mira un revisor.
+  await expect(page.locator('a[href^="mailto:"]').first()).toBeVisible();
+  await expect(page.getByText(/Windoce LLC/).first()).toBeVisible();
+  // Y los datos estructurados que le dicen a Google que ESTA es la página de contacto
+  const ld = await page.locator('script[type="application/ld+json"]').first().textContent();
+  expect(JSON.parse(ld ?? "{}")).toMatchObject({ "@type": "ContactPage" });
+
+  // El formulario avisa al instante, igual que el del boletín
+  await page.getByLabel("Tu nombre").fill("Ana Pérez");
+  await page.getByLabel("Tu correo").fill("ana@ejemplo.com");
+  await page.getByLabel("Tu mensaje").fill("Escribo por una corrección en una nota de economía.");
+  await page.getByRole("button", { name: /Enviar mensaje/ }).click();
+  await expect(page.getByRole("status")).toBeVisible({ timeout: 8000 });
+
+  // Y en inglés existe la misma página con su propia palabra
+  await page.goto("/en/contact");
+  await expect(page.getByRole("heading", { level: 1, name: "Contact" })).toBeVisible();
+});
+
+test("Google Noticias: la portada no mezcla lo de hoy con el archivo viejo", async ({ page }) => {
+  await page.goto("/es");
+  const archivo = page.getByRole("region", { name: "Del archivo" });
+  // Si hay notas viejas, van en su propia franja y dicha con todas las letras.
+  if ((await archivo.count()) > 0) {
+    await expect(archivo).toBeVisible();
+    // Y lo de «Lo último» va ANTES que el archivo en el orden de la página.
+    const ultimo = page.getByRole("region", { name: "Lo último" });
+    if ((await ultimo.count()) > 0) {
+      const posUltimo = await ultimo.first().evaluate((el) => el.getBoundingClientRect().top);
+      const posArchivo = await archivo.first().evaluate((el) => el.getBoundingClientRect().top);
+      expect(posUltimo).toBeLessThan(posArchivo);
+    }
+  }
+});

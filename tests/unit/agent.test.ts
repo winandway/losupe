@@ -218,6 +218,8 @@ describe("otros", () => {
         bio: "Editora",
         role: "Editora",
         avatarUrl: null,
+        expertise: null,
+        links: { linkedin: null, x: null, email: null },
       },
       "losupe",
     ) as { "@type": string; mainEntity: { "@type": string; url: string } };

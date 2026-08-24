@@ -74,6 +74,8 @@ describe("datos estructurados para Google News y las IA", () => {
         bio: "Editora",
         role: "Editora",
         avatarUrl: null,
+        expertise: null,
+        links: { linkedin: null, x: null, email: null },
       },
       "losupe",
     );
