@@ -130,6 +130,10 @@ export type RobotStatus = {
     finishedAt: string | null;
     error: string | null;
     summary: unknown;
+    /** En qué paso quedó. Si la corrida se corta, aquí se ve DÓNDE murió. */
+    step?: string | null;
+    /** Las notas de esa corrida con su último paso: el detalle para diagnosticar un corte. */
+    items?: { status: string; step: string | null; topic: string | null; error: string | null }[];
   } | null;
 };
 
@@ -160,6 +164,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
         finished_at: string | null;
         error: string | null;
         summary_json: string | null;
+        step: string | null;
       }>(),
     ]);
   const keys = {
@@ -181,6 +186,23 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
       summary = last.summary_json;
     }
   }
+  const itemsUltimaCorrida = last
+    ? (
+        await db
+          .prepare(
+            `SELECT status, step, topic, error FROM run_items WHERE run_id = ?1 ORDER BY rowid`,
+          )
+          .bind(last.id)
+          .all<{
+            status: string;
+            step: string | null;
+            topic: string | null;
+            error: string | null;
+          }>()
+          .catch(() => ({ results: [] }))
+      ).results
+    : [];
+
   return {
     paused,
     autoPublish: auto === "1",
@@ -212,6 +234,10 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
           finishedAt: last.finished_at,
           error: last.error,
           summary,
+          step: last.step ?? null,
+          // Sin esto, una corrida cortada solo dice «se cortó» y no hay forma de saber en qué
+          // paso murió. El dato ya se guardaba en `run_items`; solo faltaba enseñarlo.
+          items: itemsUltimaCorrida,
         }
       : null,
   };
