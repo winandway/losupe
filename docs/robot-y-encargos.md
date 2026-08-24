@@ -129,6 +129,33 @@ que haya `FAL_KEY` o `PEXELS_API_KEY`; el panel lo avisa).
 5. **Notas** → Abrir → leer → **Publicar**. La nota sale en la portada con «Contenido patrocinado».
 6. Volver a «Ejecutar ahora»: la siguiente será universal (si hay candidatos en las fuentes).
 
+## 6.b Escribir una nota a mano (Panel → Escribir)
+
+Dos formas, las dos terminan en una nota bilingüe lista para revisar:
+
+- **«Le doy el tema y mis apuntes, y la IA la escribe»**: se escribe el titular, lo que se sabe y las
+  fuentes (una URL por línea). La IA redacta con las mismas reglas del robot y **no inventa fuentes**.
+- **«Ya la escribí yo, solo tradúcela y maquétala»**: respeta el texto tal cual —solo corrige
+  ortografía y lo maqueta—, escribe la versión en inglés y completa extracto, meta y etiquetas.
+
+Se elige sección, tipo, firma (por turno o una concreta) y si sale publicada o queda en revisión.
+
+## 6.c Avisos por correo
+
+Al publicarse una nota (robot, encargo o escrita a mano) se manda un aviso corto con el titular, la
+entradilla y el enlace, usando el **correo transaccional de YaDominios Cloud** incluido en el plan
+(`src/lib/mail.ts`; no hace falta SMTP ni proveedor externo). Va a dos sitios:
+
+- **El equipo:** los correos que se guardan en Panel → Inicio → «Avisos por correo». No se muestran
+  en el sitio. Hay un botón para mandarse una prueba.
+- **Los suscriptores:** quien se apunte en el bloque del final de la portada. Con **doble
+  confirmación** (nadie queda apuntado sin tocar el enlace de su correo) y con enlace de baja en cada
+  aviso, para no ser spam.
+
+Variables necesarias: `YAD_SITE`, `YAD_TOKEN` (panel → «Ver token»), `MAIL_FROM` (de un dominio
+conectado al sitio) y opcionalmente `MAIL_FROM_NAME`. Límite por plan: 50/100/300/1.000 correos al
+día; al pasarse se pausa hasta el día siguiente, sin cobros sorpresa.
+
 ## 7. Qué falta / siguiente
 
 - Llaves (arriba). Sin `GEMINI_API_KEY` nada se redacta.

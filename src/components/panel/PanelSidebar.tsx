@@ -11,7 +11,7 @@ export type PanelNavItem = {
   key: string;
   href: string;
   label: string;
-  icon: "home" | "orders" | "sponsors" | "notes" | "sources";
+  icon: "home" | "write" | "orders" | "sponsors" | "notes" | "sources";
   badge?: number;
 };
 
@@ -29,6 +29,12 @@ const ICONS: Record<PanelNavItem["icon"], React.ReactNode> = {
     <>
       <path d="M3 10.5 12 3l9 7.5" />
       <path d="M5 9.5V20h5v-5.5h4V20h5V9.5" />
+    </>
+  ),
+  write: (
+    <>
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" />
     </>
   ),
   orders: (

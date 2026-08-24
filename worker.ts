@@ -26,6 +26,7 @@ import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow"
 import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { legacyRedirectTarget } from "./src/lib/legacy-redirects";
+import { claimTick } from "./src/lib/robot/heartbeat";
 import { robotStatus } from "./src/lib/robot/pipeline";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
 import { createSchemaGuard } from "./src/lib/schema-guard";
@@ -142,6 +143,23 @@ export default {
         status: 301,
         headers: { Location: legacy + url.search, "Cache-Control": "public, max-age=86400" },
       });
+    }
+
+    // Piloto automático por tráfico: si el programador de la plataforma falla, el propio sitio se
+    // encarga. Solo en páginas HTML (no en imágenes ni en el panel) y sin frenar la respuesta.
+    if (
+      env.DB &&
+      request.method === "GET" &&
+      !pathname.startsWith("/panel") &&
+      !pathname.startsWith("/datos/") &&
+      !STATIC_PREFIXES.some((p) => pathname.startsWith(p)) &&
+      !FEED_PATHS.has(pathname)
+    ) {
+      ctx.waitUntil(
+        claimTick(env.DB).then((d) =>
+          d.run ? runScheduled(env, "cron", { base }).catch(() => undefined) : undefined,
+        ),
+      );
     }
 
     const target = langRedirectTarget(url, request.headers.get("accept-language"));

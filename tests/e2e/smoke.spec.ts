@@ -92,6 +92,71 @@ test("el equipo de redacción: fotos, fichas y la firma de cada nota", async ({ 
   await expect(page.locator("article").getByText("Magaly Molina")).toHaveCount(0);
 });
 
+test("boletín: alta desde la portada, sin apuntar a nadie sin confirmar", async ({
+  page,
+  request,
+}) => {
+  await page.goto("/es");
+  const boletin = page.locator("#boletin");
+  await boletin.scrollIntoViewIfNeeded();
+  await expect(boletin.getByRole("heading", { name: /Recibe las notas/ })).toBeVisible();
+  await boletin.getByPlaceholder("Tu correo electrónico").fill(`prueba+${Date.now()}@example.com`);
+  await boletin.getByRole("button", { name: "Quiero recibirlas" }).click();
+  // Sin correo configurado en local, el sitio lo dice en claro (no falla en silencio)
+  await expect(page.getByRole("status")).toBeVisible();
+  await expect(page).toHaveURL(/boletin=/);
+
+  // Un correo mal escrito no pasa la validación del servidor
+  const malo = await request.post("/datos/boletin", {
+    form: { email: "no-es-correo", lang: "es" },
+    maxRedirects: 0,
+  });
+  expect(malo.status()).toBe(303);
+  expect(malo.headers()["location"]).toContain("boletin=invalido");
+
+  // Un enlace de confirmación inventado no da de alta a nadie
+  const falso = await request.get("/datos/boletin?alta=inventado", { maxRedirects: 0 });
+  expect(falso.headers()["location"]).toContain("boletin=invalido");
+});
+
+test("panel: se puede escribir una nota a mano y los avisos por correo se configuran", async ({
+  page,
+}) => {
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/panel/entrar");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  // La pestaña Escribir existe y el formulario pide lo necesario
+  await page.goto("/panel/escribir");
+  await expect(page.getByRole("heading", { name: "Escribir una nota" })).toBeVisible();
+  await expect(page.getByText("Le doy el tema y mis apuntes")).toBeVisible();
+  await expect(page.getByText("Ya la escribí yo")).toBeVisible();
+  await expect(page.getByLabel("Titular")).toBeVisible();
+  await expect(page.getByLabel("Firma")).toBeVisible();
+  // Sin GEMINI_API_KEY en local, avisa claro en vez de fallar en silencio
+  await page.getByLabel("Titular").fill("Una nota de prueba escrita a mano por la redacción");
+  await page
+    .getByLabel("El texto o tus apuntes")
+    .fill(
+      "Esto es una prueba con texto suficiente para pasar la validación mínima del formulario.",
+    );
+  await page.getByRole("button", { name: "Crear la nota" }).click();
+  await expect(page.getByRole("alert")).toContainText(/GEMINI_API_KEY/);
+
+  // Los correos de aviso se guardan y no se muestran en el sitio público
+  await page.goto("/panel");
+  const correos = page.getByLabel(/Correos del equipo/);
+  await correos.fill("aviso1@example.com, aviso2@example.com");
+  await page.getByRole("button", { name: "Guardar correos" }).click();
+  await expect(page.getByText("Correos guardados.")).toBeVisible();
+  await expect(page.getByLabel(/Correos del equipo/)).toHaveValue(
+    "aviso1@example.com\naviso2@example.com",
+  );
+  await page.goto("/es");
+  await expect(page.getByText("aviso1@example.com")).toHaveCount(0);
+});
+
 test("los mapas del sitio son válidos para Google (XML, rutas y cabeceras)", async ({
   request,
 }) => {

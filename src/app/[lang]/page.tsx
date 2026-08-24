@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Container } from "@/components/Container";
+import { Boletin } from "@/components/Boletin";
 import { HeroBanner } from "@/components/HeroBanner";
 import { JsonLd } from "@/components/JsonLd";
 import { SectionHeading } from "@/components/SectionHeading";
@@ -13,7 +14,10 @@ import { itemListJsonLd, organizationJsonLd, websiteJsonLd } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
 import { searchPath, sectionPath } from "@/lib/urls";
 
-type Props = { params: Promise<{ lang: string }> };
+type Props = {
+  params: Promise<{ lang: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+};
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const lang = await requireLang(params);
@@ -24,9 +28,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function HomePage({ params }: Props) {
+export default async function HomePage({ params, searchParams }: Props) {
   const lang = await requireLang(params);
   const dict = getDict(lang);
+  const sp = await searchParams;
+  const boletin = typeof sp.boletin === "string" ? sp.boletin : undefined;
   const [db, base] = await Promise.all([getDb(), getBaseUrl()]);
   const [latest, perSectionRaw] = await Promise.all([
     listLatest(db, lang, { limit: 7 }),
@@ -102,6 +108,8 @@ export default async function HomePage({ params }: Props) {
             </section>
           );
         })}
+
+        <Boletin lang={lang} dict={dict} state={boletin} />
       </Container>
     </>
   );

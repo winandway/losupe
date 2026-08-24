@@ -210,3 +210,23 @@ diario…`, 23 ago 2026).
   limpio pasa. También se verificó que sigue detectando claves de Google, Stripe y genéricas.
 - **Qué NO tocar:** no añadas rutas de código fuente a la lista de exclusión, ni uses `--no-verify`
   para saltarte el hook. Si gitleaks se pone en rojo, primero se mira **qué** encontró.
+
+## 12. El piloto automático no puede depender solo del cron de la plataforma
+
+- **Cómo se vio (24 ago 2026):** Richard avisó de que el robot solo había publicado una nota. En
+  `/__health` el robot estaba **encendido y con publicación automática**, pero la única corrida
+  registrada era la **manual**: el cron de YaDominios no había disparado ni una vez en 7 horas.
+- **Se comprobó:** el endpoint funciona (`GET /__scheduled` con la cabecera `x-yad-cron` corrió y
+  publicó la nota de YaDominios), así que el fallo estaba en la invocación, no en el código.
+- **Qué se hizo:**
+  1. Cron con lista explícita (`0 11,13,15,17,19,21,23 * * *`) en vez de rango con paso
+     (`11-23/2`), por si el planificador no soporta esa forma.
+  2. **Latido por tráfico** (`src/lib/robot/heartbeat.ts`): en cada visita normal al sitio se mira si
+     toca corrida y, si toca, se lanza en segundo plano con `ctx.waitUntil` (no se hace esperar al
+     lector). Para que dos visitas a la vez no lancen dos corridas, el turno se gana con un UPDATE
+     condicional (`WHERE value < límite`), que SQLite resuelve de forma atómica.
+- **Candado:** `tests/unit/correo-boletin.test.ts` → «piloto automático por tráfico»: no corre en
+  pausa, no corre si la última fue hace poco (solo una petición gana), corre si pasó el intervalo y
+  no explota sin base.
+- **Qué NO tocar:** no quites el latido «porque el cron ya va»; son dos caminos a propósito. Y no
+  lances el robot fuera de `ctx.waitUntil`: el lector no debe esperar a que se escriba una nota.

@@ -222,6 +222,43 @@ export default async function PanelHome({ searchParams }: Props) {
           </form>
         </Card>
 
+        <Card title={p.mailSettings.title}>
+          <p className="text-xs text-muted">{p.mailSettings.intro}</p>
+          <p className="mt-2 flex items-center gap-2 text-sm">
+            <Dot ok={status.mail.configured} />
+            {status.mail.configured ? p.mailSettings.ready : p.mailSettings.missing}
+          </p>
+          <form action="/panel/accion/correos" method="post" className="mt-3">
+            <input type="hidden" name="op" value="save" />
+            <label className="block text-sm font-semibold">
+              {p.mailSettings.emails}
+              <textarea
+                name="emails"
+                rows={3}
+                defaultValue={status.mail.recipients.join("\n")}
+                className="mt-1 w-full rounded-xl border border-line px-3 py-2 text-sm font-normal"
+              />
+            </label>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="submit"
+                className="rounded-full border border-line px-4 py-2 text-xs font-bold text-ink hover:bg-paper"
+              >
+                {p.mailSettings.save}
+              </button>
+            </div>
+          </form>
+          <form action="/panel/accion/correos" method="post" className="mt-2">
+            <input type="hidden" name="op" value="test" />
+            <button
+              type="submit"
+              className="rounded-full bg-ink px-4 py-2 text-xs font-bold text-white hover:bg-ink-2"
+            >
+              {p.mailSettings.test}
+            </button>
+          </form>
+        </Card>
+
         <Card title={p.dashboard.lastRun}>
           {status.lastRun ? (
             <div className="text-sm">

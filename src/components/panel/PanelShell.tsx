@@ -3,7 +3,7 @@ import type { Dict } from "@/i18n/es";
 import { panelEnv } from "@/lib/panel/server";
 import { PanelSidebar, type PanelNavItem } from "./PanelSidebar";
 
-export type PanelSection = "dashboard" | "orders" | "sponsors" | "notes" | "sources";
+export type PanelSection = "dashboard" | "write" | "orders" | "sponsors" | "notes" | "sources";
 
 async function badges(): Promise<{ orders: number; notes: number }> {
   try {
@@ -47,6 +47,7 @@ export async function PanelShell({
   const count = await badges();
   const items: PanelNavItem[] = [
     { key: "dashboard", href: "/panel", label: p.nav.dashboard, icon: "home" },
+    { key: "write", href: "/panel/escribir", label: p.nav.write, icon: "write" },
     {
       key: "orders",
       href: "/panel/pedidos",

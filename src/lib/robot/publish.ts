@@ -24,6 +24,8 @@ export type PublishInput = {
 
 export type PublishResult = {
   articleId: string;
+  /** Nombre de quien firma (para el aviso por correo). */
+  authorName: string;
   slugEs: string;
   slugEn: string;
   pathEs: string;
@@ -99,8 +101,13 @@ export async function saveArticle(db: D1Database, input: PublishInput): Promise<
     ),
   ]);
   await indexArticle(db, id).catch(() => undefined);
+  const author = await db
+    .prepare(`SELECT name FROM authors WHERE id = ?1`)
+    .bind(input.authorId)
+    .first<{ name: string }>();
   return {
     articleId: id,
+    authorName: author?.name ?? input.authorId,
     slugEs,
     slugEn,
     pathEs: articlePath("es", input.sectionId, slugEs),

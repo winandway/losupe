@@ -12,3 +12,8 @@ ADMIN_PASSWORD=losupe-panel-local
 TURNSTILE_SITE_KEY=
 TURNSTILE_SECRET_KEY=
 NEXT_PUBLIC_SITE_URL=
+# Correo transaccional de YaDominios Cloud (incluido en el plan; token del panel → «Ver token»)
+YAD_SITE=losupe
+YAD_TOKEN=
+MAIL_FROM=avisos@losupe.com
+MAIL_FROM_NAME=losupe

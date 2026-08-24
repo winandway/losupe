@@ -9,7 +9,9 @@ import {
   getSpendToday,
   recordSpend,
 } from "./budget";
+import { mailConfigured, parseRecipients } from "@/lib/mail";
 import { pickWriter } from "./authors";
+import { notifyPublished } from "./notify";
 import { embedVideo, findPexelsVideo, illustrate } from "./images";
 import { saveArticle } from "./publish";
 import {
@@ -53,6 +55,10 @@ export type RobotEnv = {
   CRON_SECRET?: string;
   ADMIN_PASSWORD?: string;
   NEXT_PUBLIC_SITE_URL?: string;
+  YAD_SITE?: string;
+  YAD_TOKEN?: string;
+  MAIL_FROM?: string;
+  MAIL_FROM_NAME?: string;
 };
 
 export type PipelineOptions = {
@@ -74,6 +80,9 @@ export type NoteResult = {
   costUsd: number;
   error?: string;
   sponsor?: string;
+  /** A cuántos correos se avisó (equipo + suscriptores) y el fallo si lo hubo. */
+  notified?: number;
+  notifyError?: string;
 };
 
 export type RunSummary = {
@@ -96,6 +105,7 @@ export type RobotStatus = {
   budget: { limitUsd: number; spentTodayUsd: number };
   quota: { notesPerDay: number; today: number };
   evergreenRatio: number;
+  mail: { configured: boolean; recipients: string[] };
   queue: QueueSummary;
   lastRun: {
     id: string;
@@ -115,25 +125,27 @@ export async function isRobotPaused(db: D1Database): Promise<boolean> {
 
 export async function robotStatus(env: RobotEnv, now = new Date()): Promise<RobotStatus> {
   const db = env.DB;
-  const [paused, auto, limit, spent, today, queue, perDay, ratio, last] = await Promise.all([
-    isRobotPaused(db),
-    getSetting(db, "robot_auto_publish"),
-    getDailyBudgetUsd(db),
-    getSpendToday(db, now),
-    robotNotesToday(db, now),
-    queueSummary(db, now),
-    getSetting(db, "notes_per_day"),
-    getSetting(db, "evergreen_ratio"),
-    db.prepare(`SELECT * FROM runs ORDER BY started_at DESC LIMIT 1`).first<{
-      id: string;
-      status: string;
-      trigger: string;
-      started_at: string;
-      finished_at: string | null;
-      error: string | null;
-      summary_json: string | null;
-    }>(),
-  ]);
+  const [paused, auto, limit, spent, today, queue, perDay, ratio, notifyEmails, last] =
+    await Promise.all([
+      isRobotPaused(db),
+      getSetting(db, "robot_auto_publish"),
+      getDailyBudgetUsd(db),
+      getSpendToday(db, now),
+      robotNotesToday(db, now),
+      queueSummary(db, now),
+      getSetting(db, "notes_per_day"),
+      getSetting(db, "evergreen_ratio"),
+      getSetting(db, "notify_emails"),
+      db.prepare(`SELECT * FROM runs ORDER BY started_at DESC LIMIT 1`).first<{
+        id: string;
+        status: string;
+        trigger: string;
+        started_at: string;
+        finished_at: string | null;
+        error: string | null;
+        summary_json: string | null;
+      }>(),
+    ]);
   const keys = {
     gemini: Boolean(env.GEMINI_API_KEY),
     fal: Boolean(env.FAL_KEY),
@@ -165,6 +177,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
       today: Object.values(today).reduce((a, b) => a + b, 0),
     },
     evergreenRatio: Math.min(1, Math.max(0, Number(ratio ?? "0.5") || 0)),
+    mail: { configured: mailConfigured(env), recipients: parseRecipients(notifyEmails) },
     queue,
     lastRun: last
       ? {
@@ -530,6 +543,23 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
             [absoluteUrl(opts.base, saved.pathEs), absoluteUrl(opts.base, saved.pathEn)],
             fetchImpl,
           ).catch(() => undefined);
+          // Aviso por correo: nunca frena la publicación (la nota ya está en el sitio).
+          const aviso = await notifyPublished(
+            db,
+            env,
+            opts.base,
+            {
+              articleId: saved.articleId,
+              title: draft.es.title,
+              excerpt: draft.es.excerpt,
+              path: saved.pathEs,
+              sectionId: sectionId,
+              authorName: saved.authorName,
+            },
+            fetchImpl,
+          ).catch(() => ({ team: 0, subscribers: 0, errors: ["aviso: fallo inesperado"] }));
+          result.notified = aviso.team + aviso.subscribers;
+          if (aviso.errors.length > 0) result.notifyError = aviso.errors.join(" | ");
         }
         Object.assign(result, {
           ok: true,
@@ -626,6 +656,22 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
             [absoluteUrl(opts.base, saved.pathEs), absoluteUrl(opts.base, saved.pathEn)],
             fetchImpl,
           ).catch(() => undefined);
+          const aviso = await notifyPublished(
+            db,
+            env,
+            opts.base,
+            {
+              articleId: saved.articleId,
+              title: draft.es.title,
+              excerpt: draft.es.excerpt,
+              path: saved.pathEs,
+              sectionId: c.sectionId,
+              authorName: saved.authorName,
+            },
+            fetchImpl,
+          ).catch(() => ({ team: 0, subscribers: 0, errors: ["aviso: fallo inesperado"] }));
+          result.notified = aviso.team + aviso.subscribers;
+          if (aviso.errors.length > 0) result.notifyError = aviso.errors.join(" | ");
         }
         Object.assign(result, {
           ok: true,

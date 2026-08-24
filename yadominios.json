@@ -2,6 +2,6 @@
   "compatibility_date": "2026-07-01",
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "triggers": {
-    "crons": ["0 11-23/2 * * *"]
+    "crons": ["0 11,13,15,17,19,21,23 * * *"]
   }
 }
