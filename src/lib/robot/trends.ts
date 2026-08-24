@@ -58,7 +58,10 @@ export function parseTrendsFeed(xml: string, limit = 25): TrendItem[] {
 
 const SKIP = [
   /\b(vs\.?|partido|pron[oó]stico|cuotas|odds|bet|apuesta|bracket|score|marcador|goles?)\b/i,
-  /\b(nfl|nba|mlb|nhl|ncaa|ufc|wwe|f1|nascar|pga|atp|wta|liga|premier league|champions|mundial|world cup|super bowl|playoffs?)\b/i,
+  /\b(nfl|nba|mlb|nhl|ncaa|ufc|wwe|f1|nascar|pga|atp|wta|liga mx|la liga|premier league|champions league|copa mundial|mundial de f[uú]tbol|world cup|super bowl|playoffs?)\b/i,
+  // Palabras de fichajes y plantillas: «CB Trevon Diggs signing 1-year deal with Seahawks» no
+  // llevaba ni «NFL» ni «football», y por eso se coló (24 ago 2026).
+  /\b(signing|signs with|traded to|trade deadline|free agent|draft pick|roster|lineup|coach|quarterback|fichaje|traspaso|convocatoria|entrenador)\b/i,
   /\b(f[uú]tbol|soccer|baseball|basketball|football|hockey|tennis|golf|boxing|boxeo|cricket|rugby)\b/i,
   /\b(powerball|mega millions|loter[ií]a|lottery|jackpot)\b/i,
   /\b(porn|xxx|onlyfans|desnud|nude)\b/i,
@@ -82,13 +85,30 @@ const SECTION_RULES: [SectionId, RegExp][] = [
     "ventas",
     /\b(emprend\w*|startup|negocio|business|ventas|sales|marketing|amazon|shopify|ecommerce|e-commerce|pyme|small business|franquicia|franchise|side hustle|ingreso extra|walmart|costco|target|black friday|prime day|descuentos?|deals?)\b/i,
   ],
+  // «Artistas y tendencias» también necesita SU regla. Antes era el cajón donde caía todo lo que no
+  // se reconocía, y ahí es donde se coló el fichaje de los Seahawks.
+  [
+    "artistas",
+    /\b(cantante|singer|m[uú]sic\w*|music|[aá]lbum|album|canci[oó]n|song|gira|tour|concierto|concert|pel[ií]cula|movie|film|serie|series|netflix|disney|hbo|prime video|estreno|premiere|tr[aá]iler|trailer|actor|actriz|actress|artista|artist|celebridad|celebrity|famos\w*|grammy|[oó]scar|oscars|emmy|billboard|moda|fashion|influencer|viral|tiktoker|youtuber|podcast|libro|book|autor|author)\b/i,
+  ],
 ];
 
-/** Sección para una tendencia (null = no es tema de losupe: deportes, apuestas, sucesos). */
+/**
+ * Sección para una tendencia, o `null` si no es tema de losupe.
+ *
+ * OJO CON EL SENTIDO DE ESTA FUNCIÓN. Antes rechazaba una lista de temas y **todo lo demás pasaba**,
+ * cayendo en «artistas» como cajón de sastre. Así se coló «CB Trevon Diggs signing 1-year deal with
+ * Seahawks» (24 ago 2026): no decía «NFL» ni «football», así que ninguna regla de rechazo lo vio, y
+ * el robot se puso a escribir sobre un fichaje de fútbol americano.
+ *
+ * Ahora es al revés y es la única forma correcta para un medio con secciones definidas: **si no
+ * encaja en ninguna de las nuestras, no se publica**. Las tendencias de Google traen de todo; el
+ * criterio no puede ser «lo que no supe rechazar».
+ */
 export function classifyTrend(text: string): SectionId | null {
   if (SKIP.some((re) => re.test(text))) return null;
   for (const [section, re] of SECTION_RULES) if (re.test(text)) return section;
-  return "artistas";
+  return null;
 }
 
 /** Mejor artículo de una tendencia: primero la fuente más confiable. */

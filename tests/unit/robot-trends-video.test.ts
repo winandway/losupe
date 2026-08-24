@@ -188,3 +188,47 @@ describe("video de archivo (Pexels)", () => {
     expect(embedVideo("sin parrafos", v!, "V")).toContain("<figure");
   });
 });
+
+describe("el clasificador es una lista blanca, no un cajón de sastre", () => {
+  it("EL CASO REAL: un fichaje de la NFL sin la palabra «NFL» no se publica", () => {
+    // El robot se puso a escribir sobre esto el 24 ago 2026 porque no decía «NFL» ni «football»,
+    // así que ninguna regla de rechazo lo vio y cayó en «artistas».
+    expect(classifyTrend("Source: CB Trevon Diggs signing 1-year deal with Seahawks")).toBeNull();
+    expect(classifyTrend("Lakers trade deadline: what the roster looks like now")).toBeNull();
+    expect(classifyTrend("El entrenador confirma el fichaje del delantero")).toBeNull();
+  });
+
+  it("lo que no encaja en NINGUNA de nuestras secciones, tampoco", () => {
+    expect(classifyTrend("weather forecast for the weekend")).toBeNull();
+    expect(classifyTrend("horoscopo de hoy")).toBeNull();
+    expect(classifyTrend("como se hace el pan de masa madre")).toBeNull();
+  });
+
+  it("«artistas y tendencias» ahora tiene su propia regla, no es el cajón", () => {
+    expect(classifyTrend("Taylor Swift anuncia nuevo album y gira mundial")).toBe("artistas");
+    expect(classifyTrend("El estreno de la serie en Netflix rompe records")).toBe("artistas");
+    expect(classifyTrend("La actriz gana el Oscar a mejor interpretacion")).toBe("artistas");
+  });
+
+  it("las secciones de siempre siguen entrando", () => {
+    expect(classifyTrend("bitcoin supera los 100 mil dolares")).toBe("cripto");
+    expect(classifyTrend("OpenAI presenta su nuevo modelo de inteligencia artificial")).toBe(
+      "tecnologia",
+    );
+    expect(classifyTrend("la inflacion baja al 3% segun la Reserva Federal")).toBe("economia");
+    expect(classifyTrend("como abrir una tienda en Shopify siendo pyme")).toBe("ventas");
+  });
+});
+
+describe("el filtro de deportes no puede llevarse por delante temas buenos", () => {
+  it("«gira mundial» de una cantante NO es deporte", () => {
+    expect(classifyTrend("Taylor Swift anuncia su gira mundial 2027")).toBe("artistas");
+    expect(classifyTrend("La economia mundial crece menos de lo previsto")).toBe("economia");
+  });
+
+  it("pero el mundial de futbol sigue fuera", () => {
+    expect(classifyTrend("Copa Mundial 2026: las sedes confirmadas")).toBeNull();
+    expect(classifyTrend("World Cup tickets go on sale")).toBeNull();
+    expect(classifyTrend("Premier League: resultados de la jornada")).toBeNull();
+  });
+});

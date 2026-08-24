@@ -417,3 +417,30 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no vuelvas a calcular el índice de fuentes dentro del bucle de reintentos; no
   cambies el cron solo en `wrangler.jsonc`; y si una corrida muere, mira el **gasto** antes de
   suponer que estaba trabajando — si no sube, no está lenta, está muerta.
+
+## 18. El robot escribía de lo que fuera: el clasificador era un cajón de sastre
+
+- **Cómo se vio (24 ago 2026):** al enseñar en `/__health` el paso de cada corrida (candado 17)
+  apareció el tema que el robot estaba escribiendo cuando murió: **«Source: CB Trevon Diggs signing
+  1-year deal with Seahawks»** — un fichaje de fútbol americano. losupe no tiene sección de
+  deportes. Llevaba tiempo pudiendo pasar y nadie lo había visto.
+- **Cuál era la causa real:** `classifyTrend` estaba escrita al revés. Rechazaba una lista de temas
+  (deportes, apuestas, sucesos) y **todo lo demás pasaba**, cayendo en «artistas» como cajón de
+  sastre (`return "artistas"`). Ese titular no decía «NFL» ni «football», así que ninguna regla de
+  rechazo lo vio. El criterio de publicación acababa siendo _«lo que no supe rechazar»_, y las
+  tendencias de Google traen de todo.
+- **Qué se hizo exactamente:**
+  1. **Lista blanca, no lista negra:** si no encaja en ninguna de nuestras cinco secciones,
+     `classifyTrend` devuelve `null` y no se publica.
+  2. «Artistas y tendencias» tiene ahora **su propia regla** (música, cine, series, premios,
+     streaming, moda, virales, libros) en vez de ser el cajón donde caía lo desconocido.
+  3. Al filtro de deportes se le añadieron las palabras de fichajes y plantillas (`signing`,
+     `traded to`, `roster`, `quarterback`, `fichaje`, `entrenador`…), que es por donde se coló.
+  4. **Y se le quitó un falso positivo:** «mundial» a secas mataba la _gira mundial_ de una
+     cantante y la _economía mundial_. Ahora dice `copa mundial` / `mundial de fútbol` / `world cup`.
+- **Candado:** en `tests/unit/robot-trends-video.test.ts`, «el clasificador es una lista blanca» —
+  con el titular real de los Seahawks como caso — y «el filtro de deportes no puede llevarse por
+  delante temas buenos», que vigila los falsos positivos en los dos sentidos.
+- **Qué NO tocar:** no vuelvas a poner un `return "artistas"` al final de `classifyTrend`; el
+  descarte es lo correcto. Y al añadir una palabra al filtro de deportes, escribe antes la prueba
+  del tema BUENO que esa palabra podría llevarse por delante.
