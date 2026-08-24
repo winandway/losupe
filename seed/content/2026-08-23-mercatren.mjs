@@ -5,7 +5,7 @@ export default {
   article: {
     id: "art-2026-08-23-mercatren",
     section_id: "ventas",
-    author_id: "magaly-molina",
+    author_id: "merry-melina",
     status: "published",
     kind: "news",
     origin: "editorial",
