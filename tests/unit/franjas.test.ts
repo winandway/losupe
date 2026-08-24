@@ -123,3 +123,12 @@ describe("la configuración de la plataforma va con las franjas", () => {
     expect(conf.limits?.cpu_ms ?? 0).toBeGreaterThanOrEqual(60_000);
   });
 });
+
+describe("los intentos de una franja dan margen a un arreglo", () => {
+  it("cinco intentos por franja, no tres", async () => {
+    const { MAX_INTENTOS_POR_FRANJA } = await import("@/lib/robot/heartbeat");
+    // El 24 ago 2026 un solo tema envenenado se comió los tres intentos de dos franjas seguidas y
+    // el diario se quedó sin publicar en todo el día.
+    expect(MAX_INTENTOS_POR_FRANJA).toBe(5);
+  });
+});

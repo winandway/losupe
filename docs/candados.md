@@ -484,3 +484,38 @@ diario…`, 23 ago 2026).
   `action`/`method` del formulario (es lo que lo mantiene vivo sin JavaScript); y si el envío pasa a
   segundo plano en algún otro sitio, **deja siempre dónde se anota el fallo** — un correo que no
   sale y no deja rastro es peor que uno que falla a la vista.
+
+## 20. UN SOLO TEMA PARALIZÓ EL DIARIO TODO EL DÍA
+
+- **Cómo se vio (24 ago 2026):** seis corridas seguidas —los tres intentos de la franja del mediodía
+  y los tres de la tarde— murieron en el paso `write`, y **el gasto del día no subió ni un centavo**.
+  El diario se quedó sin publicar en toda la jornada. Al enseñar el tema de cada corrida (candado 17)
+  se vio que las seis estaban escribiendo **exactamente lo mismo**: «Source: CB Trevon Diggs signing
+  1-year deal with Seahawks».
+- **Cuál era la causa real, y es de diseño:** `pickCandidate` elegía siempre el candidato con más
+  puntaje y estado `new`. Si la corrida se moría antes de marcarlo, el candidato **seguía en `new`**
+  y volvía a salir elegido en la corrida siguiente. Un tema que falla se convertía en un bucle
+  perfecto: se elige, mata la corrida, sigue pendiente, se vuelve a elegir. Para siempre.
+- **Y un segundo fallo encima:** el filtro de temas (candado 18) se arregló ese mismo día, pero se
+  aplica **al descubrir**. El fichaje de los Seahawks ya estaba guardado, así que el arreglo no lo
+  tocó. _Arreglar la puerta no sirve de nada si lo que entró mal se queda dentro._
+- **Qué se hizo exactamente:**
+  1. **Contador de intentos por tema** (`candidates.attempts`). Se apunta **antes** de trabajar, así
+     que aunque el worker muera a media escritura el intento queda contado. Un tema que falla tres
+     veces se aparta (`MAX_INTENTOS_CANDIDATO`) y el diario sigue publicando. Este es el candado de
+     verdad: **protege pase lo que pase**, sea cual sea la causa del fallo.
+  2. `limpiarCandidatosFueraDeTema()` corre al principio de cada corrida y aparta los temas
+     guardados que hoy no publicaríamos. Usa **solo la lista de rechazo**, nunca la lista blanca: los
+     candidatos de nuestras fuentes RSS son legítimos aunque su titular no lleve palabras clave.
+  3. `MAX_INTENTOS_POR_FRANJA` de 3 a **5**. Un tema envenenado se comió los tres intentos de dos
+     franjas seguidas; con cinco, un arreglo publicado a media tarde todavía llega a tiempo.
+- **Candado:** en `tests/unit/robot-trends-video.test.ts`, «un tema envenenado no puede paralizar el
+  diario» (con el titular real, y comprobando que no se lleva por delante temas legítimos); en
+  `tests/unit/franjas.test.ts`, el tope de intentos por franja.
+- **La lección que vale para todo el proyecto:** cuando algo se elige en bucle —un candidato, un
+  encargo, una tarea de una cola— **el intento se apunta antes de trabajar, no después**. Si se
+  apunta después, cualquier muerte a media faena reinicia el bucle, y el sistema se queda dando
+  vueltas sin que salte ninguna alarma.
+- **Qué NO tocar:** no quites el `attempts + 1` de antes del trabajo ni lo muevas al final; no
+  apliques la lista blanca a los candidatos guardados (te llevas por delante los RSS buenos); y si un
+  tema se aparta, que se vea en el panel — apartar en silencio es cómo empezó todo esto.

@@ -7,7 +7,7 @@ import {
   MAIL_ENDPOINT,
 } from "@/lib/mail";
 import { confirmSubscriber, subscribe, subscribeSchema, unsubscribe } from "@/lib/subscribers";
-import { claimTick, TICK_KEY } from "@/lib/robot/heartbeat";
+import { claimTick, MAX_INTENTOS_POR_FRANJA, TICK_KEY } from "@/lib/robot/heartbeat";
 import {
   buildManualPrompt,
   buildTranslatePrompt,
@@ -400,15 +400,18 @@ describe("una corrida cortada no se lleva la nota del turno", () => {
     });
   });
 
-  it("no se reintenta sin fin: tres intentos y se acabó la franja", async () => {
+  it("no se reintenta sin fin: llegado el tope, se acabó la franja", async () => {
     expect(await claimTick(db("2026-08-24:mediodia#2", "error").d1, MEDIODIA)).toMatchObject({
       run: true,
       marca: "2026-08-24:mediodia#3",
     });
-    expect(await claimTick(db("2026-08-24:mediodia#3", "error").d1, MEDIODIA)).toEqual({
-      run: false,
-      reason: "turno_hecho",
+    expect(await claimTick(db("2026-08-24:mediodia#4", "error").d1, MEDIODIA)).toMatchObject({
+      run: true,
+      marca: "2026-08-24:mediodia#5",
     });
+    expect(
+      await claimTick(db(`2026-08-24:mediodia#${MAX_INTENTOS_POR_FRANJA}`, "error").d1, MEDIODIA),
+    ).toEqual({ run: false, reason: "turno_hecho" });
   });
 
   it("un turno de OTRA franja no cuenta como intento de esta", async () => {

@@ -2,7 +2,7 @@ import { decodeEntities, stripHtml } from "@/lib/html";
 import { SECTIONS, type SectionId } from "@/lib/sections";
 import { rangoDelDiaLocal } from "./franjas";
 import { BOT_USER_AGENT, fetchPage } from "./research";
-import { bestTrendArticle, classifyTrend, parseTrendsFeed } from "./trends";
+import { bestTrendArticle, classifyTrend, esTemaVetado, parseTrendsFeed } from "./trends";
 import { trustLevel } from "./trusted-sources";
 import type { SourceDoc } from "./writer";
 
@@ -269,6 +269,33 @@ export async function robotNotesToday(
  * Elige el mejor candidato nuevo: primero la sección con más cupo libre hoy (cupo = notes_per_day
  * de `sections`), y dentro de ella el de mayor puntaje.
  */
+/**
+ * Cuántas veces se intenta un mismo tema antes de dejarlo por imposible. Un tema que falla tres
+ * veces no es mala suerte: tiene algo (la fuente no se puede leer, el modelo se atasca con él). Se
+ * aparta y el diario sigue publicando.
+ */
+export const MAX_INTENTOS_CANDIDATO = 3;
+
+/**
+ * Saca de la cola los temas que hoy no publicaríamos. Hace falta porque el filtro se aplica al
+ * DESCUBRIR: si el filtro se mejora, lo que ya estaba guardado se queda dentro y se sigue eligiendo.
+ * Devuelve cuántos se descartaron.
+ */
+export async function limpiarCandidatosFueraDeTema(db: D1Database): Promise<number> {
+  const { results } = await db
+    .prepare(`SELECT id, title, summary FROM candidates WHERE status = 'new' LIMIT 500`)
+    .all<{ id: string; title: string; summary: string | null }>();
+  const fuera = results.filter((c) => esTemaVetado(`${c.title} ${c.summary ?? ""}`));
+  for (const c of fuera) {
+    await db
+      .prepare(`UPDATE candidates SET status = 'skipped' WHERE id = ?1`)
+      .bind(c.id)
+      .run()
+      .catch(() => undefined);
+  }
+  return fuera.length;
+}
+
 export async function pickCandidate(db: D1Database, now = new Date()): Promise<Candidate | null> {
   const [{ results: quotas }, today] = await Promise.all([
     db
@@ -283,11 +310,21 @@ export async function pickCandidate(db: D1Database, now = new Date()): Promise<C
     if (sec.free <= 0) continue;
     const row = await db
       .prepare(
-        `SELECT id, section_id, url, title, summary, lang, published_at, score FROM candidates WHERE status = 'new' AND section_id = ?1 ORDER BY score DESC, published_at DESC LIMIT 1`,
+        `SELECT id, section_id, url, title, summary, lang, published_at, score FROM candidates
+         WHERE status = 'new' AND section_id = ?1 AND attempts < ?2
+         ORDER BY score DESC, published_at DESC LIMIT 1`,
       )
-      .bind(sec.id)
+      .bind(sec.id, MAX_INTENTOS_CANDIDATO)
       .first<CandidateRow>();
     if (row) {
+      // Se apunta el intento ANTES de trabajar. Si la corrida se muere a media escritura, el intento
+      // queda contado igual: sin esto, un tema que falla se vuelve a elegir en cada corrida y
+      // paraliza el diario entero. Pasó el 24 ago 2026 con un fichaje de la NFL.
+      await db
+        .prepare(`UPDATE candidates SET attempts = attempts + 1 WHERE id = ?1`)
+        .bind(row.id)
+        .run()
+        .catch(() => undefined);
       return {
         id: row.id,
         sectionId: row.section_id as SectionId,

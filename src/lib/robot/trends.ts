@@ -94,6 +94,18 @@ const SECTION_RULES: [SectionId, RegExp][] = [
 ];
 
 /**
+ * ¿Es un tema que no tocamos (deportes, apuestas, sucesos)? Se usa también para limpiar candidatos
+ * que YA estaban guardados cuando el filtro no los atrapaba: arreglar la entrada no sirve de nada si
+ * lo que entró mal se queda dentro para siempre.
+ *
+ * Ojo: aquí va SOLO la lista de rechazo, nunca la lista blanca. Los candidatos de nuestras fuentes
+ * RSS son legítimos aunque su titular no contenga ninguna palabra clave.
+ */
+export function esTemaVetado(texto: string): boolean {
+  return SKIP.some((re) => re.test(texto));
+}
+
+/**
  * Sección para una tendencia, o `null` si no es tema de losupe.
  *
  * OJO CON EL SENTIDO DE ESTA FUNCIÓN. Antes rechazaba una lista de temas y **todo lo demás pasaba**,

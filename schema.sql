@@ -284,6 +284,9 @@ ALTER TABLE authors ADD COLUMN sections_json TEXT NOT NULL DEFAULT '[]';
 -- Motivo por el que no salio el correo de confirmacion. Se manda en segundo plano para que la
 -- persona no espere, y sin esta columna un fallo del servicio de correo no dejaria ni rastro.
 ALTER TABLE subscribers ADD COLUMN mail_error TEXT;
+-- Cuantas veces se ha intentado escribir sobre este tema. Sin este contador, un tema que hace
+-- fallar la corrida se vuelve a elegir siempre y paraliza el diario (24 ago 2026).
+ALTER TABLE candidates ADD COLUMN attempts INTEGER NOT NULL DEFAULT 0;
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
 INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES

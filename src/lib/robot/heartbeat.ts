@@ -28,7 +28,7 @@ export const TICK_TOKEN_KEY = "robot_tick_token";
  * delante la nota del turno, y nadie se enteraba hasta ver el hueco en la portada. Reintentar
  * dentro de la franja NO es acumular turnos: pasada la ventana, el turno se pierde igual.
  */
-export const MAX_INTENTOS_POR_FRANJA = 3;
+export const MAX_INTENTOS_POR_FRANJA = 5;
 
 export type TickDecision =
   | { run: false; reason: "paused" | "fuera_de_horario" | "turno_hecho" | "no_db" | "error" }

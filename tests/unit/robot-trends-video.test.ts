@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { bestTrendArticle, classifyTrend, parseTrendsFeed, TRENDS_FEEDS } from "@/lib/robot/trends";
+import {
+  bestTrendArticle,
+  classifyTrend,
+  esTemaVetado,
+  parseTrendsFeed,
+  TRENDS_FEEDS,
+} from "@/lib/robot/trends";
 import { sourceDisplayName, SYSTEM_PROMPT, draftSchema } from "@/lib/robot/writer";
 import { SOURCE_NAMES, trustLevel } from "@/lib/robot/trusted-sources";
 import { embedVideo, findPexelsVideo } from "@/lib/robot/images";
@@ -230,5 +236,21 @@ describe("el filtro de deportes no puede llevarse por delante temas buenos", () 
     expect(classifyTrend("Copa Mundial 2026: las sedes confirmadas")).toBeNull();
     expect(classifyTrend("World Cup tickets go on sale")).toBeNull();
     expect(classifyTrend("Premier League: resultados de la jornada")).toBeNull();
+  });
+});
+
+describe("un tema envenenado no puede paralizar el diario", () => {
+  it("el veto también sirve para limpiar lo que YA estaba guardado", () => {
+    // Es el titular real que bloqueó las seis corridas del 24 ago 2026.
+    expect(esTemaVetado("Source: CB Trevon Diggs signing 1-year deal with Seahawks")).toBe(true);
+    expect(esTemaVetado("Powerball jackpot llega a 900 millones")).toBe(true);
+    // Pero no se lleva por delante un tema legítimo de nuestras secciones
+    expect(esTemaVetado("La Reserva Federal baja las tasas de interes")).toBe(false);
+    expect(esTemaVetado("Taylor Swift anuncia su gira mundial")).toBe(false);
+  });
+
+  it("se intenta un tema tres veces como mucho", async () => {
+    const { MAX_INTENTOS_CANDIDATO } = await import("@/lib/robot/universal");
+    expect(MAX_INTENTOS_CANDIDATO).toBe(3);
   });
 });

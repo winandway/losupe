@@ -31,6 +31,7 @@ import {
   markCandidate,
   pickCandidate,
   robotNotesToday,
+  limpiarCandidatosFueraDeTema,
 } from "./universal";
 import { SQL_NOW } from "../sql-time";
 import { FRANJAS, franjaActiva, NOMBRE_FRANJA, partesEnZona, ZONA } from "./franjas";
@@ -453,6 +454,9 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   );
 
   // 4) Descubrir candidatos universales (barato: solo RSS)
+  // Antes de nada, fuera los temas guardados que hoy no publicaríamos: el filtro se aplica al
+  // descubrir, así que al mejorarlo lo que ya estaba dentro se quedaba dentro.
+  await limpiarCandidatosFueraDeTema(db).catch(() => 0);
   const discover = await discoverCandidates(db, { fetchImpl, now });
 
   // 5) Notas, alternando
