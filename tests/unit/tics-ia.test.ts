@@ -4,6 +4,7 @@ import {
   MAX_TICS_POR_MIL,
   normalizar,
   revisarSonidoHumano,
+  ticsEnTitular,
   TICS_EN,
   TICS_ES,
 } from "@/lib/robot/tics-ia";
@@ -74,5 +75,41 @@ describe("que no suene a máquina", () => {
       for (const t of lista) expect(t.trim()).toBe(t);
       for (const t of lista) expect(t.length).toBeGreaterThan(2);
     }
+  });
+});
+
+describe("el titular se mide aparte y con más rigor", () => {
+  it("UNA muletilla en el titular ya lo devuelve (el caso que vio Richard)", () => {
+    const aviso = revisarSonidoHumano(relleno(900), relleno(900), undefined, {
+      es: "La resiliencia de la economia de EE. UU.: que la hace fuerte",
+      en: "What keeps the US economy going",
+    });
+    expect(aviso).toContain("El titular delata");
+    expect(aviso).toContain("resiliencia");
+    // Y le dice dónde sí puede usarla
+    expect(aviso).toContain("DENTRO del texto");
+  });
+
+  it("también vigila el titular en inglés", () => {
+    const aviso = revisarSonidoHumano(relleno(900), relleno(900), undefined, {
+      es: "Cuanto cuesta de verdad un dominio en 2026",
+      en: "Delve into what a domain really costs in 2026",
+    });
+    expect(aviso).toContain("delve");
+  });
+
+  it("un titular normal pasa, aunque el cuerpo lleve la palabra una vez", () => {
+    const cuerpo = `El informe habla de resiliencia. ${relleno(900)}`;
+    expect(
+      revisarSonidoHumano(cuerpo, relleno(900), undefined, {
+        es: "El dominio mas barato cuesta 9 dolares: lo que nadie te dice de la renovacion",
+        en: "The cheapest domain costs $9. Nobody tells you about the renewal",
+      }),
+    ).toBeNull();
+  });
+
+  it("ticsEnTitular no mide densidad: una sola cuenta", () => {
+    expect(ticsEnTitular("La resiliencia del mercado", TICS_ES)).toEqual(["resiliencia"]);
+    expect(ticsEnTitular("El mercado aguanta el golpe", TICS_ES)).toEqual([]);
   });
 });

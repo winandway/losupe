@@ -175,14 +175,43 @@ export function contarTics(
 }
 
 /**
- * Revisa los dos idiomas de un borrador. Devuelve `null` si suena bien, o el aviso que se le manda
- * al redactor para que lo reescriba, diciéndole exactamente qué palabras lo delataron.
+ * EL TITULAR SE MIDE APARTE, Y CON MÁS RIGOR.
+ *
+ * En el cuerpo, una muletilla entre novecientas palabras no la nota nadie. En un titular de doce
+ * palabras, sí: es lo único que mucha gente llega a leer, es lo que sale en Google y en WhatsApp, y
+ * es exactamente donde Richard la vio («La resiliencia de la economía de EE. UU.»). Por eso aquí no
+ * se mide densidad: una sola basta para devolver el borrador.
+ *
+ * Sigue sin ser una lista negra: no se prohíbe la palabra en la nota, se le pide que la ponga donde
+ * de verdad viene a cuento, que es dentro del texto y no en la portada.
+ */
+export function ticsEnTitular(titulo: string, lista: readonly string[]): string[] {
+  return contarTics(titulo, lista, Number.POSITIVE_INFINITY).encontrados;
+}
+
+/**
+ * Revisa los dos idiomas de un borrador: el titular con rigor y el cuerpo por densidad. Devuelve
+ * `null` si suena bien, o el aviso que se le manda al redactor para que lo reescriba, diciéndole
+ * exactamente qué palabras lo delataron.
  */
 export function revisarSonidoHumano(
   es: string,
   en: string,
   maxPorMil = MAX_TICS_POR_MIL,
+  titulares?: { es: string; en: string },
 ): string | null {
+  if (titulares) {
+    const tEs = ticsEnTitular(titulares.es, TICS_ES);
+    const tEn = ticsEnTitular(titulares.en, TICS_EN);
+    if (tEs.length > 0 || tEn.length > 0) {
+      const cuales = [...tEs, ...tEn].join(", ");
+      return (
+        `El titular delata que lo escribió una máquina: usa ${cuales}. El titular es lo único que ` +
+        `mucha gente llega a leer. Escríbelo con palabras de la vida real, diciendo qué pasó y a ` +
+        `quién le importa. Si esa palabra es de verdad la exacta, va DENTRO del texto, no en el titular.`
+      );
+    }
+  }
   const rEs = contarTics(es, TICS_ES, maxPorMil);
   const rEn = contarTics(en, TICS_EN, maxPorMil);
   if (!rEs.excede && !rEn.excede) return null;

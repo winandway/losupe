@@ -276,6 +276,8 @@ export function finalizeDraft(raw: unknown, sourceTexts: readonly string[]): Dra
   const sonido = revisarSonidoHumano(
     `${es.title}. ${es.excerpt} ${stripHtml(es.content_html)}`,
     `${en.title}. ${en.excerpt} ${stripHtml(en.content_html)}`,
+    undefined,
+    { es: es.title, en: en.title },
   );
   if (sonido) throw new DraftRejectedError(`suena a IA — ${sonido}`);
   return { ...d, es, en };
