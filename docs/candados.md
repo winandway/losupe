@@ -384,3 +384,36 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no conviertas esto en una lista negra («que nunca escriba resiliencia»), porque
   entonces la nota queda peor; y no subas el tope para que pasen más notas — si un borrador no pasa,
   el problema es el borrador.
+
+## 17. El robot moría a media nota: presupuesto de CPU y trabajo repetido
+
+- **Cómo se vio (24 ago 2026):** después de poner las franjas, **dos corridas seguidas** se quedaron
+  «en marcha» para siempre y el guardián de corridas colgadas las cerró a los 15 minutos. El gasto
+  del día no se movía ni un centavo, así que el robot no estaba trabajando lento: estaba **muerto**.
+  Sin error, sin registro, sin nota. El fallo en silencio de manual.
+- **Cuáles eran las causas (dos, y las dos reales):**
+  1. **Trabajo repetido.** `copyRatio` reconstruía el índice de fragmentos de **todas** las fuentes
+     en cada comprobación: dos idiomas por intento y, con un reintento, **cuatro veces** el mismo
+     cálculo sobre decenas de miles de palabras. El detector de muletillas de IA añadió un motivo
+     más de reintento, y eso fue lo que empujó la corrida por encima del límite.
+  2. **El presupuesto de CPU por defecto (30 s).** Escribir una nota bilingüe, limpiarle el HTML,
+     comparar contra las fuentes y, si no pasa, repetirlo, no cabe ahí. Ojo: es CPU, no reloj —
+     esperar a Gemini no consume nada de este presupuesto; lo que lo consume es el cálculo.
+  3. **De paso apareció otra:** el cron de verdad vive en `yadominios.json`, no en `wrangler.jsonc`
+     (ese solo vale para desarrollo). Se habían cambiado las horas en el archivo equivocado y la
+     plataforma seguía disparando el horario viejo.
+- **Qué se hizo exactamente:**
+  1. `sourceShingles()` calcula el índice de las fuentes **una vez por corrida**;
+     `copyRatioContra()` compara contra él. `copyRatio()` se queda como estaba para quien la use
+     suelta. El trabajo de CPU baja a la cuarta parte.
+  2. `limits.cpu_ms = 300000` en `yadominios.json` **y** en `wrangler.jsonc`.
+  3. Las horas del cron, corregidas en `yadominios.json`, que es el que manda.
+- **Candado:** en `tests/unit/franjas.test.ts`, «la configuración de la plataforma va con las
+  franjas»: lee `yadominios.json` de verdad y exige las horas de las tres franjas y un presupuesto
+  de CPU suficiente. Si alguien vuelve a cambiar solo el archivo de desarrollo, se pone rojo.
+- **Cómo se comprueba que sigue funcionando:** `GET https://losupe.com/__health` → `robot.lastRun`
+  tiene que terminar en `done` en menos de dos minutos, y `robot.budget.spentTodayUsd` tiene que
+  subir. Una corrida que se queda en `running` más de cinco minutos es este fallo otra vez.
+- **Qué NO tocar:** no vuelvas a calcular el índice de fuentes dentro del bucle de reintentos; no
+  cambies el cron solo en `wrangler.jsonc`; y si una corrida muere, mira el **gasto** antes de
+  suponer que estaba trabajando — si no sube, no está lenta, está muerta.

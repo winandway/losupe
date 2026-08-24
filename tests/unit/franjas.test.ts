@@ -106,3 +106,20 @@ describe("franjas horarias del diario", () => {
     expect(marcaDeFranja(new Date("2026-08-25T01:00:00Z"), franja)).toBe("2026-08-24:tarde");
   });
 });
+
+describe("la configuración de la plataforma va con las franjas", () => {
+  it("yadominios.json dispara en las horas de las tres franjas, no cada 2 horas", async () => {
+    const { readFileSync } = await import("node:fs");
+    const conf = JSON.parse(readFileSync("yadominios.json", "utf8")) as {
+      triggers?: { crons?: string[] };
+      limits?: { cpu_ms?: number };
+    };
+    const cron = conf.triggers?.crons?.[0] ?? "";
+    // Las dos horas UTC posibles de cada franja (verano e invierno)
+    for (const hora of [11, 12, 16, 17, 21, 22]) expect(cron).toContain(String(hora));
+    // Y ninguna de madrugada del Este (13, 15, 19 UTC eran del cron viejo de cada 2 horas)
+    expect(cron).not.toContain("13,");
+    // Escribir una nota necesita más CPU que la del reparto por defecto
+    expect(conf.limits?.cpu_ms ?? 0).toBeGreaterThanOrEqual(60_000);
+  });
+});

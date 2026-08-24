@@ -86,15 +86,32 @@ export function shingles(text: string, n = 8): Set<string> {
   return out;
 }
 
-/** Proporción de fragmentos del borrador que aparecen tal cual en las fuentes (0 = nada copiado). */
-export function copyRatio(draftText: string, sources: readonly string[], n = 8): number {
-  const mine = shingles(draftText, n);
-  if (mine.size === 0) return 0;
+/**
+ * Índice de fragmentos de las fuentes. Se calcula UNA vez por corrida y se reutiliza.
+ *
+ * Antes se rehacía dentro de cada comprobación: dos idiomas por intento, y con un reintento son
+ * cuatro veces el mismo trabajo sobre decenas de miles de palabras. El 24 ago 2026 dos corridas
+ * seguidas murieron a media escritura sin dejar rastro; el worker tiene un presupuesto de CPU y
+ * esto se lo comía. Calcularlo una vez cuesta lo mismo que calcularlo cuatro, dividido entre cuatro.
+ */
+export function sourceShingles(sources: readonly string[], n = 8): Set<string> {
   const theirs = new Set<string>();
   for (const s of sources) for (const sh of shingles(s, n)) theirs.add(sh);
+  return theirs;
+}
+
+/** Proporción de fragmentos del borrador que ya están en el índice de las fuentes. */
+export function copyRatioContra(draftText: string, theirs: ReadonlySet<string>, n = 8): number {
+  const mine = shingles(draftText, n);
+  if (mine.size === 0) return 0;
   let hits = 0;
   for (const sh of mine) if (theirs.has(sh)) hits++;
   return hits / mine.size;
+}
+
+/** Proporción de fragmentos del borrador que aparecen tal cual en las fuentes (0 = nada copiado). */
+export function copyRatio(draftText: string, sources: readonly string[], n = 8): number {
+  return copyRatioContra(draftText, sourceShingles(sources, n), n);
 }
 
 export const MAX_COPY_RATIO = 0.08;
@@ -240,7 +257,14 @@ export class DraftRejectedError extends Error {
 }
 
 /** Valida y limpia lo que devolvió el modelo; rechaza si copió fuentes. */
-export function finalizeDraft(raw: unknown, sourceTexts: readonly string[]): Draft {
+export function finalizeDraft(
+  raw: unknown,
+  // Acepta las fuentes en crudo (cómodo para las pruebas y para `manual.ts`) o el índice ya
+  // calculado, que es lo que usa el redactor para no rehacerlo en cada reintento.
+  fuentesOIndice: readonly string[] | ReadonlySet<string>,
+): Draft {
+  const fuentes =
+    fuentesOIndice instanceof Set ? fuentesOIndice : sourceShingles(fuentesOIndice as string[]);
   const parsed = draftSchema.safeParse(raw);
   if (!parsed.success) {
     // El detalle va en el mensaje: sin él, en el panel solo se ve «no cumple el formato» y no hay
@@ -264,7 +288,7 @@ export function finalizeDraft(raw: unknown, sourceTexts: readonly string[]): Dra
     const words = stripHtml(part.content_html).split(/\s+/).filter(Boolean).length;
     if (words < 450)
       throw new DraftRejectedError(`El borrador en ${lang} es muy corto (${words} palabras)`);
-    const ratio = copyRatio(stripHtml(part.content_html), sourceTexts);
+    const ratio = copyRatioContra(stripHtml(part.content_html), fuentes);
     if (ratio > MAX_COPY_RATIO) {
       throw new DraftRejectedError(
         `El borrador en ${lang} copia fuentes (${(ratio * 100).toFixed(1)} % de fragmentos)`,
@@ -306,6 +330,8 @@ export async function writeDraft(
   opts: WriteOptions,
 ): Promise<{ draft: Draft; usage: GeminiJsonResult<unknown>; attempts: number }> {
   const maxAttempts = Math.max(1, (opts.retries ?? 1) + 1);
+  // Una sola vez para toda la corrida, pase lo que pase con los reintentos.
+  const fuentes = sourceShingles(sourceTexts);
   let last: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const motivo = last instanceof Error ? last.message : "";
@@ -329,7 +355,7 @@ export async function writeDraft(
       fetchImpl: opts.fetchImpl,
     });
     try {
-      return { draft: finalizeDraft(usage.data, sourceTexts), usage, attempts: attempt };
+      return { draft: finalizeDraft(usage.data, fuentes), usage, attempts: attempt };
     } catch (error) {
       last = error;
       if (attempt === maxAttempts) throw error;

@@ -24,6 +24,13 @@
       "bucket_name": "losupe-media",
     },
   ],
+  // Escribir una nota gasta CPU de verdad: dos idiomas, limpieza de HTML, indice anticopia y, si
+  // el borrador no pasa, otra vuelta entera. Con el presupuesto por defecto (30 s de CPU) el worker
+  // moria a media escritura y la corrida quedaba «en marcha» para siempre — pasó dos veces el 24
+  // ago 2026. Este limite es de CPU, no de reloj: esperar a Gemini no consume nada de aqui.
+  "limits": {
+    "cpu_ms": 300000,
+  },
   "triggers": {
     // Las tres franjas de publicacion (ver src/lib/robot/franjas.ts), en UTC. El cron no entiende de
     // horario de verano, asi que se disparan las dos horas posibles de cada franja: en verano manda
