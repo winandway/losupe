@@ -219,6 +219,47 @@ describe("redactor: validación, limpieza y anticopia", () => {
     expect(u).toContain("GUÍA DURADERA");
     expect(u).toContain("https://f.com");
   });
+  it("si el primer borrador copia, se pide otra vez con la advertencia (y si vuelve a copiar, se descarta)", async () => {
+    // Fuente con vocabulario propio: el borrador «bueno» no la toca, el «copiado» la reproduce.
+    const fuenteHtml = Array.from(
+      { length: 40 },
+      (_, i) =>
+        `<p>La agencia informó que el organismo revisará ${i} medidas antes del cierre trimestral, según documentos entregados esta semana a los reguladores del sector ${i * 3}.</p>`,
+    ).join("");
+    const fuente = fuenteHtml.replace(/<[^>]+>/g, " ");
+    const copiado = goodDraft();
+    copiado.es.content_html = fuenteHtml;
+    const bueno = goodDraft();
+    let intentos = 0;
+    const prompts: string[] = [];
+    const fetchImpl: typeof fetch = async (_i, init) => {
+      intentos += 1;
+      prompts.push(JSON.parse(String(init?.body)).contents[0].parts[0].text);
+      return ok({
+        candidates: [
+          { content: { parts: [{ text: JSON.stringify(intentos === 1 ? copiado : bueno) }] } },
+        ],
+        usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100 },
+      });
+    };
+    const r = await writeDraft("prompt", [fuente], { apiKey: "k", fetchImpl });
+    expect(intentos).toBe(2);
+    expect(r.attempts).toBe(2);
+    expect(prompts[0]).not.toContain("AVISO IMPORTANTE");
+    expect(prompts[1]).toContain("AVISO IMPORTANTE");
+    expect(prompts[1]).toContain("DESDE CERO");
+
+    // Si copia las dos veces, no se publica nada: el listón no se baja.
+    const siempreCopia: typeof fetch = async () =>
+      ok({
+        candidates: [{ content: { parts: [{ text: JSON.stringify(copiado) }] } }],
+        usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100 },
+      });
+    await expect(
+      writeDraft("prompt", [fuente], { apiKey: "k", fetchImpl: siempreCopia }),
+    ).rejects.toThrow(/copia fuentes/);
+  });
+
   it("writeDraft: llama al modelo, valida y devuelve costo", async () => {
     const fetchImpl: typeof fetch = async () =>
       ok({

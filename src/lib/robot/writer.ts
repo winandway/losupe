@@ -257,23 +257,49 @@ export type WriteOptions = {
   apiKey: string;
   model?: TextModel;
   fetchImpl?: typeof fetch;
+  /** Cuántas veces se vuelve a pedir la nota si sale copiada o mal formada (por defecto, una). */
+  retries?: number;
 };
 
-/** Llama al modelo con el prompt dado y devuelve el borrador final + costo. */
+/**
+ * Llama al modelo y devuelve el borrador final + costo.
+ *
+ * Si el borrador se cae por copiar frases de las fuentes o por venir mal formado, se pide **otra
+ * vez** con una advertencia concreta encima. Pasa sobre todo en inglés, cuando la fuente ya está en
+ * inglés: reformular sin repetir cuesta más. Sin este reintento, un solo tropiezo dejaba la corrida
+ * entera sin nota (y el diario sin publicar ese turno). El listón NO se baja: si el segundo intento
+ * también copia, la nota se descarta.
+ */
 export async function writeDraft(
   prompt: string,
   sourceTexts: readonly string[],
   opts: WriteOptions,
-): Promise<{ draft: Draft; usage: GeminiJsonResult<unknown> }> {
-  const usage = await generateJson<unknown>({
-    apiKey: opts.apiKey,
-    model: opts.model ?? WRITER_MODEL,
-    system: SYSTEM_PROMPT,
-    prompt,
-    temperature: 0.7,
-    maxOutputTokens: 16_000,
-    fetchImpl: opts.fetchImpl,
-  });
-  const draft = finalizeDraft(usage.data, sourceTexts);
-  return { draft, usage };
+): Promise<{ draft: Draft; usage: GeminiJsonResult<unknown>; attempts: number }> {
+  const maxAttempts = Math.max(1, (opts.retries ?? 1) + 1);
+  let last: unknown;
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const aviso =
+      attempt === 1
+        ? ""
+        : `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${
+            last instanceof DraftRejectedError ? last.message : "formato inválido"
+          }). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`;
+    const usage = await generateJson<unknown>({
+      apiKey: opts.apiKey,
+      model: opts.model ?? WRITER_MODEL,
+      system: SYSTEM_PROMPT,
+      prompt: prompt + aviso,
+      temperature: attempt === 1 ? 0.7 : 0.9,
+      maxOutputTokens: 16_000,
+      fetchImpl: opts.fetchImpl,
+    });
+    try {
+      return { draft: finalizeDraft(usage.data, sourceTexts), usage, attempts: attempt };
+    } catch (error) {
+      last = error;
+      if (attempt === maxAttempts) throw error;
+    }
+  }
+  /* istanbul ignore next: el bucle sale por return o por throw */
+  throw last;
 }

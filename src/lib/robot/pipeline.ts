@@ -80,6 +80,8 @@ export type NoteResult = {
   costUsd: number;
   error?: string;
   sponsor?: string;
+  /** Cuántos intentos hicieron falta para que la nota pasara el control anticopia. */
+  attempts?: number;
   /** A cuántos correos se avisó (equipo + suscriptores) y el fallo si lo hubo. */
   notified?: number;
   notifyError?: string;
@@ -470,6 +472,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           apiKey: env.GEMINI_API_KEY,
           fetchImpl,
         });
+        if (written.attempts > 1) result.attempts = written.attempts;
         const usage = written.usage;
         const { draft } = await maybeAddVideo(env, written.draft, fetchImpl);
         await recordSpend(
@@ -603,6 +606,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           docs.map((d) => d.text),
           { apiKey: env.GEMINI_API_KEY, fetchImpl },
         );
+        if (written.attempts > 1) result.attempts = written.attempts;
         const usage = written.usage;
         const { draft } = await maybeAddVideo(env, written.draft, fetchImpl);
         await recordSpend(
