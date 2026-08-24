@@ -555,3 +555,36 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no vuelvas a poner `await runScheduled(...)` en la respuesta de `/__scheduled`;
   no hagas el trabajo del robot dentro del `waitUntil` de una visita; y cuando algo muera sin dejar
   error ni gasto, sospecha de **quién lo estaba esperando** antes que de lo que estaba haciendo.
+
+## 22. El panel no decía que estaba trabajando (y una nota se tiraba por tres caracteres)
+
+- **Cómo se vio (24 ago 2026):** Richard pulsando «Ejecutar ahora»: _«no se queda, no dice una
+  rueda girando ni alguna cosa. Hay algo que sucede en segundo plano, pero no lo muestra. Entonces
+  uno da clic, clic, clic y no hace nada. Eso es un bug»_.
+- **Cuál era la causa:** los formularios del panel son entregas normales al servidor. Escribir una
+  nota tarda entre 30 y 90 segundos, y en todo ese rato la pantalla se quedaba **exactamente igual**.
+- **Qué se hizo:** `AvisoDeEnvio` se monta una sola vez en el armazón del panel y escucha el envío
+  de **cualquier** formulario que haya dentro. Se hizo así, y no tocando los veintitrés formularios
+  uno a uno, para que los que se añadan mañana queden cubiertos solos.
+  - **El aviso se dibuja FUERA del árbol de React, y eso es lo importante.** El primer intento
+    cambiaba el texto del botón a «Trabajando…» y **no funcionaba**: React lo restauraba al volver a
+    pintar. Los elementos los crea el propio componente en `document.body`, donde nadie los pisa.
+  - Tres señales a la vez: barra que se mueve arriba, cartel con lo que tarda, y una capa por encima
+    que impide el clic, clic, clic. Con red de seguridad a los 2 minutos por si la respuesta no llega.
+- **Y en la misma tanda, el error que destapó ese botón:** la corrida terminó bien (33 segundos, ya
+  sin morirse) pero devolvió _«El borrador no cumple el formato (es.meta_description: Too big:
+  expected string to have <=180 characters)»_. Una nota entera —dos idiomas, 1.100 palabras, ya
+  pagada— a la basura **por tres caracteres de más en un campo que solo leen los buscadores**.
+  - `ajustarMetadatos()` recorta ahora lo que se puede recortar (meta descripción, meta título,
+    entradilla, textos de la imagen, número de etiquetas), cortando por palabra entera. **El titular
+    y el cuerpo siguen siendo estrictos: eso lo lee la gente.**
+  - Y se devolvió el reintento del redactor a 1. Se había quitado esa tarde creyendo que la corrida
+    moría por tardar; resultó ser otra cosa (candado 21) y, ya arreglada, una corrida entera tarda
+    33 segundos: caben dos llamadas de sobra.
+- **Candado:** en `tests/e2e/smoke.spec.ts`, «al pulsar un botón se nota que está trabajando»
+  comprueba el aviso **en el mismo instante del envío** (sin esperar a la red: en local la respuesta
+  llega en milisegundos y esperar no probaría nada). En `tests/unit/robot-core.test.ts`, «un campo de
+  metadatos fuera de medida se RECORTA, no tira la nota» y su pareja, que el cuerpo sigue estricto.
+- **Qué NO tocar:** no vuelvas a dar el aviso cambiando el DOM que React controla; no recortes el
+  titular ni el cuerpo; y si añades un formulario al panel, no hace falta que hagas nada — ya está
+  cubierto.

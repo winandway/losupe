@@ -1,6 +1,7 @@
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { panelEnv } from "@/lib/panel/server";
+import { AvisoDeEnvio } from "./AvisoDeEnvio";
 import { PanelSidebar, type PanelNavItem } from "./PanelSidebar";
 
 export type PanelSection = "dashboard" | "write" | "orders" | "sponsors" | "notes" | "sources";
@@ -79,6 +80,7 @@ export async function PanelShell({
         }}
       />
 
+      <AvisoDeEnvio etiqueta={p.working} detalle={p.workingHint} />
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 border-b border-line bg-paper">
           <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 py-3 pl-16 pr-4 lg:px-8">

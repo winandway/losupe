@@ -268,6 +268,9 @@ export const es = {
     },
   },
   panel: {
+    working: "Trabajando…",
+    workingHint:
+      "Puede tardar hasta minuto y medio. No cierres esta pantalla ni vuelvas a tocar el botón.",
     title: "Panel de losupe",
     login: {
       title: "Entrar al panel",

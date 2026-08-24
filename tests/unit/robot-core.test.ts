@@ -276,30 +276,26 @@ describe("redactor: validación, limpieza y anticopia", () => {
     ).rejects.toThrow(/copia fuentes/);
   });
 
-  it("POR DEFECTO no reintenta dentro de la misma corrida (el worker no llega a dos llamadas)", async () => {
-    let intentos = 0;
-    const fetchImpl: typeof fetch = async () => {
-      intentos += 1;
-      return ok({
-        candidates: [
-          {
-            content: {
-              parts: [
-                {
-                  text: JSON.stringify({
-                    ...goodDraft(),
-                    es: { ...goodDraft().es, content_html: "<p>corto</p>" },
-                  }),
-                },
-              ],
-            },
-          },
-        ],
-        usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100 },
-      });
-    };
-    await expect(writeDraft("prompt", ["fuente"], { apiKey: "k", fetchImpl })).rejects.toThrow();
-    expect(intentos).toBe(1);
+  it("un campo de metadatos fuera de medida se RECORTA, no tira la nota", () => {
+    // El 24 ago 2026 una nota entera se descartó porque la descripción para Google traía 183
+    // caracteres en vez de 180. Un campo que solo ven los buscadores se recorta y ya está.
+    const largo = goodDraft();
+    largo.es.meta_description = `${"palabra ".repeat(40)}final`;
+    largo.en.meta_title = "T".repeat(200);
+    largo.es.tags = Array.from({ length: 20 }, (_, i) => `etiqueta${i}`);
+    const d = finalizeDraft(largo, []);
+    expect(d.es.meta_description.length).toBeLessThanOrEqual(180);
+    expect(d.en.meta_title.length).toBeLessThanOrEqual(95);
+    expect(d.es.tags).toHaveLength(8);
+    // Y no parte palabras por la mitad
+    expect(d.es.meta_description.endsWith("palabra")).toBe(true);
+  });
+
+  it("pero el titular y el cuerpo siguen siendo estrictos: eso lo lee la gente", async () => {
+    const corto = goodDraft();
+    corto.es.content_html = "<p>dos palabras</p>";
+    // Se rechaza (por el mínimo del cuerpo): no se recorta ni se deja pasar.
+    expect(() => finalizeDraft(corto, [])).toThrow(/formato|corto/);
   });
 
   it("writeDraft: llama al modelo, valida y devuelve costo", async () => {

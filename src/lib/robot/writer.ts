@@ -257,6 +257,55 @@ export class DraftRejectedError extends Error {
 }
 
 /** Valida y limpia lo que devolvió el modelo; rechaza si copió fuentes. */
+export /** Corta un texto en el último espacio antes del límite, para no partir una palabra por la mitad. */
+function recortar(texto: string, max: number): string {
+  const t = texto.trim();
+  if (t.length <= max) return t;
+  const corte = t.slice(0, max);
+  const espacio = corte.lastIndexOf(" ");
+  return (espacio > max * 0.6 ? corte.slice(0, espacio) : corte).replace(/[\s,;:.\-–—]+$/, "");
+}
+
+/**
+ * Ajusta lo que se puede ajustar antes de validar.
+ *
+ * El 24 ago 2026 una nota entera —dos idiomas, 1.100 palabras, bien escrita y ya pagada— se tiró a
+ * la basura porque la descripción para Google traía 183 caracteres en vez de 180. Eso es absurdo:
+ * un campo de metadatos se recorta y ya está.
+ *
+ * La regla es la que tiene sentido para un diario: **lo que el lector lee se respeta; lo que solo
+ * ven los buscadores se ajusta**. El titular y el cuerpo siguen siendo estrictos —si vienen mal, la
+ * nota se rehace—, pero la meta descripción, el meta título, la entradilla, los textos de la imagen
+ * y el número de etiquetas se recortan sin preguntar.
+ */
+export function ajustarMetadatos(raw: unknown): unknown {
+  if (typeof raw !== "object" || raw === null) return raw;
+  const d = { ...(raw as Record<string, unknown>) };
+  for (const lang of ["es", "en"] as const) {
+    const parte = d[lang];
+    if (typeof parte !== "object" || parte === null) continue;
+    const p = { ...(parte as Record<string, unknown>) };
+    if (typeof p.meta_description === "string")
+      p.meta_description = recortar(p.meta_description, 180);
+    if (typeof p.meta_title === "string") p.meta_title = recortar(p.meta_title, 95);
+    if (typeof p.excerpt === "string") p.excerpt = recortar(p.excerpt, 420);
+    if (Array.isArray(p.tags)) {
+      p.tags = p.tags
+        .filter((t): t is string => typeof t === "string" && t.trim().length >= 2)
+        .map((t) => recortar(t, 40))
+        .slice(0, 8);
+    }
+    d[lang] = p;
+  }
+  for (const campo of ["image_alt_es", "image_alt_en"] as const) {
+    if (typeof d[campo] === "string") d[campo] = recortar(d[campo] as string, 200);
+  }
+  if (typeof d.image_prompt === "string") d.image_prompt = recortar(d.image_prompt, 500);
+  if (Array.isArray(d.image_keywords)) d.image_keywords = d.image_keywords.slice(0, 5);
+  if (Array.isArray(d.video_keywords)) d.video_keywords = d.video_keywords.slice(0, 4);
+  return d;
+}
+
 export function finalizeDraft(
   raw: unknown,
   // Acepta las fuentes en crudo (cómodo para las pruebas y para `manual.ts`) o el índice ya
@@ -265,7 +314,7 @@ export function finalizeDraft(
 ): Draft {
   const fuentes =
     fuentesOIndice instanceof Set ? fuentesOIndice : sourceShingles(fuentesOIndice as string[]);
-  const parsed = draftSchema.safeParse(raw);
+  const parsed = draftSchema.safeParse(ajustarMetadatos(raw));
   if (!parsed.success) {
     // El detalle va en el mensaje: sin él, en el panel solo se ve «no cumple el formato» y no hay
     // forma de saber qué campo vino mal (pasó en producción el 24 ago 2026).
@@ -329,13 +378,11 @@ export async function writeDraft(
   sourceTexts: readonly string[],
   opts: WriteOptions,
 ): Promise<{ draft: Draft; usage: GeminiJsonResult<unknown>; attempts: number }> {
-  // POR DEFECTO, UN SOLO INTENTO. Y no es por ahorrar: es que reintentar aquí dentro duplica el
-  // tiempo de la corrida (dos llamadas al modelo de hasta 90 s) y el worker no llega. El 24 ago
-  // 2026 tres corridas seguidas murieron en este paso justo después de añadir un motivo más de
-  // rechazo. El reintento correcto ya existe un piso más arriba: el turno de la franja se vuelve a
-  // reclamar hasta tres veces, y cada vez es una invocación NUEVA, con su propio presupuesto. Un
-  // intento por invocación es más robusto que dos en la misma.
-  const maxAttempts = Math.max(1, (opts.retries ?? 0) + 1);
+  // Un reintento. Se quitó por la tarde del 24 ago 2026 creyendo que la corrida moría por tardar
+  // demasiado; resultó que moría por otra cosa (candado 21) y, ya arreglada, una corrida entera
+  // tarda 33 segundos: caben dos llamadas de sobra. Y hace falta, porque el modelo a veces devuelve
+  // un campo fuera de medida y sin reintento eso tira la nota entera.
+  const maxAttempts = Math.max(1, (opts.retries ?? 1) + 1);
   // Una sola vez para toda la corrida, pase lo que pase con los reintentos.
   const fuentes = sourceShingles(sourceTexts);
   let last: unknown;

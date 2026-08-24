@@ -784,3 +784,33 @@ test("panel: crear patrocinador, encolar ideas, ver cola y ejecutar sin llave av
   await page.getByRole("button", { name: "Guardar" }).click();
   await expect(page.getByText("Cambios guardados.")).toBeVisible();
 });
+
+test("panel: al pulsar un botón se nota que está trabajando", async ({ page }) => {
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/panel/entrar");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.goto("/panel");
+  // El aviso tiene que estar EN EL MISMO INSTANTE del envío: se comprueba en el mismo tick, sin
+  // esperar a la red, porque es justo lo que faltaba (Richard: «uno da clic, clic, clic y no hace
+  // nada»). En local la acción responde en milisegundos y la página se recarga enseguida; esperar a
+  // la red no probaría nada.
+  const aviso = await page.evaluate(() => {
+    const form = [...document.querySelectorAll("form")].find(
+      (f) => f.action.includes("/panel/accion/robot") && f.querySelector('input[value="run"]'),
+    );
+    if (!form) return { error: "no se encontró el formulario de «Ejecutar ahora»" };
+    form.addEventListener("submit", (e) => e.preventDefault(), { once: true });
+    form.requestSubmit();
+    const capa = document.getElementById("panel-trabajando");
+    return {
+      hay: !!capa,
+      rol: capa?.getAttribute("role") ?? null,
+      texto: capa?.textContent ?? "",
+      tapa: capa ? getComputedStyle(capa).position === "fixed" : false,
+    };
+  });
+  expect(aviso).toMatchObject({ hay: true, rol: "progressbar", tapa: true });
+  expect(aviso.texto).toContain("Trabajando");
+  expect(aviso.texto).toContain("minuto y medio");
+});

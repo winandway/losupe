@@ -270,6 +270,9 @@ export const en: Dict = {
     },
   },
   panel: {
+    working: "Working…",
+    workingHint:
+      "This can take up to a minute and a half. Don't close this screen or press the button again.",
     title: "losupe dashboard",
     login: {
       title: "Sign in to the dashboard",
