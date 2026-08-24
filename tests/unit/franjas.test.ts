@@ -132,3 +132,46 @@ describe("los intentos de una franja dan margen a un arreglo", () => {
     expect(MAX_INTENTOS_POR_FRANJA).toBe(5);
   });
 });
+
+describe("la corrida no depende de quien la llama", () => {
+  const ENV = { DB: undefined, CRON_SECRET: "s3creto" } as never;
+
+  it("responde AL INSTANTE y escribe la nota por detrás", async () => {
+    const { handleScheduledRequest } = await import("@/lib/robot/scheduled");
+    const pendientes: Promise<unknown>[] = [];
+    const ctx = { waitUntil: (p: Promise<unknown>) => void pendientes.push(p) };
+    const t0 = Date.now();
+    const res = await handleScheduledRequest(
+      new Request("https://losupe.com/__scheduled?key=s3creto"),
+      ENV,
+      ctx,
+    );
+    // 202 = «arrancada». Si esperase a escribir la nota, la petición duraría 30-90 segundos y
+    // quien la llamó podría colgar y matarla (fue lo que pasó el 24 ago 2026, once veces).
+    expect(res.status).toBe(202);
+    expect(Date.now() - t0).toBeLessThan(500);
+    expect(await res.json()).toMatchObject({ ok: true, started: true });
+    expect(pendientes).toHaveLength(1);
+  });
+
+  it("con ?wait=1 sí espera, para poder diagnosticar a mano", async () => {
+    const { handleScheduledRequest } = await import("@/lib/robot/scheduled");
+    const ctx = { waitUntil: () => undefined };
+    const res = await handleScheduledRequest(
+      new Request("https://losupe.com/__scheduled?key=s3creto&wait=1"),
+      ENV,
+      ctx,
+    );
+    expect(res.status).not.toBe(202);
+  });
+
+  it("sin la llave no corre nada", async () => {
+    const { handleScheduledRequest } = await import("@/lib/robot/scheduled");
+    const res = await handleScheduledRequest(
+      new Request("https://losupe.com/__scheduled?key=mala"),
+      ENV,
+      { waitUntil: () => undefined },
+    );
+    expect(res.status).toBe(404);
+  });
+});

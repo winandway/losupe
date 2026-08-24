@@ -120,7 +120,9 @@ export default {
     }
 
     if (pathname === "/__scheduled") {
-      return handleScheduledRequest(request, env);
+      // El `ctx` es lo que permite responder ya y escribir la nota por detrás (ver el comentario
+      // de handleScheduledRequest): sin él, quien llama puede matar la corrida al colgar.
+      return handleScheduledRequest(request, env, ctx);
     }
 
     // Descubrimiento para agentes.

@@ -519,3 +519,39 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no quites el `attempts + 1` de antes del trabajo ni lo muevas al final; no
   apliques la lista blanca a los candidatos guardados (te llevas por delante los RSS buenos); y si un
   tema se aparta, que se vea en el panel — apartar en silencio es cómo empezó todo esto.
+
+## 21. LA CAUSA DE FONDO: la corrida moría porque colgaba quien la llamaba
+
+- **Cómo se vio (24 ago 2026):** once corridas seguidas muertas en el paso `write`, **sin gastar un
+  centavo**, con temas distintos (o sea, no era el tema) y después de haber arreglado la CPU, el
+  número de llamadas al modelo, el filtro de temas y el candidato envenenado. El diario no publicó
+  en todo el día.
+- **Cuál era la causa real:** `/__scheduled` hacía `await runScheduled(...)` **dentro de la
+  respuesta HTTP**. Es decir, la petición se quedaba abierta los 30 a 90 segundos que tarda escribir
+  una nota bilingüe. ¿Y quién la llamaba? El latido, desde el `waitUntil` de la visita de **un lector
+  cualquiera**. Cuando a esa visita se le acababa su tiempo, **cancelaba la petición y con ella
+  moría la invocación que estaba escribiendo**: sin excepción, sin error registrado, sin gasto y sin
+  rastro. La corrida se quedaba «en marcha» hasta que `closeStaleRuns` la cerraba 15 minutos después.
+- **Por qué costó tanto encontrarlo:** funcionaba por los pelos. Antes de ese día la corrida tardaba
+  34 segundos y cabía justo en el tiempo que le sobraba a la visita. Cualquier cosa que la alargara
+  un poco —un prompt más largo, un rechazo más— la sacaba del margen. Por eso parecía que la habían
+  roto los cambios de ese día: en realidad solo destaparon una fragilidad que llevaba ahí desde el
+  principio.
+- **Qué se hizo exactamente:** `/__scheduled` **responde 202 «arrancada» en milisegundos** y hace el
+  trabajo en el `waitUntil` de SU PROPIA invocación, que tiene su propio presupuesto y de la que ya
+  no cuelga nadie. El latido solo dispara. Con `?wait=1` se puede seguir esperando el resultado
+  completo para diagnosticar a mano.
+- **Candado:** en `tests/unit/franjas.test.ts`, «la corrida no depende de quien la llama»: exige el
+  202 en menos de 500 ms y que el trabajo quede en `waitUntil`. Si alguien vuelve a poner el `await`
+  dentro de la respuesta, la prueba se pone roja.
+- **Cómo se comprueba que sigue funcionando:** `curl -s -o /dev/null -w "%{http_code} %{time_total}"
+"https://losupe.com/__scheduled?key=..."` tiene que dar **202** en menos de un segundo. Si tarda
+  30 segundos o más, alguien volvió a esperar el trabajo dentro de la respuesta.
+- **La lección, que vale para cualquier tarea larga:** un trabajo de minutos **nunca** se hace
+  dentro de una respuesta HTTP que otro está esperando, y menos si ese otro es una visita de un
+  lector. Se responde «recibido» y se trabaja aparte. Y ojo con el diagnóstico: aquí se arreglaron
+  cuatro cosas reales (todas mejoras que se quedan) antes de dar con esta, porque **el síntoma
+  —«muere escribiendo»— apuntaba al que escribe, no al que llama**.
+- **Qué NO tocar:** no vuelvas a poner `await runScheduled(...)` en la respuesta de `/__scheduled`;
+  no hagas el trabajo del robot dentro del `waitUntil` de una visita; y cuando algo muera sin dejar
+  error ni gasto, sospecha de **quién lo estaba esperando** antes que de lo que estaba haciendo.

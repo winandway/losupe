@@ -81,9 +81,24 @@ export function timingSafeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
+/**
+ * LA RESPUESTA SALE ANTES QUE EL TRABAJO, Y ES A PROPÓSITO.
+ *
+ * Antes esto era `await runScheduled(...)` dentro de la respuesta: la petición HTTP se quedaba
+ * abierta los 30-90 segundos que tarda escribir una nota. Y quien la llamaba era el latido, desde el
+ * `waitUntil` de la visita de un lector cualquiera. Cuando a esa visita se le acababa su tiempo,
+ * **cancelaba la petición y mataba la corrida a media escritura** — sin error, sin gasto, sin rastro.
+ * El 24 ago 2026 así se perdieron once corridas seguidas y el diario no publicó en todo el día.
+ *
+ * Ahora el trabajo va en el `waitUntil` de ESTA invocación, que tiene su propio presupuesto y a la
+ * que ya no le cuelga nadie: se responde «arrancada» en milisegundos y la nota se escribe sola.
+ *
+ * Con `?wait=1` se espera el resultado completo (para diagnosticar a mano y ver qué salió).
+ */
 export async function handleScheduledRequest(
   request: Request,
   env: ScheduledEnv,
+  ctx?: { waitUntil(p: Promise<unknown>): void },
 ): Promise<Response> {
   if (!(await isScheduledRequestAuthorized(request, env))) {
     return new Response("Not found", { status: 404 });
@@ -91,9 +106,20 @@ export async function handleScheduledRequest(
   if (request.method !== "GET" && request.method !== "POST") {
     return new Response("Method not allowed", { status: 405 });
   }
+  const trigger: RunTrigger = request.headers.has("x-yad-cron") ? "cron" : "manual";
+  const base = baseFrom(env, request);
+  const esperar = new URL(request.url).searchParams.get("wait") === "1";
+
+  if (ctx && !esperar) {
+    ctx.waitUntil(runScheduled(env, trigger, { base }).catch(() => undefined));
+    return Response.json(
+      { ok: true, started: true, trigger },
+      { status: 202, headers: { "Cache-Control": "no-store" } },
+    );
+  }
+
   try {
-    const trigger: RunTrigger = request.headers.has("x-yad-cron") ? "cron" : "manual";
-    const result = await runScheduled(env, trigger, { base: baseFrom(env, request) });
+    const result = await runScheduled(env, trigger, { base });
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";

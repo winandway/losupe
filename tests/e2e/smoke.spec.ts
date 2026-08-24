@@ -475,14 +475,26 @@ test("/__health reporta la base en verde", async ({ request }) => {
   expect(body.db.articles).toBeGreaterThan(0);
 });
 
-test("el robot solo responde al programador", async ({ request }) => {
+test("el robot solo responde al programador, y arranca sin hacer esperar", async ({ request }) => {
   const denied = await request.get("/__scheduled?key=incorrecta");
   expect(denied.status()).toBe(404);
+
+  // ARRANCA Y CUELGA: responde «202 arrancada» de inmediato, sin dejar la petición abierta los
+  // 30-90 s que tarda escribir una nota. Si esperase, quien llama podría colgar y matar la corrida
+  // a media escritura (pasó once veces el 24 ago 2026).
+  const t0 = Date.now();
   const ok = await request.get("/__scheduled", { headers: { "x-yad-cron": "1" } });
-  expect(ok.status()).toBe(200);
-  const body = (await ok.json()) as { ok: boolean; status: string };
-  expect(body.ok).toBe(true);
-  expect(["skipped", "pending"]).toContain(body.status);
+  expect(ok.status()).toBe(202);
+  expect(Date.now() - t0).toBeLessThan(5000);
+  const body = (await ok.json()) as { ok: boolean; started: boolean; trigger: string };
+  expect(body).toMatchObject({ ok: true, started: true, trigger: "cron" });
+
+  // Con ?wait=1 sí se espera el resultado, para poder diagnosticar a mano.
+  const esperado = await request.get("/__scheduled?wait=1", { headers: { "x-yad-cron": "1" } });
+  expect(esperado.status()).toBe(200);
+  const detalle = (await esperado.json()) as { ok: boolean; status: string };
+  expect(detalle.ok).toBe(true);
+  expect(["skipped", "pending"]).toContain(detalle.status);
 });
 
 test("portada: franja de video, buscador grande y botonera", async ({ page }) => {
