@@ -303,6 +303,12 @@ INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, ro
 UPDATE settings SET value = 'andreea-blidar', updated_at = datetime('now')
   WHERE key = 'default_author' AND value NOT IN (SELECT id FROM authors WHERE active = 1);
 UPDATE authors SET active = 0 WHERE id = 'magaly-molina';
+-- El prompt del robot la nombraba, así que el modelo llegó a escribir la firma DENTRO del cuerpo.
+-- Se limpia de las notas ya publicadas (el limpiador del redactor evita que vuelva a pasar).
+UPDATE article_i18n SET content_html = REPLACE(content_html, '<p>Por Magaly Molina</p>', '')
+  WHERE content_html LIKE '%Por Magaly Molina%';
+UPDATE article_i18n SET content_html = REPLACE(content_html, '<p>By Magaly Molina</p>', '')
+  WHERE content_html LIKE '%By Magaly Molina%';
 UPDATE authors SET sections_json = '[]' WHERE id IN ('equipo-losupe', 'kevin-rondon');
 UPDATE articles SET author_id = 'andreea-blidar' WHERE author_id = 'magaly-molina' AND section_id = 'economia';
 UPDATE articles SET author_id = 'merry-melina' WHERE author_id = 'magaly-molina';

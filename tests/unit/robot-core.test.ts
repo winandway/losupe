@@ -192,6 +192,14 @@ describe("redactor: validación, limpieza y anticopia", () => {
     expect(() => finalizeDraft(copied, [source])).toThrow(/copia fuentes/);
     expect(shingles("a b c d e f g h i", 8).size).toBe(2);
     expect(cleanEditorialHtml('<a href="javascript:x">x</a><p>ok</p>')).toBe("x<p>ok</p>");
+    // El sitio ya pone la firma con foto: si el modelo la escribe dentro del texto, se quita.
+    expect(cleanEditorialHtml("<p>Texto.</p><p>Por Magaly Molina</p>")).toBe("<p>Texto.</p>");
+    expect(cleanEditorialHtml("<p>Texto.</p><p>By Andreea Blidar</p>")).toBe("<p>Texto.</p>");
+    expect(cleanEditorialHtml("<p>Texto.</p><p>Por  Pedro Llerena .</p>")).toBe("<p>Texto.</p>");
+    // No se lleva por delante frases normales que empiezan por «Por»
+    expect(
+      cleanEditorialHtml("<p>Por eso el mercado subió con fuerza durante la semana.</p>"),
+    ).toBe("<p>Por eso el mercado subió con fuerza durante la semana.</p>");
   });
   it("los prompts llevan la idea, el brief, las reglas de tono y el material", () => {
     const p = buildSponsoredPrompt({

@@ -65,7 +65,28 @@ export function cleanEditorialHtml(html: string): string {
     }
     return `<${name}>`;
   });
+  // El modelo a veces firma el texto («Por Nombre Apellido»). El sitio ya pone la firma con foto, así
+  // que esa línea duplica —y en el peor caso deja el nombre de alguien que ya no escribe aquí.
+  out = out.replace(/<p>([^<]{0,60})<\/p>/g, (m, dentro: string) => (esFirma(dentro) ? "" : m));
   return out.replace(/\n{3,}/g, "\n\n").trim();
+}
+
+/**
+ * ¿Este párrafo es solo una firma («Por Ana López», «By John Smith»)? Se comprueba con lógica
+ * simple en vez de una expresión regular anidada, que con textos raros puede colgarse.
+ */
+export function esFirma(texto: string): boolean {
+  const limpio = texto
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s*\.$/, "")
+    .trim();
+  const partes = limpio.split(" ").filter(Boolean);
+  if (partes.length < 2 || partes.length > 5) return false;
+  const primera = partes[0]!.toLowerCase();
+  if (primera !== "por" && primera !== "by") return false;
+  // Todo lo que sigue tiene que parecer un nombre propio: empieza en mayúscula y no lleva números.
+  return partes.slice(1).every((w) => /^[A-ZÁÉÍÓÚÑ][\p{L}'.-]*$/u.test(w));
 }
 
 /** Fragmentos de N palabras (sin acentos ni signos) para comparar textos. */
@@ -95,7 +116,7 @@ export function copyRatio(draftText: string, sources: readonly string[], n = 8):
 
 export const MAX_COPY_RATIO = 0.08;
 
-export const SYSTEM_PROMPT = `Eres la redacción de losupe.com, un medio de noticias bilingüe (español e inglés) para lectores de Estados Unidos y América Latina. Escribes notas propias, claras y humanas, como una periodista experimentada. Cada nota sale firmada por Magaly Molina, nuestra editora: tiene que estar a la altura de su firma —bien hecha, verificable y sin descuidos—, porque queremos ser una fuente seria para las personas, para Google y para las IA que leen la web.
+export const SYSTEM_PROMPT = `Eres la redacción de losupe.com, un medio de noticias bilingüe (español e inglés) para lectores de Estados Unidos y América Latina. Escribes notas propias, claras y humanas, como una periodista experimentada. Cada nota sale firmada por la persona del equipo a la que le toque el turno, y el sitio pone su nombre y su foto solo: **NUNCA escribas la firma dentro del texto** (nada de «Por Nombre Apellido», ni al principio ni al final) y no menciones a ningún miembro del equipo. Aun así, la nota tiene que estar a la altura de una firma con nombre y cara —bien hecha, verificable y sin descuidos—, porque queremos ser una fuente seria para las personas, para Google y para las IA que leen la web.
 
 VOZ (lo que nunca se pierde)
 - Escribe con calidez y humanidad: cercana, relajada, amable, como quien le explica algo importante a un amigo que confía en ti. Sin frialdad corporativa, sin grandilocuencia, sin sermones. Se permite una pizca de emoción y de empatía cuando la historia la tiene; nunca sensacionalismo.

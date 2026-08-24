@@ -93,7 +93,10 @@ describe("fuentes confiables y nombre para citar", () => {
     expect(SYSTEM_PROMPT).toMatch(/calidez y humanidad/);
     expect(SYSTEM_PROMPT).toMatch(/según The New York Times/);
     expect(SYSTEM_PROMPT).toMatch(/fuente MÁS confiable/);
-    expect(SYSTEM_PROMPT).toMatch(/Magaly Molina/);
+    // El prompt no nombra a nadie del equipo, pero sí exige que la nota esté a la altura de una
+    // firma con nombre y cara, y prohíbe firmar dentro del texto.
+    expect(SYSTEM_PROMPT).not.toMatch(/Magaly/i);
+    expect(SYSTEM_PROMPT).toMatch(/NUNCA escribas la firma dentro del texto/);
     expect(SYSTEM_PROMPT).toMatch(/wants_video/);
     expect(SYSTEM_PROMPT).toMatch(/contenido patrocinado/);
     const parsed = draftSchema.safeParse({
