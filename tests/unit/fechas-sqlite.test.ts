@@ -1,3 +1,6 @@
+// @vitest-environment node
+// Esta prueba usa SQLite de verdad (`node:sqlite`). En el entorno de navegador (jsdom, el que
+// usa el resto) vitest no puede empaquetar un modulo interno de Node y la prueba ni arranca.
 /**
  * El fallo de las dos fechas, probado contra SQLite DE VERDAD.
  *

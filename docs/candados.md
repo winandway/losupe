@@ -305,6 +305,11 @@ diario…`, 23 ago 2026).
 - **Comprobado en rojo:** quitando `julianday()` de la consulta, la prueba «CASO QUE MUERDE:
   separación corta (6 h)» falla con `expected { id: 'a2' } to be null` — o sea, el patrocinador
   saca la segunda nota. Con el arreglo puesto, 10/10 en verde.
+- **El CI necesita Node 24.** `node:sqlite` solo es estable a partir de Node 24; con Node 22 la
+  prueba ni arranca (`Cannot bundle Node.js built-in "node:sqlite"`) y el candado más importante del
+  proyecto se quedaba sin correr en GitHub, aunque en la máquina pasara. `verify.yml` usa la misma
+  versión que se usa para desarrollar. Probar con otra versión es probar otra cosa.
 - **Qué NO tocar:** no vuelvas a `datetime('now')` «porque es más corto»; no compares fechas como
-  texto en una consulta que proteja algo; y cuando lo que se prueba es la CONSULTA, usa `SqliteD1`,
-  no `FakeD1`.
+  texto en una consulta que proteja algo; cuando lo que se prueba es la CONSULTA, usa `SqliteD1`,
+  no `FakeD1`; y no bajes el Node del CI por debajo de 24 ni excluyas esta prueba «porque falla en
+  el servidor»: lo que falla es la versión, no la prueba.
