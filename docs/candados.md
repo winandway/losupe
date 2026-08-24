@@ -169,3 +169,22 @@ diario…`, 23 ago 2026).
 - **Ojo:** `npx wrangler d1 execute --file schema.sql` **no pasa por el guardián** (ejecuta SQL crudo),
   así que en local fallará el ALTER si la columna ya está. Para pruebas locales, aplica el esquema sin
   esa línea o deja que el worker lo haga.
+
+## 10. El orden del `schema.sql` importa en una base NUEVA
+
+- **Cómo se vio (24 ago 2026):** el workflow `verify` de GitHub falló con
+  `FOREIGN KEY constraint failed` al crear la base local desde cero. En producción no se notó porque
+  allí las tablas ya tenían datos.
+- **Causa real:** el bloque del patrocinador YaDominios (`sponsors` + `assignments`, que apuntan a
+  `sections`) quedó **antes** del `INSERT OR IGNORE INTO sections`. En una base con secciones no pasa
+  nada; en una base nueva, la clave foránea revienta y se cae todo el esquema.
+- **Qué se hizo:** se movió ese bloque al final, después de los datos base. Orden correcto del
+  archivo: **tablas → índices → `ALTER TABLE` (columnas nuevas) → datos base (secciones, autores,
+  ajustes) → equipo de redacción → fuentes → patrocinadores y encargos**.
+- **Candado (comprobado en rojo):** `tests/unit/schema-guard.test.ts` → «orden de dependencias del
+  schema.sql»: exige que las tablas se creen antes de escribir, que **nada referencie una sección
+  antes de que exista**, que el `ALTER` de `sections_json` vaya antes de usarla y que los `UPDATE` a
+  autores vayan después de insertarlos. Se comprobó devolviendo el bloque a su sitio malo: la prueba
+  falla. Corre en `npm run verify`, o sea, en el pre-push y en CI.
+- **Qué NO tocar:** al agregar datos nuevos al `schema.sql`, ponlos **al final**; si referencian
+  secciones o autores, nunca antes de los datos base.

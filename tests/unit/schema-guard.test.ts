@@ -299,3 +299,50 @@ describe("health", () => {
     expect(r.db.error).toBe("boom");
   });
 });
+
+describe("orden de dependencias del schema.sql", () => {
+  const stmts = splitSql(SCHEMA);
+  const idx = (pred: (s: string) => boolean) => stmts.findIndex(pred);
+
+  it("las tablas se crean antes de que nadie escriba en ellas", () => {
+    const primerInsert = idx((s) => /^INSERT|^UPDATE/i.test(s));
+    const ultimoCreate = stmts.reduce(
+      (acc, s, i) => (/^CREATE (TABLE|VIRTUAL TABLE)/i.test(s) ? i : acc),
+      -1,
+    );
+    expect(ultimoCreate).toBeLessThan(primerInsert);
+  });
+
+  it("las secciones existen antes de que las referencie nadie (fallaría la clave foránea)", () => {
+    const secciones = idx((s) => /^INSERT OR IGNORE INTO sections/i.test(s));
+    expect(secciones).toBeGreaterThanOrEqual(0);
+    const referencian = stmts
+      .map((s, i) => ({ s, i }))
+      .filter(
+        ({ s }) =>
+          /^INSERT/i.test(s) &&
+          /\b(sponsors|assignments|candidates|articles|sources)\b/i.test(s) &&
+          /'(economia|ventas|tecnologia|cripto|artistas)'/.test(s),
+      );
+    expect(referencian.length).toBeGreaterThan(0);
+    for (const { s, i } of referencian) {
+      expect(
+        i,
+        `esta sentencia va antes de crear las secciones: ${s.slice(0, 70)}…`,
+      ).toBeGreaterThan(secciones);
+    }
+  });
+
+  it("la columna sections_json se añade antes de usarla, y los autores existen antes de actualizarlos", () => {
+    const alter = idx((s) => /^ALTER TABLE authors ADD COLUMN sections_json/i.test(s));
+    const usaColumna = idx((s) => /^INSERT OR IGNORE INTO authors[\s\S]*sections_json/i.test(s));
+    expect(alter).toBeGreaterThanOrEqual(0);
+    expect(usaColumna).toBeGreaterThan(alter);
+    const insertAutoresBase = stmts.reduce(
+      (acc, s, i) => (/^INSERT OR IGNORE INTO authors/i.test(s) ? i : acc),
+      -1,
+    );
+    const updateAutores = idx((s) => /^UPDATE authors/i.test(s));
+    expect(updateAutores).toBeGreaterThan(insertAutoresBase);
+  });
+});

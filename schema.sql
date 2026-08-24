@@ -255,32 +255,6 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status, created_at DESC);
 
 
--- Primer patrocinador real: YaDominios (la plataforma donde vive losupe). Sirve de ejemplo vivo
--- del módulo de encargos. Se puede editar o cancelar desde el panel sin tocar este archivo.
-INSERT OR IGNORE INTO sponsors (id, name, website, contact_name, contact_email, brief, section_id, notes_total, status, internal_notes) VALUES
-  ('sp-yadominios', 'YaDominios', 'https://yadominios.com/', 'Equipo YaDominios', 'hola@yadominios.com',
-   'Plataforma de dominios y hosting en la nube fundada en 2006, con soporte en español. Eslogan: Tu dominio, listo ya. Registra dominios (.com desde 14 dólares al año, privacidad WHOIS incluida, sin aumentos ocultos en la renovación) y ofrece YaDominios Cloud, hosting con cuatro planes (Nébula 3, Órbita 6, Galaxia 15 y Cosmos 39 dólares al mes) con SSL, DNS, CDN global en más de 330 ciudades, base de datos D1 y archivos R2, correo desde tu dominio y publicación automática desde GitHub. Suma herramientas de IA: Blisor AI para crear páginas web, un ERP con IA para inventario, ventas y clientes, y una Pasarela de Agentes para darle un asistente de IA a cualquier sistema. Público: emprendedores, pequeños negocios, desarrolladores y agencias que quieren todo integrado y sin complicaciones. Tono: cercano, claro, sin jerga, orgulloso de ser en español.',
-   'tecnologia', 4, 'active',
-   'Patrocinador de arranque. Es la plataforma donde se publica losupe.');
-
-INSERT OR IGNORE INTO assignments (id, sponsor_id, position, title_idea, brief, section_id, status) VALUES
-  ('as-yad-1', 'sp-yadominios', 1,
-   'Cómo publicar tu página web en la nube sin saber de servidores',
-   'Guía duradera: explicar paso a paso qué es YaDominios Cloud, cómo se conecta un repositorio de GitHub y qué incluye cada plan. Enfoque en el emprendedor que no es técnico.',
-   'tecnologia', 'queued'),
-  ('as-yad-2', 'sp-yadominios', 2,
-   'Cuánto cuesta de verdad tener un dominio y una página en 2026',
-   'Comparar precios reales y explicar el problema de las renovaciones que suben de golpe. Citar los precios publicados por la empresa.',
-   'economia', 'queued'),
-  ('as-yad-3', 'sp-yadominios', 3,
-   'Crear una página web con inteligencia artificial: qué se puede y qué no',
-   'Sobre Blisor AI. Qué resuelve, para quién sirve, qué esperar de una página hecha con IA y qué sigue haciendo falta.',
-   'tecnologia', 'queued'),
-  ('as-yad-4', 'sp-yadominios', 4,
-   'Un asistente de IA dentro de tu negocio: para qué sirve la Pasarela de Agentes',
-   'Sobre el ERP con IA y la Pasarela de Agentes, con ejemplos de tareas reales de una tienda o una agencia.',
-   'ventas', 'queued');
-
 -- Datos base (idempotentes).
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('economia', 1, 2),
@@ -356,3 +330,29 @@ INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VA
   ('bing-artistas-es', 'artistas', 'Bing Noticias: artistas y música (ES)', 'https://www.bing.com/news/search?q=artistas+m%C3%BAsica+estrenos&format=rss&setlang=es', 'rss', 'es', 2),
   ('google-trends-us-es', 'artistas', 'Google Trends: lo más buscado hoy en EE. UU. (ES)', 'https://trends.google.com/trending/rss?geo=US&hl=es-419', 'trends', 'es', 3),
   ('google-trends-us-en', 'artistas', 'Google Trends: top searches today in the U.S. (EN)', 'https://trends.google.com/trending/rss?geo=US&hl=en-US', 'trends', 'en', 3);
+
+-- Primer patrocinador real: YaDominios (la plataforma donde vive losupe). Sirve de ejemplo vivo
+-- del módulo de encargos. Se puede editar o cancelar desde el panel sin tocar este archivo.
+INSERT OR IGNORE INTO sponsors (id, name, website, contact_name, contact_email, brief, section_id, notes_total, status, internal_notes) VALUES
+  ('sp-yadominios', 'YaDominios', 'https://yadominios.com/', 'Equipo YaDominios', 'hola@yadominios.com',
+   'Plataforma de dominios y hosting en la nube fundada en 2006, con soporte en español. Eslogan: Tu dominio, listo ya. Registra dominios (.com desde 14 dólares al año, privacidad WHOIS incluida, sin aumentos ocultos en la renovación) y ofrece YaDominios Cloud, hosting con cuatro planes (Nébula 3, Órbita 6, Galaxia 15 y Cosmos 39 dólares al mes) con SSL, DNS, CDN global en más de 330 ciudades, base de datos D1 y archivos R2, correo desde tu dominio y publicación automática desde GitHub. Suma herramientas de IA: Blisor AI para crear páginas web, un ERP con IA para inventario, ventas y clientes, y una Pasarela de Agentes para darle un asistente de IA a cualquier sistema. Público: emprendedores, pequeños negocios, desarrolladores y agencias que quieren todo integrado y sin complicaciones. Tono: cercano, claro, sin jerga, orgulloso de ser en español.',
+   'tecnologia', 4, 'active',
+   'Patrocinador de arranque. Es la plataforma donde se publica losupe.');
+
+INSERT OR IGNORE INTO assignments (id, sponsor_id, position, title_idea, brief, section_id, status) VALUES
+  ('as-yad-1', 'sp-yadominios', 1,
+   'Cómo publicar tu página web en la nube sin saber de servidores',
+   'Guía duradera: explicar paso a paso qué es YaDominios Cloud, cómo se conecta un repositorio de GitHub y qué incluye cada plan. Enfoque en el emprendedor que no es técnico.',
+   'tecnologia', 'queued'),
+  ('as-yad-2', 'sp-yadominios', 2,
+   'Cuánto cuesta de verdad tener un dominio y una página en 2026',
+   'Comparar precios reales y explicar el problema de las renovaciones que suben de golpe. Citar los precios publicados por la empresa.',
+   'economia', 'queued'),
+  ('as-yad-3', 'sp-yadominios', 3,
+   'Crear una página web con inteligencia artificial: qué se puede y qué no',
+   'Sobre Blisor AI. Qué resuelve, para quién sirve, qué esperar de una página hecha con IA y qué sigue haciendo falta.',
+   'tecnologia', 'queued'),
+  ('as-yad-4', 'sp-yadominios', 4,
+   'Un asistente de IA dentro de tu negocio: para qué sirve la Pasarela de Agentes',
+   'Sobre el ERP con IA y la Pasarela de Agentes, con ejemplos de tareas reales de una tienda o una agencia.',
+   'ventas', 'queued');
