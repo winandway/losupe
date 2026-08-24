@@ -255,7 +255,10 @@ describe("redactor: validación, limpieza y anticopia", () => {
         usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100 },
       });
     };
-    const r = await writeDraft("prompt", [fuente], { apiKey: "k", fetchImpl });
+    // `retries: 1` a propósito: en el robot el reintento va un piso más arriba (el turno de la
+    // franja se vuelve a reclamar en una invocación nueva), pero el mecanismo tiene que seguir
+    // funcionando para quien lo pida.
+    const r = await writeDraft("prompt", [fuente], { apiKey: "k", fetchImpl, retries: 1 });
     expect(intentos).toBe(2);
     expect(r.attempts).toBe(2);
     expect(prompts[0]).not.toContain("AVISO IMPORTANTE");
@@ -269,8 +272,34 @@ describe("redactor: validación, limpieza y anticopia", () => {
         usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100 },
       });
     await expect(
-      writeDraft("prompt", [fuente], { apiKey: "k", fetchImpl: siempreCopia }),
+      writeDraft("prompt", [fuente], { apiKey: "k", fetchImpl: siempreCopia, retries: 1 }),
     ).rejects.toThrow(/copia fuentes/);
+  });
+
+  it("POR DEFECTO no reintenta dentro de la misma corrida (el worker no llega a dos llamadas)", async () => {
+    let intentos = 0;
+    const fetchImpl: typeof fetch = async () => {
+      intentos += 1;
+      return ok({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    ...goodDraft(),
+                    es: { ...goodDraft().es, content_html: "<p>corto</p>" },
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+        usageMetadata: { promptTokenCount: 100, candidatesTokenCount: 100 },
+      });
+    };
+    await expect(writeDraft("prompt", ["fuente"], { apiKey: "k", fetchImpl })).rejects.toThrow();
+    expect(intentos).toBe(1);
   });
 
   it("writeDraft: llama al modelo, valida y devuelve costo", async () => {

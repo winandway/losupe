@@ -329,7 +329,13 @@ export async function writeDraft(
   sourceTexts: readonly string[],
   opts: WriteOptions,
 ): Promise<{ draft: Draft; usage: GeminiJsonResult<unknown>; attempts: number }> {
-  const maxAttempts = Math.max(1, (opts.retries ?? 1) + 1);
+  // POR DEFECTO, UN SOLO INTENTO. Y no es por ahorrar: es que reintentar aquí dentro duplica el
+  // tiempo de la corrida (dos llamadas al modelo de hasta 90 s) y el worker no llega. El 24 ago
+  // 2026 tres corridas seguidas murieron en este paso justo después de añadir un motivo más de
+  // rechazo. El reintento correcto ya existe un piso más arriba: el turno de la franja se vuelve a
+  // reclamar hasta tres veces, y cada vez es una invocación NUEVA, con su propio presupuesto. Un
+  // intento por invocación es más robusto que dos en la misma.
+  const maxAttempts = Math.max(1, (opts.retries ?? 0) + 1);
   // Una sola vez para toda la corrida, pase lo que pase con los reintentos.
   const fuentes = sourceShingles(sourceTexts);
   let last: unknown;
