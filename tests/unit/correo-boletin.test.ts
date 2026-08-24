@@ -101,6 +101,66 @@ describe("suscriptores (doble confirmación)", () => {
     expect(String(insert?.params[3])).toHaveLength(40);
   });
 
+  it("EN SEGUNDO PLANO: responde sin esperar al correo (nadie se queda mirando la pantalla)", async () => {
+    const db = new FakeD1(() => []);
+    let resuelto = false;
+    // Un servicio de correo lento: 1,5 s, como el que hacía esperar a la gente.
+    const lento: typeof fetch = async () => {
+      await new Promise((r) => setTimeout(r, 1500));
+      resuelto = true;
+      return new Response("{}", { status: 200 });
+    };
+    const pendientes: Promise<unknown>[] = [];
+    const t0 = Date.now();
+    const r = await subscribe(
+      db.asD1(),
+      ENV,
+      "https://losupe.com",
+      { email: "a@b.com", lang: "es" },
+      lento,
+      (p) => pendientes.push(p),
+    );
+    // La respuesta llega YA, con el correo todavía en camino.
+    expect(r).toEqual({ ok: true, state: "pending" });
+    expect(Date.now() - t0).toBeLessThan(500);
+    expect(resuelto).toBe(false);
+    // Y el alta ya está guardada: el correo saldrá, pero la persona no espera por él.
+    expect(db.calls.some((c) => c.sql.startsWith("INSERT INTO subscribers"))).toBe(true);
+    await Promise.all(pendientes);
+    expect(resuelto).toBe(true);
+  });
+
+  it("si el correo falla en segundo plano, queda anotado (no se pierde en silencio)", async () => {
+    const db = new FakeD1(() => []);
+    const roto: typeof fetch = async () => new Response("nope", { status: 500 });
+    const pendientes: Promise<unknown>[] = [];
+    await subscribe(
+      db.asD1(),
+      ENV,
+      "https://losupe.com",
+      { email: "a@b.com", lang: "es" },
+      roto,
+      (p) => pendientes.push(p),
+    );
+    await Promise.all(pendientes);
+    const apunte = db.calls.find((c) => c.sql.includes("mail_error"));
+    expect(apunte).toBeTruthy();
+    expect(String(apunte?.params[1])).toContain("rejected");
+  });
+
+  it("sin segundo plano se comporta como siempre: espera y avisa del fallo", async () => {
+    const db = new FakeD1(() => []);
+    const roto: typeof fetch = async () => new Response("nope", { status: 500 });
+    const r = await subscribe(
+      db.asD1(),
+      ENV,
+      "https://losupe.com",
+      { email: "a@b.com", lang: "es" },
+      roto,
+    );
+    expect(r).toMatchObject({ ok: false, reason: "mail" });
+  });
+
   it("si ya estaba confirmado no vuelve a escribir ni a mandar correo", async () => {
     const db = new FakeD1((sql) =>
       sql.includes("SELECT status FROM subscribers") ? [{ status: "confirmed" }] : [],

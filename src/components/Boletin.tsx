@@ -1,5 +1,6 @@
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
+import { BoletinForm } from "./BoletinForm";
 
 /**
  * Alta al aviso de notas nuevas. Funciona sin JavaScript (formulario normal) y no apunta a nadie
@@ -37,32 +38,18 @@ export function Boletin({ lang, dict, state }: { lang: Lang; dict: Dict; state?:
             {mensaje}
           </p>
         ) : null}
-        <form
-          action="/datos/boletin"
-          method="post"
-          className="mx-auto mt-5 flex max-w-md flex-col gap-2 sm:flex-row"
-        >
-          <input type="hidden" name="lang" value={lang} />
-          <label htmlFor="boletin-email" className="sr-only">
-            {b.placeholder}
-          </label>
-          <input
-            id="boletin-email"
-            name="email"
-            type="email"
-            required
-            maxLength={200}
-            autoComplete="email"
-            placeholder={b.placeholder}
-            className="h-12 w-full min-w-0 rounded-full border-0 bg-white px-5 text-base text-ink outline-none ring-accent focus:ring-4"
-          />
-          <button
-            type="submit"
-            className="h-12 shrink-0 rounded-full bg-accent px-6 text-sm font-extrabold uppercase tracking-wide text-ink hover:brightness-95"
-          >
-            {b.button}
-          </button>
-        </form>
+        <BoletinForm
+          lang={lang}
+          t={{
+            placeholder: b.placeholder,
+            button: b.button,
+            sending: b.sending,
+            checkInbox: b.checkInbox,
+            already: b.already,
+            invalid: b.invalid,
+            mailDown: b.mailDown,
+          }}
+        />
         <p className="mt-3 text-xs text-white/60">{b.legal}</p>
       </div>
     </section>

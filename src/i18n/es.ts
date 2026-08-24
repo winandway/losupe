@@ -614,6 +614,7 @@ export const es = {
     button: "Quiero recibirlas",
     legal:
       "Te mandamos un correo para que confirmes. Puedes darte de baja cuando quieras, con un clic.",
+    sending: "Enviando…",
     checkInbox: "Revisa tu correo y toca el botón para confirmar.",
     confirmed: "¡Listo! Ya recibirás las notas apenas salgan.",
     already: "Ya estabas apuntado. No hay nada más que hacer.",

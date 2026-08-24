@@ -38,12 +38,19 @@ export async function POST(request: Request) {
     email: String(form.get("email") ?? ""),
     lang,
   });
-  const to = (estado: string) => back(`${homePath(lang)}?boletin=${estado}#boletin`);
+  // El formulario del sitio pide JSON (así responde sin recargar la página y puede avisar al
+  // instante). Sin JavaScript llega una petición normal y se responde con la redirección de siempre.
+  const quiereJson = (request.headers.get("accept") ?? "").includes("application/json");
+  const to = (estado: string) =>
+    quiereJson
+      ? Response.json({ estado }, { headers: { "Cache-Control": "no-store" } })
+      : back(`${homePath(lang)}?boletin=${estado}#boletin`);
   if (!parsed.success) return to("invalido");
-  const { env } = await getCloudflareContext({ async: true });
+  const { env, ctx } = await getCloudflareContext({ async: true });
   const db = await getDb();
   const base = env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
-  const res = await subscribe(db, env, base, parsed.data);
+  // El correo sale por detrás: la persona no tiene por qué esperar al servicio de correo.
+  const res = await subscribe(db, env, base, parsed.data, fetch, (p) => ctx.waitUntil(p));
   if (!res.ok) return to(res.reason === "mail" ? "sincorreo" : "invalido");
   return to(res.state === "already" ? "yaestabas" : "revisa");
 }

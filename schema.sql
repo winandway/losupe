@@ -281,6 +281,9 @@ INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en)
 -- Especialidades de cada autor (secciones que domina). Columna añadida el 23 ago 2026: en las bases
 -- que ya existían se agrega con ALTER (el guardián tolera que ya esté puesta).
 ALTER TABLE authors ADD COLUMN sections_json TEXT NOT NULL DEFAULT '[]';
+-- Motivo por el que no salio el correo de confirmacion. Se manda en segundo plano para que la
+-- persona no espere, y sin esta columna un fallo del servicio de correo no dejaria ni rastro.
+ALTER TABLE subscribers ADD COLUMN mail_error TEXT;
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
 INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES

@@ -117,10 +117,13 @@ test("boletín: alta desde la portada, sin apuntar a nadie sin confirmar", async
   await boletin.scrollIntoViewIfNeeded();
   await expect(boletin.getByRole("heading", { name: /Recibe las notas/ })).toBeVisible();
   await boletin.getByPlaceholder("Tu correo electrónico").fill(`prueba+${Date.now()}@example.com`);
+  const urlAntes = page.url();
   await boletin.getByRole("button", { name: "Quiero recibirlas" }).click();
-  // Sin correo configurado en local, el sitio lo dice en claro (no falla en silencio)
-  await expect(page.getByRole("status")).toBeVisible();
-  await expect(page).toHaveURL(/boletin=/);
+  // AVISA AL INSTANTE: antes se quedaba dos segundos mudo y la gente pulsaba otra vez.
+  // Sin correo configurado en local, el sitio lo dice en claro (no falla en silencio).
+  await expect(page.getByRole("status")).toBeVisible({ timeout: 3000 });
+  // Y lo hace SIN recargar la página: la dirección no se mueve.
+  expect(page.url()).toBe(urlAntes);
 
   // Un correo mal escrito no pasa la validación del servidor
   const malo = await request.post("/datos/boletin", {
@@ -133,6 +136,25 @@ test("boletín: alta desde la portada, sin apuntar a nadie sin confirmar", async
   // Un enlace de confirmación inventado no da de alta a nadie
   const falso = await request.get("/datos/boletin?alta=inventado", { maxRedirects: 0 });
   expect(falso.headers()["location"]).toContain("boletin=invalido");
+});
+
+test("boletín: el botón avisa que está enviando y no admite doble clic", async ({ page }) => {
+  await page.goto("/es");
+  const boletin = page.locator("#boletin");
+  await boletin.scrollIntoViewIfNeeded();
+  const boton = boletin.getByRole("button", { name: /Quiero recibirlas|Enviando/ });
+  // Servicio lento a propósito: así se ve el estado intermedio que antes no existía.
+  await page.route("**/datos/boletin", async (route) => {
+    await new Promise((r) => setTimeout(r, 2500));
+    await route.fulfill({ json: { estado: "revisa" } });
+  });
+  await boletin.getByPlaceholder("Tu correo electrónico").fill(`lento+${Date.now()}@example.com`);
+  await boton.click();
+  await expect(boton).toHaveText(/Enviando/);
+  await expect(boton).toBeDisabled();
+  // Y al terminar, el aviso amable y el campo limpio para el siguiente
+  await expect(page.getByRole("status")).toContainText(/Revisa tu correo/, { timeout: 8000 });
+  await expect(boletin.getByPlaceholder("Tu correo electrónico")).toHaveValue("");
 });
 
 test("panel: se puede escribir una nota a mano y los avisos por correo se configuran", async ({

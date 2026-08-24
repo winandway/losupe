@@ -615,6 +615,7 @@ export const en: Dict = {
     placeholder: "Your email",
     button: "Send them to me",
     legal: "We'll email you to confirm. You can unsubscribe any time, with one click.",
+    sending: "Sending…",
     checkInbox: "Check your email and tap the button to confirm.",
     confirmed: "Done! You'll get our stories as soon as they're out.",
     already: "You were already subscribed. Nothing else to do.",

@@ -37,12 +37,24 @@ const TEXTS = {
   },
 } as const;
 
+/**
+ * Alta al aviso de notas nuevas.
+ *
+ * `enSegundoPlano` (el `waitUntil` de la plataforma) es lo que hace que la persona no se quede dos
+ * segundos mirando una pantalla quieta: el alta se guarda y se responde YA, y el correo de
+ * confirmación sale por detrás. Sin él, la respuesta esperaba al servicio de correo y la gente
+ * pensaba que el botón no funcionaba y lo pulsaba otra vez.
+ *
+ * Si el envío falla estando en segundo plano NO se pierde el rastro: queda anotado en la fila del
+ * suscriptor (`mail_error`), que es lo que mira el panel.
+ */
 export async function subscribe(
   db: D1Database,
   env: MailEnv,
   base: string,
   input: { email: string; lang: Lang },
   fetchImpl: typeof fetch = fetch,
+  enSegundoPlano?: (p: Promise<unknown>) => void,
 ): Promise<SubscribeResult> {
   const email = input.email.trim().toLowerCase();
   try {
@@ -63,19 +75,38 @@ export async function subscribe(
 
     const t = TEXTS[input.lang];
     const url = `${base}/datos/boletin?alta=${encodeURIComponent(token)}`;
-    const res = await sendMail(
-      env,
-      {
-        to: [email],
-        subject: t.subject,
-        text: `${t.intro}\n\n${url}\n\n${t.ignore}`,
-        html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:520px;margin:0 auto;color:#0b1f3a">
+    const envio = () =>
+      sendMail(
+        env,
+        {
+          to: [email],
+          subject: t.subject,
+          text: `${t.intro}\n\n${url}\n\n${t.ignore}`,
+          html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:520px;margin:0 auto;color:#0b1f3a">
 <p style="font-size:16px;line-height:1.6;margin:0 0 20px">${t.intro}</p>
 <p style="margin:0 0 24px"><a href="${url}" style="background:#FFD60A;color:#0b1f3a;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;display:inline-block">${t.button}</a></p>
 <p style="font-size:12px;color:#5b6b82;margin:0">${t.ignore}</p></div>`,
-      },
-      fetchImpl,
-    );
+        },
+        fetchImpl,
+      );
+
+    // Con `waitUntil` la respuesta sale de inmediato y el correo se manda por detrás.
+    if (enSegundoPlano) {
+      enSegundoPlano(
+        envio().then(async (r) => {
+          if (r.ok) return;
+          // Nada de fallar en silencio: el motivo queda en la ficha del suscriptor.
+          await db
+            .prepare(`UPDATE subscribers SET mail_error = ?2 WHERE email = ?1`)
+            .bind(email, `${r.reason}${"detail" in r && r.detail ? `: ${r.detail}` : ""}`)
+            .run()
+            .catch(() => undefined);
+        }),
+      );
+      return { ok: true, state: "pending" };
+    }
+
+    const res = await envio();
     if (!res.ok) return { ok: false, reason: "mail", detail: res.reason };
     return { ok: true, state: "pending" };
   } catch (error) {

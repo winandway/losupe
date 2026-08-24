@@ -452,3 +452,35 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no vuelvas a poner un `return "artistas"` al final de `classifyTrend`; el
   descarte es lo correcto. Y al añadir una palabra al filtro de deportes, escribe antes la prueba
   del tema BUENO que esa palabra podría llevarse por delante.
+
+## 19. El formulario del boletín se quedaba dos segundos mudo
+
+- **Cómo se vio (24 ago 2026):** Richard, mirando el sitio como un lector cualquiera: _«se queda
+  pensando… uno tiene que darle clic, clic. La gente piensa que eso no funciona»_. Al pulsar
+  «Quiero recibirlas» no pasaba **nada** en pantalla durante unos dos segundos.
+- **Cuál era la causa real (dos capas):**
+  1. **El servidor esperaba al correo.** La ruta guardaba el alta, **esperaba a que el servicio de
+     correo mandara la confirmación** y solo entonces respondía. Ese viaje son uno o dos segundos.
+  2. **El formulario era una entrega normal:** al responder, el navegador **recargaba la página
+     entera** y saltaba al ancla. Entre una cosa y otra, dos segundos de pantalla quieta y ninguna
+     señal de que el botón hubiera hecho algo.
+- **Por qué importa de verdad:** el que se suscribe es un lector nuevo, el momento más frágil que
+  hay. Si cree que está roto, pulsa otra vez (dos altas, dos correos) o se va. Un formulario que no
+  contesta al instante es un formulario que pierde gente.
+- **Qué se hizo exactamente:**
+  1. **El correo sale por detrás** (`waitUntil`): se guarda el alta, se responde YA y la
+     confirmación se manda en segundo plano. Si el envío falla, **no se pierde**: el motivo queda
+     anotado en `subscribers.mail_error` (columna nueva).
+  2. **`BoletinForm` avisa en el instante del clic**: el botón pasa a «Enviando…», queda
+     deshabilitado (adiós al doble clic) y la respuesta aparece **sin recargar la página**.
+  3. La ruta responde JSON cuando se lo piden (`Accept: application/json`) y sigue respondiendo con
+     la redirección de siempre cuando no. **Sin JavaScript el formulario sigue funcionando igual**:
+     esto se añadió encima, no en lugar de.
+- **Candado:** en `tests/unit/correo-boletin.test.ts` — «EN SEGUNDO PLANO: responde sin esperar al
+  correo» usa un servicio de correo de 1,5 s y exige que la respuesta llegue en menos de 500 ms con
+  el envío todavía en marcha; «si el correo falla en segundo plano, queda anotado» comprueba que el
+  motivo se guarda. En el navegador: a los 250 ms el botón ya dice «Enviando…» y está deshabilitado.
+- **Qué NO tocar:** no vuelvas a esperar al servicio de correo dentro de la respuesta; no quites el
+  `action`/`method` del formulario (es lo que lo mantiene vivo sin JavaScript); y si el envío pasa a
+  segundo plano en algún otro sitio, **deja siempre dónde se anota el fallo** — un correo que no
+  sale y no deja rastro es peor que uno que falla a la vista.
