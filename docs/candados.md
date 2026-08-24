@@ -313,3 +313,67 @@ diario…`, 23 ago 2026).
   texto en una consulta que proteja algo; cuando lo que se prueba es la CONSULTA, usa `SqliteD1`,
   no `FakeD1`; y no bajes el Node del CI por debajo de 24 ni excluyas esta prueba «porque falla en
   el servidor»: lo que falla es la versión, no la prueba.
+
+## 15. El diario publicaba de madrugada (franjas horarias y una firma por franja)
+
+- **Cómo se vio (24 ago 2026, 12:49 PM hora de Michigan):** Richard entró al mediodía, actualizó y
+  no había nada nuevo. El robot estaba encendido, con publicación automática, y la cuota del día
+  marcaba **3 de 3**. Las tres notas habían salido a las **11:35 PM, 12:49 AM y 1:08 AM** — de
+  madrugada, cuando no hay nadie leyendo, y las tres firmadas casi seguidas.
+- **Cuál era la causa real (dos fallos que se sumaban):**
+  1. **El día se contaba en UTC.** El día UTC cambia a las 8 de la noche hora del Este. En cuanto
+     cambiaba, la cuota diaria se ponía a cero y el robot tenía permiso para disparar.
+  2. **El latido solo miraba el reloj de cocina, no la hora:** «¿pasó una hora desde la última
+     corrida?». Nunca preguntaba _qué hora es_. Entre las dos cosas, la noche era el mejor momento
+     para publicar: cuota libre y ningún freno.
+- **Qué se hizo exactamente:**
+  1. `src/lib/robot/franjas.ts` — tres franjas fijas en hora del Este (`America/New_York`):
+     **7:00 mañana, 12:00 mediodía, 17:00 tarde**, con ventana de tolerancia de 3 horas por si
+     nadie visita el sitio a la hora en punto. Elegidas con los picos de lectura de los medios
+     (Pew: 66 % lee noticias entre 5 y 9 PM y 56 % antes de las 8 AM; Public Radio Biz Lab: picos a
+     primera hora, 9 AM, mediodía y 5 PM; Sprout Social 2026: pico general 11 AM–6 PM hora local).
+  2. `claimTick` solo entrega el turno **dentro** de una franja, y la marca que guarda es el turno
+     concreto del día local (`2026-08-24:mediodia`), no una hora suelta. Fuera de horario devuelve
+     `fuera_de_horario` aunque falten notas: **los turnos atrasados NO se acumulan**, porque
+     acumularlos es justo lo que llenaba la madrugada.
+  3. `robotNotesToday` cuenta por **día del Este** (`rangoDelDiaLocal`), comparando el instante UTC
+     guardado contra el rango real del día, no el texto de la fecha.
+  4. **Una firma por franja** (`rankWriters`): quien ya publicó hoy pasa al final de la cola, por
+     delante incluso de la especialidad. Son tres notas y tres personas: una cada uno. Palabras de
+     Richard: _«no sale que una sola persona escribió tantas cosas en un día, nadie tiene esa
+     capacidad»_. Solo se repite si todo el equipo ya publicó.
+  5. El cron dispara las dos horas UTC posibles de cada franja (verano e invierno). No hay riesgo de
+     nota doble: el segundo disparo encuentra el turno ya marcado.
+- **Candado:** `tests/unit/franjas.test.ts` (con las tres horas reales del fallo como caso de
+  prueba) y el bloque «piloto automático por franjas» de `tests/unit/correo-boletin.test.ts`; la
+  rotación, en `tests/unit/autores.test.ts` → «una firma por franja».
+- **Comprobado en rojo:** quitando el `if (!franja) return …` de `claimTick`, la prueba «DE
+  MADRUGADA NO CORRE» falla. Con el arreglo puesto, todo en verde.
+- **Qué NO tocar:** no vuelvas a contar el día con `toISOString().slice(0,10)` — eso es UTC y aquí
+  el día es el del Este; no dejes que un turno perdido se recupere fuera de su ventana; y no pongas
+  una franja de madrugada «para aprovechar la cuota»: la cuota no es una meta, los lectores sí.
+
+## 16. Que no suene a IA: se mide la densidad, no se prohíben palabras
+
+- **Cómo se vio (24 ago 2026):** Richard leyó un titular nuestro — «La resiliencia de la economía
+  de EE. UU.» — y lo dijo claro: _«que no busque ni ponga palabras de IA… "resiliencia" es una
+  palabra típica de AI. Eso no quiere decir que van a vetar esa palabra, si tiene que saber
+  agregarla en un lugar que sea más humano»_.
+- **Cuál era la causa real:** al redactor se le pedía «humano» en el prompt y volvía igual. Una
+  instrucción sin medición no se cumple sola. Y la respuesta fácil —una lista negra— habría sido
+  peor: «resiliencia» es la palabra correcta cuando el informe del Fondo Monetario habla de
+  resiliencia. Lo que delata a una máquina no es una palabra: es el montón.
+- **Qué se hizo exactamente:**
+  1. `src/lib/robot/tics-ia.ts` mide **densidad**: muletillas por cada 1000 palabras, con un tope
+     holgado (`MAX_TICS_POR_MIL = 3`). Una pasa; cinco en un párrafo, no. Dos listas, español e
+     inglés, comparadas sobre texto sin tildes ni mayúsculas.
+  2. Si se pasa, el borrador se rechaza igual que cuando copia una fuente, y el reintento le dice
+     **qué palabras** lo delataron y que el problema es la cantidad, no el término.
+  3. En el prompt, una sección nueva con los tics más típicos en los dos idiomas y la regla:
+     concreto antes que abstracto, frases de largos distintos, nada de cerrar con «En resumen».
+- **Candado:** `tests/unit/tics-ia.test.ts`. Incluye el caso exacto que pidió Richard: una nota con
+  «resiliencia» **una vez** pasa sin problema; la misma nota con siete muletillas amontonadas se
+  rechaza.
+- **Qué NO tocar:** no conviertas esto en una lista negra («que nunca escriba resiliencia»), porque
+  entonces la nota queda peor; y no subas el tope para que pasen más notas — si un borrador no pasa,
+  el problema es el borrador.

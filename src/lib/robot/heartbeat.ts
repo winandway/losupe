@@ -1,4 +1,3 @@
-import { SQL_NOW } from "../sql-time";
 /**
  * Piloto automático que NO depende del programador de la plataforma.
  *
@@ -10,27 +9,33 @@ import { SQL_NOW } from "../sql-time";
  * Para que dos visitas simultáneas no lancen dos corridas, el turno se «gana» con un UPDATE
  * condicional en la base (SQLite lo resuelve de forma atómica): solo la petición que consigue
  * cambiar la marca ejecuta el robot.
+ *
+ * SEGUNDA LECCIÓN (mismo día): con «cada 60 minutos» no basta. Así, las tres notas del día salieron
+ * a las 11:35 PM, 12:49 AM y 1:08 AM hora del Este — de madrugada, sin lectores. Ahora el turno solo
+ * se puede reclamar DENTRO de una de las tres franjas de publicación (`franjas.ts`), una nota por
+ * franja, y la marca guardada es el turno concreto («2026-08-24:mediodia»), no una hora suelta.
  */
+
+import { SQL_NOW } from "../sql-time";
+import { franjaActiva, marcaDeFranja, type Franja } from "./franjas";
 
 export const TICK_KEY = "robot_last_tick";
 export const TICK_TOKEN_KEY = "robot_tick_token";
-/** Cada cuánto, como mucho, se lanza una corrida por tráfico. Se puede cambiar en `settings`. */
-export const DEFAULT_INTERVAL_MINUTES = 60;
-/** Si la corrida anterior falló o se cortó, se reintenta mucho antes. */
-export const RETRY_MINUTES = 15;
 
 export type TickDecision =
-  | { run: false; reason: "paused" | "too_soon" | "no_db" | "error" }
-  | { run: true; since: string | null };
+  | { run: false; reason: "paused" | "fuera_de_horario" | "turno_hecho" | "no_db" | "error" }
+  | { run: true; franja: Franja["key"]; marca: string };
 
 /**
- * Reclama el turno para correr. Devuelve `run: true` SOLO a quien gana la carrera.
+ * Reclama el turno para correr. Devuelve `run: true` SOLO a quien gana la carrera, y solo si el
+ * reloj está dentro de una franja de publicación. Fuera de horario no corre aunque falten notas del
+ * día: acumular turnos atrasados es justo lo que llenaba la madrugada de noticias.
+ *
  * No lanza excepciones: si algo falla, dice que no toca y sigue la vida.
  */
 export async function claimTick(
   db: D1Database | undefined,
   now = new Date(),
-  intervalMinutes?: number,
 ): Promise<TickDecision> {
   if (!db) return { run: false, reason: "no_db" };
   try {
@@ -39,45 +44,28 @@ export async function claimTick(
       .first<{ value: string }>();
     if (!paused || paused.value !== "0") return { run: false, reason: "paused" };
 
-    // Ritmo: el de `settings.robot_tick_minutes` (o el de por defecto). Si la última corrida quedó
-    // en error, se reintenta mucho antes en vez de esperar el turno completo.
-    let minutes = intervalMinutes;
-    if (minutes === undefined) {
-      const conf = await db
-        .prepare(`SELECT value FROM settings WHERE key = 'robot_tick_minutes'`)
-        .first<{ value: string }>();
-      minutes = Number(conf?.value ?? "") || DEFAULT_INTERVAL_MINUTES;
-      const last = await db
-        .prepare(`SELECT status FROM runs ORDER BY started_at DESC LIMIT 1`)
-        .first<{ status: string }>();
-      if (last?.status === "error") minutes = Math.min(minutes, RETRY_MINUTES);
-    }
+    const franja = franjaActiva(now);
+    if (!franja) return { run: false, reason: "fuera_de_horario" };
+    const marca = marcaDeFranja(now, franja);
 
-    const iso = now.toISOString();
-    const limit = new Date(now.getTime() - minutes * 60_000).toISOString();
-
-    // Primera vez: si la marca no existe, la creamos ya vencida para que la corrida entre.
+    // Primera vez: si la marca no existe, se crea vacía para que el turno pueda reclamarse.
     await db
       .prepare(
-        `INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?1, ?2, ${SQL_NOW})`,
+        `INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?1, '', ${SQL_NOW})`,
       )
-      .bind(TICK_KEY, "")
+      .bind(TICK_KEY)
       .run();
 
-    const before = await db
-      .prepare(`SELECT value FROM settings WHERE key = ?1`)
-      .bind(TICK_KEY)
-      .first<{ value: string }>();
-
-    // Gana el turno quien logre mover la marca: el `WHERE value < ?` deja pasar a una sola petición.
+    // Gana el turno quien logre escribir la marca de ESTA franja. El `value <> ?2` deja pasar a una
+    // sola petición: las demás encuentran la marca ya puesta y se van.
     const claimed = await db
       .prepare(
-        `UPDATE settings SET value = ?2, updated_at = ${SQL_NOW} WHERE key = ?1 AND value < ?3`,
+        `UPDATE settings SET value = ?2, updated_at = ${SQL_NOW} WHERE key = ?1 AND value <> ?2`,
       )
-      .bind(TICK_KEY, iso, limit)
+      .bind(TICK_KEY, marca)
       .run();
-    if ((claimed.meta?.changes ?? 0) === 0) return { run: false, reason: "too_soon" };
-    return { run: true, since: before?.value || null };
+    if ((claimed.meta?.changes ?? 0) === 0) return { run: false, reason: "turno_hecho" };
+    return { run: true, franja: franja.key, marca };
   } catch {
     return { run: false, reason: "error" };
   }

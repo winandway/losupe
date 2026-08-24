@@ -25,9 +25,14 @@
     },
   ],
   "triggers": {
-    // Cada 2 horas entre las 11:00 y las 23:00 UTC (7 am–7 pm hora del este): una nota por corrida,
-    // repartidas a lo largo del día hasta completar el cupo diario (settings.notes_per_day).
-    "crons": ["0 11,13,15,17,19,21,23 * * *"],
+    // Las tres franjas de publicacion (ver src/lib/robot/franjas.ts), en UTC. El cron no entiende de
+    // horario de verano, asi que se disparan las dos horas posibles de cada franja: en verano manda
+    // la primera, en invierno la segunda. No hay riesgo de nota doble porque el turno se apunta por
+    // franja y dia local, y el segundo disparo encuentra la marca ya puesta.
+    //   7:00 ET -> 11:00 UTC (verano) / 12:00 UTC (invierno)
+    //  12:00 ET -> 16:00 UTC          / 17:00 UTC
+    //  17:00 ET -> 21:00 UTC          / 22:00 UTC
+    "crons": ["0 11,12,16,17,21,22 * * *"],
   },
   "observability": {
     "enabled": true,

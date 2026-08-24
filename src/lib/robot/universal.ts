@@ -1,5 +1,6 @@
 import { decodeEntities, stripHtml } from "@/lib/html";
 import { SECTIONS, type SectionId } from "@/lib/sections";
+import { rangoDelDiaLocal } from "./franjas";
 import { BOT_USER_AGENT, fetchPage } from "./research";
 import { bestTrendArticle, classifyTrend, parseTrendsFeed } from "./trends";
 import { trustLevel } from "./trusted-sources";
@@ -250,12 +251,14 @@ export async function robotNotesToday(
   db: D1Database,
   now = new Date(),
 ): Promise<Record<string, number>> {
-  const day = now.toISOString().slice(0, 10);
+  // «Hoy» es el día del Este de EE. UU., no el día UTC. El día UTC cambia a las 8 de la noche hora
+  // de Michigan: contando así, la cuota se abría de noche y las tres notas salían de madrugada.
+  const { desde, hasta } = rangoDelDiaLocal(now);
   const { results } = await db
     .prepare(
-      `SELECT section_id, COUNT(*) AS n FROM articles WHERE origin IN ('robot', 'sponsored') AND substr(created_at, 1, 10) = ?1 GROUP BY section_id`,
+      `SELECT section_id, COUNT(*) AS n FROM articles WHERE origin IN ('robot', 'sponsored') AND created_at >= ?1 AND created_at < ?2 GROUP BY section_id`,
     )
-    .bind(day)
+    .bind(desde, hasta)
     .all<{ section_id: string; n: number }>();
   const out: Record<string, number> = {};
   for (const r of results) out[r.section_id] = Number(r.n);

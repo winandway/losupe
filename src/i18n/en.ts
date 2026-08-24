@@ -309,6 +309,9 @@ export const en: Dict = {
       absent: "missing",
       budget: "Spent today",
       of: "of",
+      schedule: "Publishing schedule",
+      scheduleHint:
+        "US Eastern time: {hora}. One story per slot, each signed by a different writer.",
       quota: "Robot stories today",
       autoPublish: "Auto-publish",
       autoOn: "Publishes on its own",

@@ -145,15 +145,14 @@ describe("suscriptores (doble confirmación)", () => {
   });
 });
 
-describe("piloto automático por tráfico", () => {
-  function db(paused: string, last: string, changes = 1, runStatus = "done") {
+describe("piloto automático por franjas", () => {
+  // Horas reales, en UTC, de la zona del Este: 12:30 PM (dentro de la franja de mediodía) y
+  // 1:08 AM (la madrugada donde salieron las notas del 24 ago 2026).
+  const MEDIODIA = new Date("2026-08-24T16:30:00Z");
+  const MADRUGADA = new Date("2026-08-24T05:08:00Z");
+
+  function db(paused: string, changes = 1) {
     const calls: { sql: string; params: unknown[] }[] = [];
-    const responde = (sql: string) => {
-      if (sql.includes("robot_paused")) return { value: paused };
-      if (sql.includes("robot_tick_minutes")) return { value: "" };
-      if (sql.includes("FROM runs")) return { status: runStatus };
-      return { value: last };
-    };
     return {
       calls,
       d1: {
@@ -161,44 +160,44 @@ describe("piloto automático por tráfico", () => {
           bind: (...params: unknown[]) => ({
             first: async () => {
               calls.push({ sql, params });
-              return responde(sql);
+              return { value: "" };
             },
             run: async () => {
               calls.push({ sql, params });
               return { meta: { changes: sql.startsWith("UPDATE settings") ? changes : 1 } };
             },
           }),
-          first: async () => responde(sql),
+          first: async () => (sql.includes("robot_paused") ? { value: paused } : { value: "" }),
         }),
       } as unknown as D1Database,
     };
   }
 
   it("no corre si el robot está en pausa", async () => {
-    const { d1 } = db("1", "");
-    expect(await claimTick(d1)).toEqual({ run: false, reason: "paused" });
+    expect(await claimTick(db("1").d1, MEDIODIA)).toEqual({ run: false, reason: "paused" });
   });
 
-  it("no corre si la última fue hace poco (solo una petición gana el turno)", async () => {
-    const { d1 } = db("0", new Date().toISOString(), 0);
-    expect(await claimTick(d1)).toEqual({ run: false, reason: "too_soon" });
+  it("DE MADRUGADA NO CORRE, aunque no se haya publicado nada", async () => {
+    expect(await claimTick(db("0").d1, MADRUGADA)).toEqual({
+      run: false,
+      reason: "fuera_de_horario",
+    });
   });
 
-  it("corre si pasó el intervalo, y deja la marca nueva", async () => {
-    const antigua = new Date(Date.now() - 5 * 3600_000).toISOString();
-    const { d1, calls } = db("0", antigua, 1);
-    const r = await claimTick(d1);
-    expect(r.run).toBe(true);
+  it("corre en su franja y deja apuntado el turno del día", async () => {
+    const { d1, calls } = db("0", 1);
+    const r = await claimTick(d1, MEDIODIA);
+    expect(r).toEqual({ run: true, franja: "mediodia", marca: "2026-08-24:mediodia" });
     const update = calls.find((c) => c.sql.startsWith("UPDATE settings"));
     expect(update?.params[0]).toBe(TICK_KEY);
+    expect(update?.params[1]).toBe("2026-08-24:mediodia");
   });
 
-  it("si la corrida anterior falló, reintenta mucho antes (15 min en vez de 60)", async () => {
-    const haceMedia = new Date(Date.now() - 30 * 60_000).toISOString();
-    // Con la anterior en «done» todavía no toca…
-    expect((await claimTick(db("0", haceMedia, 0, "done").d1)).run).toBe(false);
-    // …pero si quedó en error, sí.
-    expect((await claimTick(db("0", haceMedia, 1, "error").d1)).run).toBe(true);
+  it("solo una visita gana el turno: la segunda encuentra la marca puesta", async () => {
+    expect(await claimTick(db("0", 0).d1, MEDIODIA)).toEqual({
+      run: false,
+      reason: "turno_hecho",
+    });
   });
 
   it("sin base no explota", async () => {

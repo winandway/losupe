@@ -307,6 +307,9 @@ export const es = {
       absent: "falta",
       budget: "Gasto de hoy",
       of: "de",
+      schedule: "Horario de publicación",
+      scheduleHint:
+        "Hora del Este de EE. UU.: {hora}. Una nota por franja, cada una firmada por una persona distinta.",
       quota: "Notas del robot hoy",
       autoPublish: "Publicación automática",
       autoOn: "Publica sola",

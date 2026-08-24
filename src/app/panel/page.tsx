@@ -132,6 +132,31 @@ export default async function PanelHome({ searchParams }: Props) {
             {p.dashboard.quota}: <strong className="text-ink">{status.quota.today}</strong>{" "}
             {p.dashboard.of} {status.quota.notesPerDay}
           </p>
+          <div className="mt-3 border-t border-line pt-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted">
+              {p.dashboard.schedule}
+            </p>
+            <ul className="mt-1.5 flex flex-wrap gap-1.5">
+              {status.horario.franjas.map((f) => {
+                const hecha = status.horario.turnoHecho?.endsWith(`:${f.key}`) ?? false;
+                const abierta = status.horario.franjaAbierta === f.key;
+                return (
+                  <li
+                    key={f.key}
+                    className={`rounded-full px-2.5 py-1 text-xs font-bold ${
+                      hecha ? "bg-mint/30" : abierta ? "bg-accent text-ink" : "bg-paper text-muted"
+                    }`}
+                  >
+                    {f.nombre}
+                    {hecha ? " ✓" : abierta ? " ●" : ""}
+                  </li>
+                );
+              })}
+            </ul>
+            <p className="mt-1.5 text-xs text-muted">
+              {p.dashboard.scheduleHint.replace("{hora}", status.horario.ahora)}
+            </p>
+          </div>
           <p className="mt-2 flex items-center gap-2 text-sm">
             <Dot ok={status.autoPublish} />
             {p.dashboard.autoPublish}:{" "}

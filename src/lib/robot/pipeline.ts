@@ -33,6 +33,8 @@ import {
   robotNotesToday,
 } from "./universal";
 import { SQL_NOW } from "../sql-time";
+import { FRANJAS, franjaActiva, NOMBRE_FRANJA, partesEnZona, ZONA } from "./franjas";
+import { TICK_KEY } from "./heartbeat";
 import {
   buildSponsoredPrompt,
   buildUniversalPrompt,
@@ -111,6 +113,14 @@ export type RobotStatus = {
   evergreenRatio: number;
   mail: { configured: boolean; recipients: string[] };
   sponsorPace: { gapHours: number; maxPerWeek: number };
+  /** A qué horas publica el diario (hora del Este de EE. UU.) y en cuál estamos. */
+  horario: {
+    zona: string;
+    franjas: { key: string; hour: number; nombre: string }[];
+    ahora: string;
+    franjaAbierta: string | null;
+    turnoHecho: string | null;
+  };
   queue: QueueSummary;
   lastRun: {
     id: string;
@@ -178,6 +188,13 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
     ready: keys.gemini && !paused,
     missing,
     budget: { limitUsd: limit, spentTodayUsd: spent },
+    horario: {
+      zona: ZONA,
+      franjas: FRANJAS.map((f) => ({ key: f.key, hour: f.hour, nombre: NOMBRE_FRANJA[f.key].es })),
+      ahora: `${String(partesEnZona(now).hh).padStart(2, "0")}:${String(partesEnZona(now).mm).padStart(2, "0")}`,
+      franjaAbierta: franjaActiva(now)?.key ?? null,
+      turnoHecho: (await getSetting(db, TICK_KEY)) || null,
+    },
     quota: {
       notesPerDay: Number(perDay ?? "6") || 6,
       today: Object.values(today).reduce((a, b) => a + b, 0),
@@ -399,7 +416,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   const defaultAuthor = valido?.id ?? "equipo-losupe";
   /** Firma de esta nota: turno del equipo para esa sección (o la de por defecto si no hay equipo). */
   const authorFor = async (section: SectionId) =>
-    (await pickWriter(db, section).catch(() => null))?.id ?? defaultAuthor;
+    (await pickWriter(db, section, now).catch(() => null))?.id ?? defaultAuthor;
   const evergreenRatio = Number((await getSetting(db, "evergreen_ratio")) ?? "0.7");
   const maxNotes = Math.max(
     1,

@@ -71,3 +71,40 @@ describe("reparto de firmas entre el equipo", () => {
     expect(await pickWriter(vacia.asD1(), "cripto")).toBeNull();
   });
 });
+
+describe("una firma por franja: nadie escribe dos notas el mismo día", () => {
+  it("quien ya firmó hoy pasa al final, aunque sea el especialista", () => {
+    // Andreea es la especialista de economía, pero ya publicó en la franja de la mañana.
+    const conLaManana: WriterRow[] = [
+      { ...equipo[0]!, today: 1 },
+      { ...equipo[1]!, today: 0 },
+      { ...equipo[2]!, today: 0 },
+    ];
+    const orden = rankWriters(conLaManana, "economia");
+    expect(orden[0]?.id).not.toBe("andreea-blidar");
+    // Y Andreea queda de última: es la única que ya publicó hoy.
+    expect(orden[orden.length - 1]?.id).toBe("andreea-blidar");
+  });
+
+  it("las tres notas del día las firman tres personas distintas", () => {
+    const estado = equipo.map((w) => ({ ...w, today: 0 }));
+    const firmas: string[] = [];
+    for (const seccion of ["economia", "economia", "economia"] as const) {
+      const elegido = rankWriters(estado, seccion)[0]!;
+      firmas.push(elegido.id);
+      const fila = estado.find((w) => w.id === elegido.id)!;
+      fila.today = (fila.today ?? 0) + 1;
+      fila.last_published = new Date().toISOString();
+    }
+    expect(new Set(firmas).size).toBe(3);
+  });
+
+  it("si TODOS publicaron hoy, vuelve a entrar el que menos lleva", () => {
+    const todos: WriterRow[] = [
+      { ...equipo[0]!, today: 2 },
+      { ...equipo[1]!, today: 1 },
+      { ...equipo[2]!, today: 2 },
+    ];
+    expect(rankWriters(todos, "economia")[0]?.id).toBe("merry-melina");
+  });
+});

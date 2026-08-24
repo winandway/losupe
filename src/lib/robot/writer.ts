@@ -4,6 +4,7 @@ import { getSection, type SectionId } from "@/lib/sections";
 import { generateJson, type GeminiJsonResult } from "./gemini";
 import type { TextModel } from "./model-guard";
 import type { FetchedPage } from "./research";
+import { revisarSonidoHumano } from "./tics-ia";
 import { SOURCE_NAMES } from "./trusted-sources";
 
 /**
@@ -104,6 +105,14 @@ VOZ (lo que nunca se pierde)
 - Escribe con calidez y humanidad: cercana, relajada, amable, como quien le explica algo importante a un amigo que confía en ti. Sin frialdad corporativa, sin grandilocuencia, sin sermones. Se permite una pizca de emoción y de empatía cuando la historia la tiene; nunca sensacionalismo.
 - Español neutro de Estados Unidos (tú, nada de voseo ni regionalismos). El inglés es inglés nativo de EE. UU., no traducción literal: escribe la versión en inglés de nuevo, con naturalidad y la misma calidez.
 - Tono "pensar en grande, con los pies en la tierra": ambicioso pero medido. Prohibido exagerar, prohibidos los superlativos sin fuente ("el mejor", "el primero", "revoluciona") y las comparaciones con gigantes para inflar ("compite con Amazon"). Di lo mismo con elegancia: qué hace, para quién, con qué respaldo, qué viene.
+
+QUE NO SE NOTE QUE ESCRIBE UNA MÁQUINA (esto es lo que más se nota y lo que más nos cuesta)
+- Escribe como habla una persona que sabe del tema y te lo está contando. Frases de largos distintos: algunas cortas de verdad. Una idea por frase. Si una frase no se puede leer en voz alta de un tirón, pártela.
+- HAY PALABRAS QUE DELATAN A UNA IA. Las más típicas: "resiliencia", "robusto", "panorama actual", "en la era digital", "cabe destacar", "es crucial", "es fundamental", "juega un papel clave", "punto de inflexión", "hoja de ruta", "desbloquear", "profundizar en", "un testimonio de", "en resumen", "en un mundo cada vez más…". En inglés: "delve", "leverage", "robust", "seamless", "landscape", "tapestry", "a testament to", "navigate", "unlock", "harness", "pivotal", "crucial", "underscores", "myriad", "in today's fast-paced world", "it's worth noting", "game-changer".
+- NO están prohibidas. "Resiliencia" es la palabra exacta si el informe del Fondo Monetario habla de resiliencia. Lo que delata no es usarla una vez: es amontonarlas. Úsala si es LA palabra, en el sitio donde de verdad pega, y ninguna más. Si estás poniendo dos o tres de esas en la misma nota, es que no tienes nada concreto que decir en esa frase: dilo con las palabras de todos los días o quita la frase.
+- Prefiere siempre lo concreto a lo abstracto: en vez de "impulsar el crecimiento", "vender más"; en vez de "optimizar recursos", "gastar menos"; en vez de "un ecosistema robusto", di qué tiene y para qué sirve.
+- Nada de párrafos que empiezan todos igual ("Además,", "Sin embargo,", "Por otro lado,"), nada de listas donde cada punto arranca con una palabra en negrita y dos puntos, y nada de cerrar con "En resumen" o "En conclusión": la nota termina cuando termina lo que hay que contar.
+- Un detalle humano vale más que un adjetivo: una cifra, una fecha, un nombre, algo que se pueda comprobar. Si un párrafo no aporta un dato nuevo, sobra.
 
 FUENTES (lo más importante)
 1. Texto 100 % original: NO copies frases de las fuentes. Reformula con tus palabras y tu estructura. Inventamos el titular y el enfoque; la información viene de donde la leímos y eso se dice.
@@ -262,6 +271,13 @@ export function finalizeDraft(raw: unknown, sourceTexts: readonly string[]): Dra
       );
     }
   }
+  // ¿Suena a máquina? Se mira el titular, la entradilla y el cuerpo juntos: el tic más caro es el
+  // del titular, que es lo único que mucha gente llega a leer.
+  const sonido = revisarSonidoHumano(
+    `${es.title}. ${es.excerpt} ${stripHtml(es.content_html)}`,
+    `${en.title}. ${en.excerpt} ${stripHtml(en.content_html)}`,
+  );
+  if (sonido) throw new DraftRejectedError(`suena a IA — ${sonido}`);
   return { ...d, es, en };
 }
 
@@ -291,13 +307,16 @@ export async function writeDraft(
   let last: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
     const motivo = last instanceof Error ? last.message : "";
-    const copiaba = /copia fuentes/.test(motivo);
+    const copiaba = motivo.includes("copia fuentes");
+    const sonabaAMaquina = motivo.includes("suena a IA");
     const aviso =
       attempt === 1
         ? ""
-        : copiaba
-          ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
-          : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
+        : sonabaAMaquina
+          ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}`
+          : copiaba
+            ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
+            : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
     const usage = await generateJson<unknown>({
       apiKey: opts.apiKey,
       model: opts.model ?? WRITER_MODEL,
