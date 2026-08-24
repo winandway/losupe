@@ -15,9 +15,30 @@
 
 ## 2. Cuántas notas y de qué (propuesta en marcha)
 
-- **6 notas al día** para arrancar (robot + encargos juntos), repartidas a lo largo del día (una cada
-  2 horas, 7 am–7 pm hora del este). Cupo por sección: **Economía 2 · Ventas y motivación 1 ·
-  Tecnología e IA 1 · Cripto 1 · Artistas y tendencias 1**. Cada nota sale en español e inglés.
+- **3 notas al día**, una por franja, en hora del Este de EE. UU. Cupo por sección: **Economía 2 ·
+  Ventas y motivación 1 · Tecnología e IA 1 · Cripto 1 · Artistas y tendencias 1**. Cada nota sale
+  en español e inglés.
+
+### A qué hora sale cada una (y por qué)
+
+| Franja       | Hora del Este | Por qué                                                                      |
+| ------------ | ------------- | ---------------------------------------------------------------------------- |
+| **Mañana**   | 7:00          | El 56 % de los lectores mira noticias antes de las 8, y otra vez a las 9     |
+| **Mediodía** | 12:00         | Pico del almuerzo, uno de los tres picos claros de un sitio de noticias      |
+| **Tarde**    | 17:00         | Salida del trabajo, justo antes del rato de más tráfico de internet (7–9 PM) |
+
+Cada franja aguanta 3 horas: si a las 7 en punto no entra nadie al sitio, la nota sale con la
+primera visita de la mañana. Pasada la ventana, ese turno se pierde — a propósito, para que no se
+junten dos notas seguidas ni salga nada de madrugada.
+
+**Una firma por franja.** Las tres notas del día las escriben tres personas distintas: quien ya
+firmó hoy pasa al final de la cola. Que una sola persona firme tres notas en un día no se lo cree
+nadie.
+
+Fuentes de los horarios: [Pew Research](https://www.pewresearch.org/journalism/2016/05/05/3-users-spend-more-time-with-content-in-the-morning-or-late-at-night/),
+[Public Radio Biz Lab](https://bizlab.wbur.org/2020/01/what-your-time-of-day-traffic-patterns-reveal-about-your-site/)
+y [Sprout Social 2026](https://sproutsocial.com/insights/best-times-to-post-on-social-media/).
+
 - **Mitad duraderas, mitad de actualidad** al arranque (50/50). Las duraderas son guías («cómo…»,
   «5 consejos…», «qué significa…», comparativas, preguntas frecuentes) que siguen trayendo visitas
   dentro de un año; las de actualidad son noticias y tendencias del día para Google News, Discover y
