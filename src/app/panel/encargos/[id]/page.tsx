@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { PanelShell } from "@/components/panel/PanelShell";
 import { SponsorForm } from "@/components/panel/SponsorForm";
 import { flashFrom, panelDict, requirePanelSession } from "@/lib/panel/server";
-import { getSponsor, listAssignments } from "@/lib/robot/queue";
+import { getSponsor, getSponsorPace, listAssignments, sponsorNextSlot } from "@/lib/robot/queue";
 import { articlePath } from "@/lib/urls";
 import { getSection, SECTIONS } from "@/lib/sections";
 
@@ -20,6 +20,7 @@ export default async function SponsorDetailPage({ params, searchParams }: Props)
   const sponsor = await getSponsor(env.DB, id);
   if (!sponsor) notFound();
   const assignments = await listAssignments(env.DB, id);
+  const [pace, slot] = await Promise.all([getSponsorPace(env.DB), sponsorNextSlot(env.DB, id)]);
   const flash = flashFrom(await searchParams);
   const flashText = {
     ok: flash.ok ? ((p as unknown as Record<string, string>)[flash.ok] ?? flash.ok) : undefined,
@@ -55,6 +56,24 @@ export default async function SponsorDetailPage({ params, searchParams }: Props)
         </Link>
       }
     >
+      <p className="mb-4 rounded-xl border border-line bg-white px-4 py-3 text-sm">
+        <strong>{p.nextSlot}:</strong>{" "}
+        {slot.availableAt === null ? (
+          <span className="font-semibold text-ink">{p.available}</span>
+        ) : slot.availableAt === "semana" ? (
+          <span className="font-semibold text-coral">{p.weekFull}</span>
+        ) : (
+          <span className="font-semibold text-coral">
+            {p.waitingUntil} {slot.availableAt.slice(0, 16).replace("T", " ")} UTC
+          </span>
+        )}
+        <span className="ml-2 text-muted">
+          ({slot.publishedThisWeek}/{slot.maxPerWeek} {p.thisWeek})
+        </span>
+        <span className="mt-1 block text-xs text-muted">
+          {p.paceHint.replace("{h}", String(pace.gapHours)).replace("{n}", String(pace.maxPerWeek))}
+        </span>
+      </p>
       <p className="mb-5 text-sm">
         <strong>{sponsor.published}</strong> {p.published} · <strong>{sponsor.queued}</strong>{" "}
         {p.queuedShort} · <strong>{sponsor.remaining}</strong> {p.remaining} ·{" "}

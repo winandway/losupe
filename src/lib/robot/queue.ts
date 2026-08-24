@@ -340,14 +340,51 @@ export async function moveAssignment(
 export type NextAssignment = Assignment & { sponsor: SponsorWithCounts };
 
 /**
+ * Ritmo de publicación de los patrocinadores. Publicar varias notas de la misma empresa el mismo día
+ * es spam a ojos del lector y de Google: se guarda una separación mínima entre una y otra, y un tope
+ * por semana. Los valores se pueden cambiar en `settings`.
+ */
+export const DEFAULT_SPONSOR_GAP_HOURS = 72; // una nota cada 3 días
+export const DEFAULT_SPONSOR_MAX_PER_WEEK = 2;
+
+export type SponsorPace = { gapHours: number; maxPerWeek: number };
+
+export async function getSponsorPace(db: D1Database): Promise<SponsorPace> {
+  const leer = async (key: string, porDefecto: number) => {
+    try {
+      const row = await db
+        .prepare(`SELECT value FROM settings WHERE key = ?1`)
+        .bind(key)
+        .first<{ value: string }>();
+      // OJO: si el ajuste no existe, `Number("")` da 0 y el freno quedaría desactivado. Solo se usa
+      // el valor guardado cuando de verdad hay uno.
+      const crudo = (row?.value ?? "").trim();
+      if (crudo === "") return porDefecto;
+      const n = Number(crudo);
+      return Number.isFinite(n) && n >= 0 ? n : porDefecto;
+    } catch {
+      return porDefecto;
+    }
+  };
+  return {
+    gapHours: await leer("sponsor_min_gap_hours", DEFAULT_SPONSOR_GAP_HOURS),
+    maxPerWeek: await leer("sponsor_max_per_week", DEFAULT_SPONSOR_MAX_PER_WEEK),
+  };
+}
+
+/**
  * Siguiente encargo listo para salir: patrocinador activo y dentro de su periodo, con notas
- * restantes, encargo en cola cuya fecha (si la tiene) ya llegó. Orden: fecha pedida, posición.
+ * restantes, encargo en cola cuya fecha (si la tiene) ya llegó, **y respetando el ritmo**: nada de
+ * dos notas de la misma empresa seguidas. Orden: fecha pedida, posición.
  */
 export async function nextQueuedAssignment(
   db: D1Database,
   now = new Date(),
 ): Promise<NextAssignment | null> {
   const iso = now.toISOString();
+  const pace = await getSponsorPace(db);
+  const desde = new Date(now.getTime() - pace.gapHours * 3_600_000).toISOString();
+  const semana = new Date(now.getTime() - 7 * 86_400_000).toISOString();
   const { results } = await db
     .prepare(
       `SELECT a.* FROM assignments a
@@ -358,16 +395,53 @@ export async function nextQueuedAssignment(
          AND (s.period_start IS NULL OR s.period_start <= ?1)
          AND (s.period_end IS NULL OR s.period_end >= substr(?1, 1, 10))
          AND s.notes_total > (SELECT COUNT(*) FROM assignments p WHERE p.sponsor_id = s.id AND p.status = 'published')
+         AND NOT EXISTS (
+           SELECT 1 FROM assignments r
+           WHERE r.sponsor_id = s.id AND r.status = 'published' AND r.published_at > ?2
+         )
+         AND (
+           SELECT COUNT(*) FROM assignments w
+           WHERE w.sponsor_id = s.id AND w.status = 'published' AND w.published_at > ?3
+         ) < ?4
        ORDER BY COALESCE(a.scheduled_for, '0000') ASC, a.position ASC, a.created_at ASC
        LIMIT 1`,
     )
-    .bind(iso)
+    .bind(iso, desde, semana, pace.maxPerWeek)
     .all<AssignmentRow>();
   const row = results[0];
   if (!row) return null;
   const sponsor = await getSponsor(db, row.sponsor_id);
   if (!sponsor) return null;
   return { ...mapAssignment(row), sponsor };
+}
+
+/** Cuándo podrá salir la siguiente nota de este patrocinador (null = ya puede). */
+export async function sponsorNextSlot(
+  db: D1Database,
+  sponsorId: string,
+  now = new Date(),
+): Promise<{ availableAt: string | null; publishedThisWeek: number; maxPerWeek: number }> {
+  const pace = await getSponsorPace(db);
+  const semana = new Date(now.getTime() - 7 * 86_400_000).toISOString();
+  const row = await db
+    .prepare(
+      `SELECT MAX(published_at) AS ultima,
+              (SELECT COUNT(*) FROM assignments w WHERE w.sponsor_id = ?1 AND w.status = 'published' AND w.published_at > ?2) AS semana
+       FROM assignments WHERE sponsor_id = ?1 AND status = 'published'`,
+    )
+    .bind(sponsorId, semana)
+    .first<{ ultima: string | null; semana: number }>();
+  const publishedThisWeek = Number(row?.semana ?? 0);
+  if (publishedThisWeek >= pace.maxPerWeek) {
+    return { availableAt: "semana", publishedThisWeek, maxPerWeek: pace.maxPerWeek };
+  }
+  if (!row?.ultima) return { availableAt: null, publishedThisWeek, maxPerWeek: pace.maxPerWeek };
+  const libre = new Date(Date.parse(row.ultima) + pace.gapHours * 3_600_000);
+  return {
+    availableAt: libre > now ? libre.toISOString() : null,
+    publishedThisWeek,
+    maxPerWeek: pace.maxPerWeek,
+  };
 }
 
 export type JobKind = "sponsored" | "universal";

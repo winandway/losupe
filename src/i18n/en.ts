@@ -449,6 +449,16 @@ export const en: Dict = {
         finished: "Finished",
         canceled: "Canceled",
       },
+      pace: "Publishing pace",
+      paceHint:
+        "One story per company every {h} hours, and at most {n} per week. Running several in a row from the same company is spam and Google penalizes it.",
+      gap: "Minimum hours between stories from the same company",
+      maxWeek: "Weekly cap per company",
+      nextSlot: "Next story from this company",
+      available: "can go out now",
+      waitingUntil: "from",
+      weekFull: "weekly cap reached",
+      thisWeek: "this week",
       ideas: "Headline ideas in queue",
       addIdeas: "Add headline ideas",
       addIdeasHint:

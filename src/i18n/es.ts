@@ -446,6 +446,16 @@ export const es = {
         finished: "Terminado",
         canceled: "Cancelado",
       },
+      pace: "Ritmo de publicación",
+      paceHint:
+        "Una nota por empresa cada {h} horas, y como máximo {n} por semana. Publicar varias seguidas de la misma empresa es spam y Google lo castiga.",
+      gap: "Horas mínimas entre notas de la misma empresa",
+      maxWeek: "Máximo por semana y empresa",
+      nextSlot: "Siguiente nota de esta empresa",
+      available: "ya puede salir",
+      waitingUntil: "a partir del",
+      weekFull: "tope semanal alcanzado",
+      thisWeek: "esta semana",
       ideas: "Ideas de titular en cola",
       addIdeas: "Agregar ideas de titular",
       addIdeasHint:

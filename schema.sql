@@ -323,7 +323,9 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('evergreen_ratio', '0.5'),
   ('robot_auto_publish', '0'),
   ('robot_last_kind', 'universal'),
-  ('robot_notes_per_run', '1');
+  ('robot_notes_per_run', '1'),
+  ('sponsor_min_gap_hours', '72'),
+  ('sponsor_max_per_week', '2');
 
 -- Fuentes iniciales del robot (RSS públicos). Se pueden apagar o ampliar desde el panel.
 INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VALUES

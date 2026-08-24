@@ -200,6 +200,28 @@ export default async function PanelHome({ searchParams }: Props) {
               />
             </label>
             <label className="block font-semibold">
+              {p.sponsors.gap}
+              <input
+                name="sponsorGapHours"
+                type="number"
+                min={0}
+                max={720}
+                defaultValue={status.sponsorPace.gapHours}
+                className="mt-1 w-full rounded-xl border border-line px-3 py-2 font-normal"
+              />
+            </label>
+            <label className="block font-semibold">
+              {p.sponsors.maxWeek}
+              <input
+                name="sponsorMaxPerWeek"
+                type="number"
+                min={1}
+                max={14}
+                defaultValue={status.sponsorPace.maxPerWeek}
+                className="mt-1 w-full rounded-xl border border-line px-3 py-2 font-normal"
+              />
+            </label>
+            <label className="block font-semibold">
               {p.dashboard.dailyBudget}
               <input
                 name="dailyBudget"

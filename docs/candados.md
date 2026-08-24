@@ -240,3 +240,36 @@ diario…`, 23 ago 2026).
      panel muestra lo que de verdad pasó y el turno se puede reintentar.
 - **Qué NO tocar:** no quites el latido «porque el cron ya va» (son dos caminos a propósito); no
   hagas el trabajo dentro del `waitUntil` de una visita; y no dejes corridas sin cerrar.
+
+## 13. Un patrocinador no puede inundar la portada (ritmo de 2 por semana, una cada 3 días)
+
+- **Cómo se vio (24 ago 2026):** Richard: _«usted lanzó en menos de 4 horas 2 de YaDominios… una
+  nota se debe lanzar cada 3 días, no puedes lanzar mucho porque eso ya es spam»_. Y tenía razón:
+  el robot alternaba una nota patrocinada con una universal, pero **nada le impedía sacar dos del
+  mismo cliente el mismo día** si le tocaban dos turnos. Para el lector eso se lee como publicidad
+  disfrazada; para el cliente, se le quema la campaña en una tarde.
+- **Cuál era la causa real:** la cola (`nextQueuedAssignment`) solo miraba si el encargo estaba
+  `queued` y si el patrocinador estaba activo. No miraba **cuándo publicó la última** ni **cuántas
+  lleva esta semana**.
+- **Qué se hizo exactamente** (`src/lib/robot/queue.ts`):
+  1. Dos frenos nuevos dentro de la misma consulta SQL que elige el encargo, así el robot **no puede
+     saltárselos por otro camino**:
+     - `NOT EXISTS (… published_at > hace 72 h)` → separación mínima entre notas del mismo cliente.
+     - `COUNT(… published_at > hace 7 días) < tope` → tope semanal (2).
+  2. Ajustables desde el panel: `settings.sponsor_min_gap_hours` (72) y
+     `settings.sponsor_max_per_week` (2).
+  3. `sponsorNextSlot()` para que el panel diga en palabras cuándo puede salir la siguiente:
+     «ya puede salir», «a partir del …» o «tope semanal alcanzado».
+  4. **Bug encontrado por la propia prueba:** si el ajuste no existía en la base, `Number("")` daba
+     **0** y el freno quedaba desactivado sin avisar. Ahora un valor vacío o con basura cae en el
+     valor por defecto; el `0` solo vale si está escrito a propósito.
+- **Candado:** `tests/unit/ritmo-patrocinadores.test.ts` — comprueba los valores por defecto, que un
+  ajuste vacío/negativo **no** desactive el freno, que la consulta lleve de verdad las condiciones y
+  los parámetros de tiempo, y las cuatro respuestas de `sponsorNextSlot` (espera, ya puede, tope de
+  semana, nunca publicó).
+- **Cómo se comprueba que sigue funcionando:** en el panel, `Encargos → ficha de un patrocinador`
+  tiene que mostrar el aviso de ritmo. Con una nota publicada hoy, el robot **no** debe elegir otra
+  de ese mismo cliente: en la corrida siguiente le toca una universal.
+- **Qué NO tocar:** no bajes el tope «para probar» ni pongas la separación en 0 en producción; y no
+  muevas los frenos a JavaScript después de la consulta — van dentro del SQL para que no haya forma
+  de elegir un encargo que no toca.

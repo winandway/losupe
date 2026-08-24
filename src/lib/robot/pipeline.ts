@@ -16,6 +16,7 @@ import { embedVideo, findPexelsVideo, illustrate } from "./images";
 import { saveArticle } from "./publish";
 import {
   decideNextKind,
+  getSponsorPace,
   nextQueuedAssignment,
   queueSummary,
   rememberLastKind,
@@ -108,6 +109,7 @@ export type RobotStatus = {
   quota: { notesPerDay: number; today: number };
   evergreenRatio: number;
   mail: { configured: boolean; recipients: string[] };
+  sponsorPace: { gapHours: number; maxPerWeek: number };
   queue: QueueSummary;
   lastRun: {
     id: string;
@@ -127,7 +129,7 @@ export async function isRobotPaused(db: D1Database): Promise<boolean> {
 
 export async function robotStatus(env: RobotEnv, now = new Date()): Promise<RobotStatus> {
   const db = env.DB;
-  const [paused, auto, limit, spent, today, queue, perDay, ratio, notifyEmails, last] =
+  const [paused, auto, limit, spent, today, queue, perDay, ratio, notifyEmails, pace, last] =
     await Promise.all([
       isRobotPaused(db),
       getSetting(db, "robot_auto_publish"),
@@ -138,6 +140,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
       getSetting(db, "notes_per_day"),
       getSetting(db, "evergreen_ratio"),
       getSetting(db, "notify_emails"),
+      getSponsorPace(db),
       db.prepare(`SELECT * FROM runs ORDER BY started_at DESC LIMIT 1`).first<{
         id: string;
         status: string;
@@ -180,6 +183,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
     },
     evergreenRatio: Math.min(1, Math.max(0, Number(ratio ?? "0.5") || 0)),
     mail: { configured: mailConfigured(env), recipients: parseRecipients(notifyEmails) },
+    sponsorPace: pace,
     queue,
     lastRun: last
       ? {

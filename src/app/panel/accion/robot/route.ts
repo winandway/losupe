@@ -11,6 +11,8 @@ const schema = z.object({
   notesPerDay: z.coerce.number().int().min(1).max(24).optional(),
   evergreenPercent: z.coerce.number().int().min(0).max(100).optional(),
   dailyBudget: z.coerce.number().min(0).max(10).optional(),
+  sponsorGapHours: z.coerce.number().int().min(0).max(720).optional(),
+  sponsorMaxPerWeek: z.coerce.number().int().min(1).max(14).optional(),
 });
 
 function back(path: string, status = 303) {
@@ -27,6 +29,8 @@ export async function POST(request: Request) {
     notesPerDay: form.get("notesPerDay") ?? undefined,
     evergreenPercent: form.get("evergreenPercent") ?? undefined,
     dailyBudget: form.get("dailyBudget") ?? undefined,
+    sponsorGapHours: form.get("sponsorGapHours") ?? undefined,
+    sponsorMaxPerWeek: form.get("sponsorMaxPerWeek") ?? undefined,
   });
   if (!parsed.success) return back("/panel?error=op");
   const { op } = parsed.data;
@@ -40,6 +44,12 @@ export async function POST(request: Request) {
       }
       if (d.dailyBudget !== undefined) {
         await setSetting(env.DB, "daily_budget_usd", d.dailyBudget.toFixed(2));
+      }
+      if (d.sponsorGapHours !== undefined) {
+        await setSetting(env.DB, "sponsor_min_gap_hours", String(d.sponsorGapHours));
+      }
+      if (d.sponsorMaxPerWeek !== undefined) {
+        await setSetting(env.DB, "sponsor_max_per_week", String(d.sponsorMaxPerWeek));
       }
       return back("/panel?ok=settingsSaved");
     }
