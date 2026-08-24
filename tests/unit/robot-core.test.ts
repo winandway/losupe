@@ -178,6 +178,11 @@ describe("redactor: validación, limpieza y anticopia", () => {
   });
   it("rechaza formato inválido, notas cortas y copia de fuentes", () => {
     expect(() => finalizeDraft({ es: {} }, [])).toThrow(DraftRejectedError);
+    // El mensaje dice QUÉ vino mal: sin eso, en el panel no hay forma de diagnosticar.
+    expect(() => finalizeDraft({ es: {} }, [])).toThrow(/es\.|en:|raíz/);
+    const tituloCorto = goodDraft();
+    tituloCorto.es.title = "corto";
+    expect(() => finalizeDraft(tituloCorto, [])).toThrow(/es\.title/);
     const short = goodDraft();
     short.es.content_html = `<p>${"palabra ".repeat(200)}</p>`;
     expect(() => finalizeDraft(short, [])).toThrow(/muy corto/);

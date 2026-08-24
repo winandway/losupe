@@ -231,7 +231,16 @@ export class DraftRejectedError extends Error {
 export function finalizeDraft(raw: unknown, sourceTexts: readonly string[]): Draft {
   const parsed = draftSchema.safeParse(raw);
   if (!parsed.success) {
-    throw new DraftRejectedError("El borrador no cumple el formato", parsed.error.flatten());
+    // El detalle va en el mensaje: sin él, en el panel solo se ve «no cumple el formato» y no hay
+    // forma de saber qué campo vino mal (pasó en producción el 24 ago 2026).
+    const detalle = parsed.error.issues
+      .slice(0, 4)
+      .map((i) => `${i.path.join(".") || "raíz"}: ${i.message}`)
+      .join("; ");
+    throw new DraftRejectedError(
+      `El borrador no cumple el formato (${detalle})`,
+      parsed.error.flatten(),
+    );
   }
   const d = parsed.data;
   const es = { ...d.es, content_html: cleanEditorialHtml(d.es.content_html) };
@@ -278,12 +287,14 @@ export async function writeDraft(
   const maxAttempts = Math.max(1, (opts.retries ?? 1) + 1);
   let last: unknown;
   for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    const motivo = last instanceof Error ? last.message : "";
+    const copiaba = /copia fuentes/.test(motivo);
     const aviso =
       attempt === 1
         ? ""
-        : `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${
-            last instanceof DraftRejectedError ? last.message : "formato inválido"
-          }). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`;
+        : copiaba
+          ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
+          : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
     const usage = await generateJson<unknown>({
       apiKey: opts.apiKey,
       model: opts.model ?? WRITER_MODEL,
