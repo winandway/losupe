@@ -13,8 +13,10 @@
 
 export const TICK_KEY = "robot_last_tick";
 export const TICK_TOKEN_KEY = "robot_tick_token";
-/** Cada cuánto, como mucho, se lanza una corrida por tráfico. */
-export const DEFAULT_INTERVAL_MINUTES = 120;
+/** Cada cuánto, como mucho, se lanza una corrida por tráfico. Se puede cambiar en `settings`. */
+export const DEFAULT_INTERVAL_MINUTES = 60;
+/** Si la corrida anterior falló o se cortó, se reintenta mucho antes. */
+export const RETRY_MINUTES = 15;
 
 export type TickDecision =
   | { run: false; reason: "paused" | "too_soon" | "no_db" | "error" }
@@ -27,7 +29,7 @@ export type TickDecision =
 export async function claimTick(
   db: D1Database | undefined,
   now = new Date(),
-  intervalMinutes = DEFAULT_INTERVAL_MINUTES,
+  intervalMinutes?: number,
 ): Promise<TickDecision> {
   if (!db) return { run: false, reason: "no_db" };
   try {
@@ -36,8 +38,22 @@ export async function claimTick(
       .first<{ value: string }>();
     if (!paused || paused.value !== "0") return { run: false, reason: "paused" };
 
+    // Ritmo: el de `settings.robot_tick_minutes` (o el de por defecto). Si la última corrida quedó
+    // en error, se reintenta mucho antes en vez de esperar el turno completo.
+    let minutes = intervalMinutes;
+    if (minutes === undefined) {
+      const conf = await db
+        .prepare(`SELECT value FROM settings WHERE key = 'robot_tick_minutes'`)
+        .first<{ value: string }>();
+      minutes = Number(conf?.value ?? "") || DEFAULT_INTERVAL_MINUTES;
+      const last = await db
+        .prepare(`SELECT status FROM runs ORDER BY started_at DESC LIMIT 1`)
+        .first<{ status: string }>();
+      if (last?.status === "error") minutes = Math.min(minutes, RETRY_MINUTES);
+    }
+
     const iso = now.toISOString();
-    const limit = new Date(now.getTime() - intervalMinutes * 60_000).toISOString();
+    const limit = new Date(now.getTime() - minutes * 60_000).toISOString();
 
     // Primera vez: si la marca no existe, la creamos ya vencida para que la corrida entre.
     await db

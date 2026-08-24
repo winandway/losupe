@@ -146,8 +146,14 @@ describe("suscriptores (doble confirmación)", () => {
 });
 
 describe("piloto automático por tráfico", () => {
-  function db(paused: string, last: string, changes = 1) {
+  function db(paused: string, last: string, changes = 1, runStatus = "done") {
     const calls: { sql: string; params: unknown[] }[] = [];
+    const responde = (sql: string) => {
+      if (sql.includes("robot_paused")) return { value: paused };
+      if (sql.includes("robot_tick_minutes")) return { value: "" };
+      if (sql.includes("FROM runs")) return { status: runStatus };
+      return { value: last };
+    };
     return {
       calls,
       d1: {
@@ -155,15 +161,14 @@ describe("piloto automático por tráfico", () => {
           bind: (...params: unknown[]) => ({
             first: async () => {
               calls.push({ sql, params });
-              if (sql.includes("robot_paused")) return { value: paused };
-              return { value: last };
+              return responde(sql);
             },
             run: async () => {
               calls.push({ sql, params });
               return { meta: { changes: sql.startsWith("UPDATE settings") ? changes : 1 } };
             },
           }),
-          first: async () => (sql.includes("robot_paused") ? { value: paused } : { value: last }),
+          first: async () => responde(sql),
         }),
       } as unknown as D1Database,
     };
@@ -186,6 +191,14 @@ describe("piloto automático por tráfico", () => {
     expect(r.run).toBe(true);
     const update = calls.find((c) => c.sql.startsWith("UPDATE settings"));
     expect(update?.params[0]).toBe(TICK_KEY);
+  });
+
+  it("si la corrida anterior falló, reintenta mucho antes (15 min en vez de 60)", async () => {
+    const haceMedia = new Date(Date.now() - 30 * 60_000).toISOString();
+    // Con la anterior en «done» todavía no toca…
+    expect((await claimTick(db("0", haceMedia, 0, "done").d1)).run).toBe(false);
+    // …pero si quedó en error, sí.
+    expect((await claimTick(db("0", haceMedia, 1, "error").d1)).run).toBe(true);
   });
 
   it("sin base no explota", async () => {
