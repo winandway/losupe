@@ -382,7 +382,16 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   if (todayTotal >= perDay) return done("skipped", "quota", "daily_quota_reached");
 
   const autoPublish = (await getSetting(db, "robot_auto_publish")) === "1";
-  const defaultAuthor = (await getSetting(db, "default_author")) ?? "equipo-losupe";
+  // La firma por defecto tiene que existir y estar activa: si el ajuste apunta a alguien que ya no
+  // trabaja con nosotros (pasó con Magaly Molina), se usa la redacción en su lugar.
+  const ajuste = await getSetting(db, "default_author");
+  const valido = ajuste
+    ? await db
+        .prepare(`SELECT id FROM authors WHERE id = ?1 AND active = 1`)
+        .bind(ajuste)
+        .first<{ id: string }>()
+    : null;
+  const defaultAuthor = valido?.id ?? "equipo-losupe";
   /** Firma de esta nota: turno del equipo para esa sección (o la de por defecto si no hay equipo). */
   const authorFor = async (section: SectionId) =>
     (await pickWriter(db, section).catch(() => null))?.id ?? defaultAuthor;

@@ -134,11 +134,17 @@ export async function createManualStory(
     // El texto lo trae la propia redacción: no se aplica el control anticopia contra él.
     const draft: Draft = finalizeDraft(usage.data, []);
     const sectionId = input.sectionId as SectionId;
-    const authorId =
-      input.autorId ||
-      (await pickWriter(env.DB, sectionId).catch(() => null))?.id ||
-      (await getSetting(env.DB, "default_author")) ||
-      "equipo-losupe";
+    // Nunca se firma con alguien inactivo, aunque el ajuste lo diga.
+    const porTurno = (await pickWriter(env.DB, sectionId).catch(() => null))?.id;
+    const ajuste = await getSetting(env.DB, "default_author");
+    const ajusteValido = ajuste
+      ? (
+          await env.DB.prepare(`SELECT id FROM authors WHERE id = ?1 AND active = 1`)
+            .bind(ajuste)
+            .first<{ id: string }>()
+        )?.id
+      : undefined;
+    const authorId = input.autorId || porTurno || ajusteValido || "equipo-losupe";
 
     const { image } = await illustrate({
       env,

@@ -64,6 +64,22 @@ test("rutas desconocidas dan 404 de verdad (no la portada)", async ({ request })
   }
 });
 
+test("cada nota lleva al pie la ficha de quien la escribió, con su foto", async ({ page }) => {
+  await page.goto("/es");
+  const href = await page.locator("main article h2 a").first().getAttribute("href");
+  await page.goto(href!);
+  const ficha = page.getByRole("complementary").filter({ hasText: "Quién escribió esta nota" });
+  await expect(ficha).toBeVisible();
+  const firma = await page.locator("article header a[href^='/es/autor/']").first().innerText();
+  // Hay dos enlaces a su ficha: la foto y el nombre.
+  await expect(ficha.getByRole("link", { name: firma })).toHaveCount(2);
+  await expect(ficha.getByRole("img", { name: firma })).toBeVisible();
+  await expect(ficha.getByRole("img", { name: firma })).toHaveClass(/rounded-full/);
+  await expect(ficha.getByRole("link", { name: /Todas sus notas/ })).toBeVisible();
+  // Magaly Molina no aparece en ninguna parte del sitio
+  await expect(page.getByText(/Magaly/i)).toHaveCount(0);
+});
+
 test("el equipo de redacción: fotos, fichas y la firma de cada nota", async ({ page }) => {
   // Los tres escritores aparecen en «Acerca» con su foto y su ficha
   await page.goto("/es/acerca");

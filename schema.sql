@@ -298,6 +298,10 @@ INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, ro
    'Cripto y emprendimiento', 'Crypto and entrepreneurship', '/img/autores/pedro-llerena.jpg');
 
 -- Magaly Molina no llegó a incorporarse: queda inactiva y sus notas pasan al equipo actual.
+-- OJO: el `INSERT OR IGNORE INTO settings` de arriba NO cambia un ajuste que ya existía, así que la
+-- firma por defecto se corrige con un UPDATE explícito (si no, el robot seguía firmando con ella).
+UPDATE settings SET value = 'andreea-blidar', updated_at = datetime('now')
+  WHERE key = 'default_author' AND value NOT IN (SELECT id FROM authors WHERE active = 1);
 UPDATE authors SET active = 0 WHERE id = 'magaly-molina';
 UPDATE authors SET sections_json = '[]' WHERE id IN ('equipo-losupe', 'kevin-rondon');
 UPDATE articles SET author_id = 'andreea-blidar' WHERE author_id = 'magaly-molina' AND section_id = 'economia';

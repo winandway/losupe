@@ -15,8 +15,9 @@ import { getDict, otherLang, type Lang } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { formatDate } from "@/lib/dates";
 import { getDb } from "@/lib/db";
+import { AuthorCard } from "@/components/AuthorCard";
 import { splitAfterParagraph } from "@/lib/html";
-import { getArticleBySlug, listRelated, type ArticleFull } from "@/lib/queries";
+import { getArticleBySlug, getAuthor, listRelated, type ArticleFull } from "@/lib/queries";
 import { getSection, sectionByAnySlug } from "@/lib/sections";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
@@ -99,6 +100,8 @@ export default async function ArticlePage({ params }: Props) {
   const related = await listRelated(db, lang, article.sectionId, article.id, 4);
   // Enlace interno dentro del texto: la nota relacionada más reciente, tras el segundo párrafo.
   const readMoreTarget = related[0] ?? null;
+  // Ficha de quien firma, para el pie de la nota.
+  const autor = await getAuthor(db, article.authorId, lang);
   const { before: bodyBefore, after: bodyAfter } = splitAfterParagraph(article.contentHtml, 2);
   const showLegacy = article.origin === "mundoscrypto";
   const sponsor =
@@ -248,6 +251,8 @@ export default async function ArticlePage({ params }: Props) {
             ) : null}
           </footer>
         </article>
+
+        {autor ? <AuthorCard author={autor} lang={lang} dict={dict} /> : null}
 
         {related.length > 0 ? (
           <section className="mx-auto mt-14 max-w-5xl" aria-label={dict.article.related}>

@@ -51,6 +51,8 @@ export const es = {
     sponsoredLabel: "Contenido patrocinado",
     sponsoredNoticeTemplate:
       "Nota producida por encargo de {sponsor}. La empresa aportó la información; la redacción y la revisión son de losupe.",
+    writtenBy: "Quién escribió esta nota",
+    moreFromAuthor: "Todas sus notas",
     readMore: "Sigue leyendo",
     related: "Te puede interesar",
     share: "Compartir",

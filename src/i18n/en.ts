@@ -53,6 +53,8 @@ export const en: Dict = {
     sponsoredLabel: "Sponsored content",
     sponsoredNoticeTemplate:
       "Story produced on commission from {sponsor}. The company provided the information; writing and review are by losupe.",
+    writtenBy: "Who wrote this story",
+    moreFromAuthor: "All their stories",
     readMore: "Keep reading",
     related: "You may also like",
     share: "Share",
