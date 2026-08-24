@@ -1,0 +1,24 @@
+# Configuración de gitleaks para losupe.com
+#
+# Se mantienen TODAS las reglas por defecto (no se desactiva ninguna): esto solo excluye del escaneo
+# el artefacto compilado `_worker.js`, que vive en la rama de publicación `yapanel-build` y lo genera
+# Next.js/OpenNext en cada build. Ese archivo contiene un `previewModeSigningKey` y un
+# `encryptionKey` que **Next genera aleatoriamente en cada compilación** para su «modo borrador»
+# (que este proyecto no usa). No son credenciales nuestras, no dan acceso a ningún servicio y el
+# archivo se publica igualmente porque ES el código del worker.
+#
+# Lo que sí se sigue vigilando, sin excepción: todo el código fuente, la configuración, los scripts,
+# la documentación y cualquier `.env`/`.dev.vars` que se colara. Las llaves reales (Gemini, fal.ai,
+# Pexels, Brave, ADMIN_PASSWORD de producción) viven SOLO en el panel de YaDominios Cloud y nunca
+# deben aparecer en el repositorio: si alguna aparece, gitleaks tiene que ponerse en rojo.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Artefacto compilado del worker (claves de build de Next, regeneradas en cada compilación)"
+paths = [
+  '''(^|/)_worker\.js$''',
+  '''^\.open-next/''',
+  '''^\.dist-worker/''',
+]

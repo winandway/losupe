@@ -188,3 +188,25 @@ diario…`, 23 ago 2026).
   falla. Corre en `npm run verify`, o sea, en el pre-push y en CI.
 - **Qué NO tocar:** al agregar datos nuevos al `schema.sql`, ponlos **al final**; si referencian
   secciones o autores, nunca antes de los datos base.
+
+## 11. El escáner de secretos apunta al código, no al artefacto compilado
+
+- **Cómo se vio (24 ago 2026):** al hacer push, gitleaks se puso en rojo con **4 hallazgos** y el
+  pre-push bloqueó la publicación (que es exactamente lo que debe hacer).
+- **Qué eran:** `previewModeSigningKey` y `encryptionKey` dentro de `_worker.js`, el archivo
+  **compilado** que vive en la rama de publicación `yapanel-build`. Next.js genera esos dos valores
+  **al azar en cada compilación** para su «modo borrador», que este proyecto no usa. No son
+  credenciales nuestras y no dan acceso a nada. Aparecieron porque se trajo esa rama al repositorio
+  local con un `git fetch`.
+- **Se comprobó lo importante:** en todo el historial **no hay ni una llave real** (Gemini, fal.ai,
+  Pexels, Brave ni la contraseña de producción). Lo único que aparece es
+  `ADMIN_PASSWORD=losupe-panel-local`, que es la contraseña **de pruebas** documentada en
+  `.dev.vars.example` y que usa CI.
+- **Qué se hizo:** `.gitleaks.toml` con `useDefault = true` (no se desactiva **ninguna** regla) y una
+  lista de exclusión que solo saca del escaneo el artefacto compilado (`_worker.js`, `.open-next/`,
+  `.dist-worker/`).
+- **Candado comprobado en los dos sentidos:** con una llave de formato real
+  (`AIzaSy…`) en `src/`, `gitleaks protect --staged` la detecta y **bloquea el commit**; con el código
+  limpio pasa. También se verificó que sigue detectando claves de Google, Stripe y genéricas.
+- **Qué NO tocar:** no añadas rutas de código fuente a la lista de exclusión, ni uses `--no-verify`
+  para saltarte el hook. Si gitleaks se pone en rojo, primero se mira **qué** encontró.
