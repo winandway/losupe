@@ -1,3 +1,4 @@
+import { SQL_NOW } from "./sql-time";
 /**
  * Garantiza que la base tenga el esquema aunque la plataforma no haya ejecutado schema.sql,
  * y siembra contenido editorial empaquetado en el worker (una sola vez por semilla).
@@ -70,9 +71,7 @@ async function getSetting(db: D1Database, key: string): Promise<string | null> {
 
 async function setSetting(db: D1Database, key: string, value: string): Promise<void> {
   await db
-    .prepare(
-      `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, datetime('now'))`,
-    )
+    .prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, ${SQL_NOW})`)
     .bind(key, value)
     .run();
 }

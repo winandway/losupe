@@ -52,7 +52,7 @@ export default async function SponsorDetailPage({ params, searchParams }: Props)
           href="/panel/encargos"
           className="rounded-full border border-line px-3 py-1.5 text-xs font-bold hover:bg-white"
         >
-          ← {p.title}
+          ← {dict.panel.nav.sponsors}
         </Link>
       }
     >
@@ -94,7 +94,10 @@ export default async function SponsorDetailPage({ params, searchParams }: Props)
         ) : (
           <ol className="mt-3 divide-y divide-line">
             {assignments.map((a, i) => (
-              <li key={a.id} className="flex flex-wrap items-start justify-between gap-3 py-3">
+              <li
+                key={a.id}
+                className="flex flex-col gap-2 py-3 sm:flex-row sm:items-start sm:justify-between sm:gap-3"
+              >
                 <div className="min-w-0 flex-1">
                   <p className="font-semibold">
                     <span className="mr-2 text-muted">{i + 1}.</span>

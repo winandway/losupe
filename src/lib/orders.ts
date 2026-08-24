@@ -4,6 +4,7 @@ import type { SectionId } from "@/lib/sections";
 import { SECTIONS } from "@/lib/sections";
 import { addAssignments, createSponsor } from "@/lib/robot/queue";
 import { parseIdeas } from "@/lib/panel/forms";
+import { SQL_NOW } from "./sql-time";
 
 /**
  * Pedidos de la página pública «Publica tu noticia» (comunicados autoservicio): el negocio pide su
@@ -149,7 +150,7 @@ export async function setOrderStatus(
   status: OrderStatus,
 ): Promise<void> {
   await db
-    .prepare(`UPDATE orders SET status = ?2, updated_at = datetime('now') WHERE id = ?1`)
+    .prepare(`UPDATE orders SET status = ?2, updated_at = ${SQL_NOW} WHERE id = ?1`)
     .bind(id, status)
     .run();
 }
@@ -182,7 +183,7 @@ export async function orderToSponsor(db: D1Database, order: Order): Promise<stri
   );
   await db
     .prepare(
-      `UPDATE orders SET sponsor_id = ?2, status = 'queued', updated_at = datetime('now') WHERE id = ?1`,
+      `UPDATE orders SET sponsor_id = ?2, status = 'queued', updated_at = ${SQL_NOW} WHERE id = ?1`,
     )
     .bind(order.id, sponsorId)
     .run();

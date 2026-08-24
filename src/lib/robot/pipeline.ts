@@ -32,6 +32,7 @@ import {
   pickCandidate,
   robotNotesToday,
 } from "./universal";
+import { SQL_NOW } from "../sql-time";
 import {
   buildSponsoredPrompt,
   buildUniversalPrompt,
@@ -315,7 +316,7 @@ async function noteItem(
   }
   await db
     .prepare(
-      `UPDATE run_items SET status = ?2, step = COALESCE(?3, step), article_id = COALESCE(?4, article_id), cost_usd = COALESCE(?5, cost_usd), error = ?6, sources_json = COALESCE(?7, sources_json), updated_at = datetime('now') WHERE id = ?1`,
+      `UPDATE run_items SET status = ?2, step = COALESCE(?3, step), article_id = COALESCE(?4, article_id), cost_usd = COALESCE(?5, cost_usd), error = ?6, sources_json = COALESCE(?7, sources_json), updated_at = ${SQL_NOW} WHERE id = ?1`,
     )
     .bind(
       itemId,

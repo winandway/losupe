@@ -1,6 +1,7 @@
 import { z } from "zod";
 import type { Lang } from "@/i18n/config";
 import { sendMail, type MailEnv } from "@/lib/mail";
+import { SQL_NOW } from "./sql-time";
 
 /**
  * Suscriptores del aviso de notas nuevas. Doble confirmación (nadie queda apuntado sin haber tocado
@@ -85,7 +86,7 @@ export async function subscribe(
 export async function confirmSubscriber(db: D1Database, token: string): Promise<boolean> {
   const res = await db
     .prepare(
-      `UPDATE subscribers SET status = 'confirmed', confirmed_at = datetime('now') WHERE token = ?1 AND status = 'pending'`,
+      `UPDATE subscribers SET status = 'confirmed', confirmed_at = ${SQL_NOW} WHERE token = ?1 AND status = 'pending'`,
     )
     .bind(token)
     .run();
@@ -100,7 +101,7 @@ export async function confirmSubscriber(db: D1Database, token: string): Promise<
 export async function unsubscribe(db: D1Database, token: string): Promise<boolean> {
   const res = await db
     .prepare(
-      `UPDATE subscribers SET status = 'unsubscribed', unsubscribed_at = datetime('now') WHERE token = ?1`,
+      `UPDATE subscribers SET status = 'unsubscribed', unsubscribed_at = ${SQL_NOW} WHERE token = ?1`,
     )
     .bind(token)
     .run();

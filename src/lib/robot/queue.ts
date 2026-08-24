@@ -1,5 +1,6 @@
 import type { SectionId } from "@/lib/sections";
 import { getSetting, setSetting } from "./budget";
+import { SQL_NOW, laterThan, parseSqlDate } from "../sql-time";
 
 /**
  * Cola de encargos: patrocinadores (empresas que compraron notas) y sus notas prometidas.
@@ -206,7 +207,7 @@ export async function updateSponsor(
 ): Promise<void> {
   await db
     .prepare(
-      `UPDATE sponsors SET name = ?2, website = ?3, contact_name = ?4, contact_email = ?5, brief = ?6, section_id = ?7, notes_total = ?8, period_start = ?9, period_end = ?10, status = ?11, internal_notes = ?12, updated_at = datetime('now') WHERE id = ?1`,
+      `UPDATE sponsors SET name = ?2, website = ?3, contact_name = ?4, contact_email = ?5, brief = ?6, section_id = ?7, notes_total = ?8, period_start = ?9, period_end = ?10, status = ?11, internal_notes = ?12, updated_at = ${SQL_NOW} WHERE id = ?1`,
     )
     .bind(
       id,
@@ -307,7 +308,7 @@ export async function updateAssignment(
   if (patch.status !== undefined) push("status", patch.status);
   if (patch.position !== undefined) push("position", patch.position);
   if (sets.length === 0) return;
-  sets.push(`updated_at = datetime('now')`);
+  sets.push(`updated_at = ${SQL_NOW}`);
   await db
     .prepare(`UPDATE assignments SET ${sets.join(", ")} WHERE id = ?1`)
     .bind(...params)
@@ -397,11 +398,11 @@ export async function nextQueuedAssignment(
          AND s.notes_total > (SELECT COUNT(*) FROM assignments p WHERE p.sponsor_id = s.id AND p.status = 'published')
          AND NOT EXISTS (
            SELECT 1 FROM assignments r
-           WHERE r.sponsor_id = s.id AND r.status = 'published' AND r.published_at > ?2
+           WHERE r.sponsor_id = s.id AND r.status = 'published' AND ${laterThan("r.published_at", "?2")}
          )
          AND (
            SELECT COUNT(*) FROM assignments w
-           WHERE w.sponsor_id = s.id AND w.status = 'published' AND w.published_at > ?3
+           WHERE w.sponsor_id = s.id AND w.status = 'published' AND ${laterThan("w.published_at", "?3")}
          ) < ?4
        ORDER BY COALESCE(a.scheduled_for, '0000') ASC, a.position ASC, a.created_at ASC
        LIMIT 1`,
@@ -425,8 +426,8 @@ export async function sponsorNextSlot(
   const semana = new Date(now.getTime() - 7 * 86_400_000).toISOString();
   const row = await db
     .prepare(
-      `SELECT MAX(published_at) AS ultima,
-              (SELECT COUNT(*) FROM assignments w WHERE w.sponsor_id = ?1 AND w.status = 'published' AND w.published_at > ?2) AS semana
+      `SELECT (SELECT published_at FROM assignments u WHERE u.sponsor_id = ?1 AND u.status = 'published' AND u.published_at IS NOT NULL ORDER BY julianday(u.published_at) DESC LIMIT 1) AS ultima,
+              (SELECT COUNT(*) FROM assignments w WHERE w.sponsor_id = ?1 AND w.status = 'published' AND ${laterThan("w.published_at", "?2")}) AS semana
        FROM assignments WHERE sponsor_id = ?1 AND status = 'published'`,
     )
     .bind(sponsorId, semana)
@@ -435,8 +436,9 @@ export async function sponsorNextSlot(
   if (publishedThisWeek >= pace.maxPerWeek) {
     return { availableAt: "semana", publishedThisWeek, maxPerWeek: pace.maxPerWeek };
   }
-  if (!row?.ultima) return { availableAt: null, publishedThisWeek, maxPerWeek: pace.maxPerWeek };
-  const libre = new Date(Date.parse(row.ultima) + pace.gapHours * 3_600_000);
+  const ultima = parseSqlDate(row?.ultima);
+  if (!ultima) return { availableAt: null, publishedThisWeek, maxPerWeek: pace.maxPerWeek };
+  const libre = new Date(ultima.getTime() + pace.gapHours * 3_600_000);
   return {
     availableAt: libre > now ? libre.toISOString() : null,
     publishedThisWeek,

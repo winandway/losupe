@@ -718,14 +718,24 @@ test("panel: crear patrocinador, encolar ideas, ver cola y ejecutar sin llave av
   await expect(page.getByText("Ideas agregadas a la cola.")).toBeVisible();
   await expect(page.getByText("Cómo ayuda la empresa a las pymes")).toBeVisible();
   await expect(page.getByText("En cola").first()).toBeVisible();
+  // Ritmo: la ficha dice cuándo puede salir la siguiente. Una empresa nueva, que nunca publicó,
+  // puede de una; y el aviso recuerda el tope (candado 13: un patrocinador no inunda la portada).
+  await expect(page.getByText("Siguiente nota de esta empresa")).toBeVisible();
+  await expect(page.getByText("ya puede salir")).toBeVisible();
+  await expect(page.getByText(/0\/2 esta semana/)).toBeVisible();
   // El resumen de la portada del panel muestra la cola
   await page.goto("/panel");
   await expect(page.getByText(/encargos en cola/)).toBeVisible();
   // Ajustes del robot: se guardan y se reflejan
   await page.getByLabel("Notas por día (robot + encargos)").fill("6");
   await page.getByLabel("Porcentaje de notas duraderas (guías) frente a actualidad").fill("50");
+  // El ritmo de los patrocinadores se ajusta desde aquí y se queda guardado
+  await page.getByLabel("Horas mínimas entre notas de la misma empresa").fill("72");
+  await page.getByLabel("Máximo por semana y empresa").fill("2");
   await page.getByRole("button", { name: "Guardar ajustes" }).click();
   await expect(page.getByText("Ajustes guardados.")).toBeVisible();
+  await expect(page.getByLabel("Horas mínimas entre notas de la misma empresa")).toHaveValue("72");
+  await expect(page.getByLabel("Máximo por semana y empresa")).toHaveValue("2");
   await expect(
     page.getByLabel("Porcentaje de notas duraderas (guías) frente a actualidad"),
   ).toHaveValue("50");

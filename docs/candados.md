@@ -273,3 +273,38 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no bajes el tope «para probar» ni pongas la separación en 0 en producción; y no
   muevas los frenos a JavaScript después de la consulta — van dentro del SQL para que no haya forma
   de elegir un encargo que no toca.
+
+## 14. Una sola forma de escribir la hora en la base (`datetime('now')` está prohibido)
+
+- **Cómo se encontró (24 ago 2026):** no lo reportó nadie. Salió investigando por qué el freno de
+  los patrocinadores parecía no aplicar en producción (era otra cosa: el sitio todavía servía el
+  código anterior). Al leer las consultas apareció esto:
+  - `datetime('now')` de SQLite guarda `2026-08-24 08:00:00` — con **espacio**, sin **Z**.
+  - JavaScript guarda `2026-08-24T08:00:00.000Z` — con **T** y con **Z**.
+  - SQLite compara esas dos como **texto**, y el espacio vale menos que la «T»:
+    `'2026-08-24 08:00:00' > '2026-08-24T02:00:00.000Z'` da **falso**. Una nota de las 8 de la mañana
+    parece más vieja que un corte de las 2.
+- **Por qué es peligroso de verdad:** no da error, no aparece en ningún registro, no rompe nada
+  visible. Solo **deja de proteger**. Y se esconde: cuando el corte cae en otro día (una separación
+  de 3 días) la comparación acierta por casualidad, porque la parte de la fecha ya difiere. El daño
+  aparece cuando el corte cae el **mismo día** — por ejemplo, si en el panel se pone la separación
+  de los patrocinadores en 6 horas. Ahí el freno se apaga solo y el cliente saca dos notas seguidas.
+- **Qué se hizo exactamente:**
+  1. `src/lib/sql-time.ts` con `SQL_NOW` = `strftime('%Y-%m-%dT%H:%M:%fZ','now')` — la hora en el
+     MISMO formato que `toISOString()`. **Todo** el código pasó a usarla (16 sitios).
+  2. `laterThan()` compara con `julianday()`, que entiende los dos formatos. Se usa en los frenos que
+     protegen dinero o reputación, para que un formato raro no pueda apagarlos en silencio.
+  3. `parseSqlDate()` para leer fechas de la base en JavaScript: `Date.parse('2026-08-24 08:00:00')`
+     interpreta esa forma como hora **local**, no UTC, y la cuenta se corre varias horas.
+  4. Reparación idempotente al final de `schema.sql`: las filas ya escritas con espacio pasan al
+     formato único (`substr(col, 11, 1) = ' '` → `replace(col,' ','T') || 'Z'`).
+- **Candado:** `tests/unit/fechas-sqlite.test.ts`, contra **SQLite de verdad** (`node:sqlite`, con el
+  puente `tests/unit/sqlite-d1.ts`). La D1 falsa no sirve para esto: responde lo que la prueba le
+  diga y nunca ejecuta el SQL — por eso el fallo habría pasado igual. Incluye una prueba que revisa
+  el código fuente y se pone roja si alguien vuelve a colar un `datetime('now')`.
+- **Comprobado en rojo:** quitando `julianday()` de la consulta, la prueba «CASO QUE MUERDE:
+  separación corta (6 h)» falla con `expected { id: 'a2' } to be null` — o sea, el patrocinador
+  saca la segunda nota. Con el arreglo puesto, 10/10 en verde.
+- **Qué NO tocar:** no vuelvas a `datetime('now')` «porque es más corto»; no compares fechas como
+  texto en una consulta que proteja algo; y cuando lo que se prueba es la CONSULTA, usa `SqliteD1`,
+  no `FakeD1`.

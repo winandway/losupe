@@ -81,9 +81,11 @@ export async function PanelShell({
 
       <div className="lg:pl-64">
         <header className="sticky top-0 z-20 border-b border-line bg-paper">
-          <div className="mx-auto flex max-w-5xl items-center gap-3 py-3 pl-16 pr-4 lg:px-8">
+          <div className="mx-auto flex max-w-5xl flex-wrap items-center gap-x-3 gap-y-2 py-3 pl-16 pr-4 lg:px-8">
             <div className="min-w-0 flex-1">
-              <h1 className="truncate font-display text-xl font-bold leading-tight text-ink md:text-2xl">
+              {/* Dos lineas como mucho: en celular un nombre largo se cortaba a «YaDomi…» y no se
+                  sabia de quien era la ficha. */}
+              <h1 className="line-clamp-2 font-display text-xl font-bold leading-tight text-ink md:text-2xl">
                 {sectionTitle}
               </h1>
             </div>

@@ -8,6 +8,7 @@ import {
 } from "@/lib/mail";
 import { getSection } from "@/lib/sections";
 import { absoluteUrl } from "@/lib/urls";
+import { SQL_NOW } from "../sql-time";
 
 /**
  * Aviso de nota publicada. Va a dos sitios: al equipo (correos internos que se configuran en el
@@ -86,7 +87,7 @@ export async function notifyPublished(
     }
     if (results.length > 0) {
       await db
-        .prepare(`UPDATE subscribers SET last_sent_at = datetime('now') WHERE status = 'confirmed'`)
+        .prepare(`UPDATE subscribers SET last_sent_at = ${SQL_NOW} WHERE status = 'confirmed'`)
         .run();
     }
   } catch (e) {

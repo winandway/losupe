@@ -1,3 +1,4 @@
+import { SQL_NOW } from "../sql-time";
 /**
  * Tope diario de gasto en IA e imágenes. El límite vive en `settings.daily_budget_usd`; cada
  * llamada pagada se anota en `spend_log`. Si el día ya gastó el tope, el robot NO corre.
@@ -25,9 +26,7 @@ export async function getSetting(db: D1Database, key: string): Promise<string | 
 
 export async function setSetting(db: D1Database, key: string, value: string): Promise<void> {
   await db
-    .prepare(
-      `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, datetime('now'))`,
-    )
+    .prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, ${SQL_NOW})`)
     .bind(key, value)
     .run();
 }

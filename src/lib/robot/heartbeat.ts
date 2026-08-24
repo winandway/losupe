@@ -1,3 +1,4 @@
+import { SQL_NOW } from "../sql-time";
 /**
  * Piloto automático que NO depende del programador de la plataforma.
  *
@@ -58,7 +59,7 @@ export async function claimTick(
     // Primera vez: si la marca no existe, la creamos ya vencida para que la corrida entre.
     await db
       .prepare(
-        `INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?1, ?2, datetime('now'))`,
+        `INSERT OR IGNORE INTO settings (key, value, updated_at) VALUES (?1, ?2, ${SQL_NOW})`,
       )
       .bind(TICK_KEY, "")
       .run();
@@ -71,7 +72,7 @@ export async function claimTick(
     // Gana el turno quien logre mover la marca: el `WHERE value < ?` deja pasar a una sola petición.
     const claimed = await db
       .prepare(
-        `UPDATE settings SET value = ?2, updated_at = datetime('now') WHERE key = ?1 AND value < ?3`,
+        `UPDATE settings SET value = ?2, updated_at = ${SQL_NOW} WHERE key = ?1 AND value < ?3`,
       )
       .bind(TICK_KEY, iso, limit)
       .run();
@@ -96,7 +97,7 @@ export async function getTickToken(db: D1Database): Promise<string | null> {
     const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().slice(0, 12);
     await db
       .prepare(
-        `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, datetime('now'))`,
+        `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, ${SQL_NOW})`,
       )
       .bind(TICK_TOKEN_KEY, token)
       .run();
@@ -115,7 +116,7 @@ export async function closeStaleRuns(db: D1Database, maxMinutes = 15): Promise<n
     const limit = new Date(Date.now() - maxMinutes * 60_000).toISOString();
     const res = await db
       .prepare(
-        `UPDATE runs SET status = 'error', finished_at = datetime('now'),
+        `UPDATE runs SET status = 'error', finished_at = ${SQL_NOW},
            error = 'la corrida se cortó antes de terminar (se reintentará)'
          WHERE status = 'running' AND started_at < ?1`,
       )

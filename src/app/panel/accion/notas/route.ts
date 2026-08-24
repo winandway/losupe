@@ -4,6 +4,7 @@ import { sessionFromRequest } from "@/lib/panel/auth";
 import { panelEnv } from "@/lib/panel/server";
 import { setArticleStatus } from "@/lib/robot/publish";
 import { absoluteUrl, articlePath } from "@/lib/urls";
+import { SQL_NOW } from "@/lib/sql-time";
 
 export const dynamic = "force-dynamic";
 
@@ -31,7 +32,7 @@ export async function POST(request: Request) {
   await setArticleStatus(env.DB, id, status);
   // El encargo ligado (si lo hay) sigue el mismo destino.
   await env.DB.prepare(
-    `UPDATE assignments SET status = ?2, published_at = CASE WHEN ?2 = 'published' THEN COALESCE(published_at, datetime('now')) ELSE published_at END, updated_at = datetime('now') WHERE article_id = ?1`,
+    `UPDATE assignments SET status = ?2, published_at = CASE WHEN ?2 = 'published' THEN COALESCE(published_at, ${SQL_NOW}) ELSE published_at END, updated_at = ${SQL_NOW} WHERE article_id = ?1`,
   )
     .bind(id, op === "publish" ? "published" : op === "unpublish" ? "review" : "canceled")
     .run();

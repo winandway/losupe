@@ -368,3 +368,41 @@ INSERT OR IGNORE INTO assignments (id, sponsor_id, position, title_idea, brief, 
    'Un asistente de IA dentro de tu negocio: para qué sirve la Pasarela de Agentes',
    'Sobre el ERP con IA y la Pasarela de Agentes, con ejemplos de tareas reales de una tienda o una agencia.',
    'ventas', 'queued');
+
+-- Reparación de fechas (24 ago 2026). Durante un tiempo parte del código escribió las horas con
+-- `datetime('now')`, que guarda "2026-08-24 05:12:00" (con espacio), mientras el resto guardaba
+-- "2026-08-24T05:12:00.000Z". SQLite las compara como TEXTO y el espacio vale menos que la T, así que
+-- una nota de hace 4 horas parecía más vieja que el corte: el freno de los patrocinadores no saltaba.
+-- Esto pasa todas las filas viejas al formato único. Es idempotente: al quedar con T ya no coinciden.
+UPDATE assignments SET published_at = replace(published_at, ' ', 'T') || 'Z'
+  WHERE published_at IS NOT NULL AND substr(published_at, 11, 1) = ' ';
+UPDATE assignments SET created_at = replace(created_at, ' ', 'T') || 'Z'
+  WHERE substr(created_at, 11, 1) = ' ';
+UPDATE assignments SET updated_at = replace(updated_at, ' ', 'T') || 'Z'
+  WHERE substr(updated_at, 11, 1) = ' ';
+UPDATE sponsors SET created_at = replace(created_at, ' ', 'T') || 'Z'
+  WHERE substr(created_at, 11, 1) = ' ';
+UPDATE sponsors SET updated_at = replace(updated_at, ' ', 'T') || 'Z'
+  WHERE substr(updated_at, 11, 1) = ' ';
+UPDATE orders SET updated_at = replace(updated_at, ' ', 'T') || 'Z'
+  WHERE substr(updated_at, 11, 1) = ' ';
+UPDATE orders SET created_at = replace(created_at, ' ', 'T') || 'Z'
+  WHERE substr(created_at, 11, 1) = ' ';
+UPDATE settings SET updated_at = replace(updated_at, ' ', 'T') || 'Z'
+  WHERE substr(updated_at, 11, 1) = ' ';
+UPDATE runs SET finished_at = replace(finished_at, ' ', 'T') || 'Z'
+  WHERE finished_at IS NOT NULL AND substr(finished_at, 11, 1) = ' ';
+UPDATE subscribers SET confirmed_at = replace(confirmed_at, ' ', 'T') || 'Z'
+  WHERE confirmed_at IS NOT NULL AND substr(confirmed_at, 11, 1) = ' ';
+UPDATE subscribers SET unsubscribed_at = replace(unsubscribed_at, ' ', 'T') || 'Z'
+  WHERE unsubscribed_at IS NOT NULL AND substr(unsubscribed_at, 11, 1) = ' ';
+UPDATE subscribers SET last_sent_at = replace(last_sent_at, ' ', 'T') || 'Z'
+  WHERE last_sent_at IS NOT NULL AND substr(last_sent_at, 11, 1) = ' ';
+UPDATE articles SET created_at = replace(created_at, ' ', 'T') || 'Z'
+  WHERE substr(created_at, 11, 1) = ' ';
+UPDATE articles SET updated_at = replace(updated_at, ' ', 'T') || 'Z'
+  WHERE substr(updated_at, 11, 1) = ' ';
+UPDATE run_items SET created_at = replace(created_at, ' ', 'T') || 'Z'
+  WHERE substr(created_at, 11, 1) = ' ';
+UPDATE run_items SET updated_at = replace(updated_at, ' ', 'T') || 'Z'
+  WHERE substr(updated_at, 11, 1) = ' ';
