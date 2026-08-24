@@ -157,3 +157,29 @@ describe("autoría verificable (E-E-A-T)", () => {
     expect((ld.mainEntity.knowsAbout as string[]).length).toBeGreaterThan(0);
   });
 });
+
+describe("el roadmap dice la verdad", () => {
+  it("cada tarea tiene estado y responsable, y ninguna se queda sin detalle", async () => {
+    const { ROADMAP, contarRoadmap, pendientesDeRichard } = await import("@/lib/roadmap");
+    expect(ROADMAP.length).toBeGreaterThan(0);
+    for (const b of ROADMAP) {
+      expect(b.tareas.length).toBeGreaterThan(0);
+      for (const t of b.tareas) {
+        expect(["hecho", "falta", "espera"]).toContain(t.estado);
+        expect(["nosotros", "richard"]).toContain(t.quien);
+        // Un roadmap con títulos sueltos y sin explicación no sirve para decidir nada.
+        expect(t.detalle.length).toBeGreaterThan(40);
+      }
+    }
+    const r = contarRoadmap();
+    expect(r.hecho + r.falta + r.espera).toBe(r.total);
+    // Lo que espera un dato de Richard siempre es suyo, nunca nuestro.
+    for (const t of pendientesDeRichard()) expect(t.quien).toBe("richard");
+  });
+
+  it("los títulos no se repiten (una tarea, un sitio)", async () => {
+    const { ROADMAP } = await import("@/lib/roadmap");
+    const titulos = ROADMAP.flatMap((b) => b.tareas.map((t) => t.titulo));
+    expect(new Set(titulos).size).toBe(titulos.length);
+  });
+});

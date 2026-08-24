@@ -45,6 +45,7 @@ export const es = {
     published: "Publicado",
     updated: "Actualizado",
     minutes: (m: number) => `${m} min de lectura`,
+    roadmap: "Roadmap",
     sources: "Fuentes consultadas",
     aiNotice:
       "Redacción asistida por inteligencia artificial y revisada por el equipo editorial de losupe.",
@@ -328,6 +329,7 @@ export const es = {
       write: "Escribir",
       notes: "Notas",
       sources: "Fuentes",
+      roadmap: "Roadmap",
       logout: "Cerrar sesión",
       openMenu: "Abrir el menú",
       closeMenu: "Cerrar el menú",

@@ -47,6 +47,7 @@ export const en: Dict = {
     published: "Published",
     updated: "Updated",
     minutes: (m: number) => `${m} min read`,
+    roadmap: "Roadmap",
     sources: "Sources",
     aiNotice:
       "Written with help from artificial intelligence and reviewed by the losupe editorial team.",
@@ -328,6 +329,7 @@ export const en: Dict = {
       write: "Write",
       notes: "Stories",
       sources: "Sources",
+      roadmap: "Roadmap",
       logout: "Sign out",
       openMenu: "Open menu",
       closeMenu: "Close menu",
