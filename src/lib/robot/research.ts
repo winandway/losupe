@@ -142,21 +142,6 @@ export async function researchSite(website: string, opts: ResearchOpts = {}): Pr
   const pages: FetchedPage[] = [];
   const seen = new Set<string>();
 
-  const add = async (url: string) => {
-    if (seen.has(url) || pages.length >= maxPages) return;
-    seen.add(url);
-    const page = await fetchPage(url, { fetchImpl, maxChars, timeoutMs: opts.timeoutMs });
-    if (!page) {
-      errors.push(`No se pudo leer ${url}`);
-      return;
-    }
-    if (page.status >= 400 || !page.text) {
-      errors.push(`${url} respondió ${page.status || "sin texto"}`);
-      return;
-    }
-    pages.push(page);
-  };
-
   let home: string;
   try {
     home = new URL(website).toString();
@@ -195,10 +180,32 @@ export async function researchSite(website: string, opts: ResearchOpts = {}): Pr
     errors.push(`No se pudo leer ${home}`);
   }
 
-  for (const u of opts.extraUrls ?? []) await add(u);
-  for (const u of links) {
+  // En paralelo: leer 5 páginas de una en una consumía casi todo el tiempo de la corrida.
+  const restantes = Math.max(0, maxPages - pages.length);
+  // Se piden algunas de más: si alguna falla, todavía se llega al número pedido.
+  const candidatas = [...(opts.extraUrls ?? []), ...links]
+    .filter((u) => !seen.has(u))
+    .slice(0, restantes + 3);
+  candidatas.forEach((u) => seen.add(u));
+  const leidas = await Promise.all(
+    candidatas.map((u) =>
+      fetchPage(u, { fetchImpl, maxChars, timeoutMs: opts.timeoutMs ?? 8_000 }).then((page) => ({
+        u,
+        page,
+      })),
+    ),
+  );
+  for (const { u, page } of leidas) {
     if (pages.length >= maxPages) break;
-    await add(u);
+    if (!page) {
+      errors.push(`No se pudo leer ${u}`);
+      continue;
+    }
+    if (page.status >= 400 || !page.text) {
+      errors.push(`${u} respondió ${page.status || "sin texto"}`);
+      continue;
+    }
+    pages.push(page);
   }
 
   return {
