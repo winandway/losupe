@@ -86,6 +86,9 @@ export const es = {
     title: "Acerca de losupe",
     intro:
       "losupe es un medio digital en español e inglés que explica lo que pasa en economía, ventas y emprendimiento, tecnología e inteligencia artificial, criptomonedas y cultura. Publicamos cada mañana notas cortas y guías que sirven hoy y dentro de un año.",
+    teamTitle: "Quién escribe",
+    teamIntro:
+      "Personas reales que firman y revisan lo que publicamos. Cada nota lleva el nombre de quien la escribió y su ficha.",
     principlesTitle: "Cómo trabajamos",
     principles: [
       "Leemos varias fuentes antes de escribir y citamos de dónde sale cada dato.",

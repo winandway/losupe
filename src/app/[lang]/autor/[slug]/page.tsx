@@ -52,13 +52,24 @@ export default async function AuthorPage({ params, searchParams }: Props) {
   return (
     <Container className="py-6 md:py-8">
       <JsonLd data={personJsonLd(base, lang, author, dict.brand.name)} />
-      <header className="mb-10 flex items-start gap-5">
-        <div
-          aria-hidden="true"
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-ink font-display text-2xl font-bold text-accent"
-        >
-          {author.name.charAt(0)}
-        </div>
+      <header className="mb-10 flex flex-col items-start gap-5 sm:flex-row">
+        {author.avatarUrl ? (
+          <img
+            src={author.avatarUrl}
+            alt={author.name}
+            width={128}
+            height={128}
+            fetchPriority="high"
+            className="h-24 w-24 shrink-0 rounded-full object-cover ring-4 ring-accent sm:h-32 sm:w-32"
+          />
+        ) : (
+          <div
+            aria-hidden="true"
+            className="flex h-24 w-24 shrink-0 items-center justify-center rounded-full bg-ink font-display text-3xl font-bold text-accent sm:h-32 sm:w-32"
+          >
+            {author.name.charAt(0)}
+          </div>
+        )}
         <div>
           <p className="text-xs font-bold uppercase tracking-widest text-muted">
             {author.kind === "newsroom" ? dict.author.newsroom : (author.role ?? "")}

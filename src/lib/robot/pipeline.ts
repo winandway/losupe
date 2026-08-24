@@ -9,6 +9,7 @@ import {
   getSpendToday,
   recordSpend,
 } from "./budget";
+import { pickWriter } from "./authors";
 import { embedVideo, findPexelsVideo, illustrate } from "./images";
 import { saveArticle } from "./publish";
 import {
@@ -366,7 +367,10 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   if (todayTotal >= perDay) return done("skipped", "quota", "daily_quota_reached");
 
   const autoPublish = (await getSetting(db, "robot_auto_publish")) === "1";
-  const authorId = (await getSetting(db, "default_author")) ?? "magaly-molina";
+  const defaultAuthor = (await getSetting(db, "default_author")) ?? "equipo-losupe";
+  /** Firma de esta nota: turno del equipo para esa sección (o la de por defecto si no hay equipo). */
+  const authorFor = async (section: SectionId) =>
+    (await pickWriter(db, section).catch(() => null))?.id ?? defaultAuthor;
   const evergreenRatio = Number((await getSetting(db, "evergreen_ratio")) ?? "0.7");
   const maxNotes = Math.max(
     1,
@@ -497,7 +501,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
         const saved = await saveArticle(db, {
           draft,
           sectionId,
-          authorId,
+          authorId: await authorFor(sectionId),
           origin: "sponsored",
           status: autoPublish ? "published" : "review",
           sources: sources.slice(0, 5).map(({ title, url }) => ({ title, url })),
@@ -606,7 +610,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
         const saved = await saveArticle(db, {
           draft,
           sectionId: c.sectionId,
-          authorId,
+          authorId: await authorFor(c.sectionId),
           origin: "robot",
           status: autoPublish ? "published" : "review",
           sources: docs.map((d) => ({ title: d.title, url: d.url })),

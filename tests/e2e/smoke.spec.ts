@@ -27,7 +27,10 @@ const ROUTES_200 = [
   "/video/hero-v2-m.mp4",
   "/video/hero-v2-poster.jpg",
   "/datos/buscar?q=bit&lang=es",
-  "/es/autor/magaly-molina",
+  "/es/autor/andreea-blidar",
+  "/es/autor/merry-melina",
+  "/es/autor/pedro-llerena",
+  "/img/autores/andreea-blidar.jpg",
   "/es/publica",
   "/en/publish",
   "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
@@ -59,6 +62,34 @@ test("rutas desconocidas dan 404 de verdad (no la portada)", async ({ request })
     const res = await request.get(p, { maxRedirects: 5 });
     expect(res.status(), p).toBe(404);
   }
+});
+
+test("el equipo de redacción: fotos, fichas y la firma de cada nota", async ({ page }) => {
+  // Los tres escritores aparecen en «Acerca» con su foto y su ficha
+  await page.goto("/es/acerca");
+  await expect(page.getByRole("heading", { name: "Quién escribe" })).toBeVisible();
+  for (const nombre of ["Andreea Blidar", "Merry Melina", "Pedro Llerena"]) {
+    const enlace = page.getByRole("link", { name: nombre });
+    await expect(enlace).toBeVisible();
+    await expect(page.getByRole("img", { name: nombre })).toBeVisible();
+  }
+  // Magaly Molina ya no forma parte del equipo
+  await expect(page.getByText("Magaly Molina")).toHaveCount(0);
+
+  // Ficha del autor: foto redonda, cargo, biografía y sus notas
+  await page.goto("/es/autor/merry-melina");
+  await expect(page.getByRole("heading", { level: 1, name: "Merry Melina" })).toBeVisible();
+  const foto = page.getByRole("img", { name: "Merry Melina" }).first();
+  await expect(foto).toHaveAttribute("src", "/img/autores/merry-melina.jpg");
+  await expect(foto).toHaveClass(/rounded-full/);
+  await expect(page.getByText(/Artistas, tendencias y negocios/)).toBeVisible();
+
+  // La nota de Mercatren la firma Merry (Pedro Llerena es el protagonista: no puede firmarla)
+  const nota =
+    "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos";
+  await page.goto(nota);
+  await expect(page.locator("article").getByRole("link", { name: "Merry Melina" })).toBeVisible();
+  await expect(page.locator("article").getByText("Magaly Molina")).toHaveCount(0);
 });
 
 test("los mapas del sitio son válidos para Google (XML, rutas y cabeceras)", async ({
@@ -383,16 +414,16 @@ test("portada: noticias heredadas, selector de idioma y artículo abre", async (
   await expect(page.locator('script[type="application/ld+json"]').first()).toHaveCount(1);
 });
 
-test("la nota de Mercatren es la principal, firmada por Magaly Molina y con aviso de IA", async ({
+test("la nota de Mercatren es la principal, firmada por el equipo y con aviso de IA", async ({
   page,
 }) => {
   await page.goto("/es");
   const hero = page.locator("article").first();
   await expect(hero.locator("h2 a")).toHaveText(/un venezolano lanza Mercatren/);
   await expect(hero.locator("h2 a")).not.toHaveText(/Amazon|Pedro/);
-  await expect(hero.getByRole("link", { name: "Magaly Molina" })).toHaveAttribute(
+  await expect(hero.getByRole("link", { name: "Merry Melina" })).toHaveAttribute(
     "href",
-    "/es/autor/magaly-molina",
+    "/es/autor/merry-melina",
   );
   await page.goto(
     "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",

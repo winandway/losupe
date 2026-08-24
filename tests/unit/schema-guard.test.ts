@@ -78,9 +78,44 @@ describe("splitSql", () => {
     for (const p of parts) {
       expect(p).not.toContain(";");
       expect(p).toMatch(
-        /^(CREATE TABLE IF NOT EXISTS|CREATE VIRTUAL TABLE IF NOT EXISTS|CREATE INDEX IF NOT EXISTS|CREATE UNIQUE INDEX IF NOT EXISTS|INSERT OR IGNORE INTO)/,
+        /^(CREATE TABLE IF NOT EXISTS|CREATE VIRTUAL TABLE IF NOT EXISTS|CREATE INDEX IF NOT EXISTS|CREATE UNIQUE INDEX IF NOT EXISTS|INSERT OR IGNORE INTO|ALTER TABLE|UPDATE )/,
       );
     }
+  });
+});
+
+describe("migraciones de columnas (ALTER TABLE)", () => {
+  it("si la columna ya existe, sigue adelante; cualquier otro error se propaga", async () => {
+    const vistos: string[] = [];
+    const duplicada = {
+      prepare: (sql: string) => ({
+        run: async () => {
+          vistos.push(sql);
+          if (/^ALTER TABLE/i.test(sql)) throw new Error("duplicate column name: sections_json");
+          return { success: true };
+        },
+      }),
+      batch: async (stmts: unknown[]) => stmts.map(() => ({ success: true })),
+    } as unknown as D1Database;
+    await expect(
+      applySchema(
+        duplicada,
+        "ALTER TABLE a ADD COLUMN b TEXT;\nCREATE TABLE IF NOT EXISTS x (a TEXT);",
+      ),
+    ).resolves.toBe(2);
+    expect(vistos.some((s) => s.startsWith("ALTER TABLE"))).toBe(true);
+
+    const rota = {
+      prepare: () => ({
+        run: async () => {
+          throw new Error("no such table: a");
+        },
+      }),
+      batch: async (stmts: unknown[]) => stmts.map(() => ({ success: true })),
+    } as unknown as D1Database;
+    await expect(applySchema(rota, "ALTER TABLE a ADD COLUMN b TEXT;")).rejects.toThrow(
+      /no such table/,
+    );
   });
 });
 
@@ -102,14 +137,14 @@ describe("ensureSchema", () => {
     const { db, state } = fakeDb({ tables: 5, hash: "vieja" });
     const status = await ensureSchema(db.asD1(), SCHEMA);
     expect(status).toEqual({ binding: true, hadTables: true, applied: true, upgraded: true });
-    expect(db.batched.length).toBe(splitSql(SCHEMA).length);
+    expect(db.batched.length).toBe(splitSql(SCHEMA).filter((x) => !/^ALTER TABLE/i.test(x)).length);
     expect(state.hash).toBe(HASH);
   });
   it("si faltan tablas aplica todo el esquema en lote y guarda la huella", async () => {
     const { db, state } = fakeDb({ tables: 0 });
     const status = await ensureSchema(db.asD1(), SCHEMA);
     expect(status).toEqual({ binding: true, hadTables: false, applied: true });
-    expect(db.batched.length).toBe(splitSql(SCHEMA).length);
+    expect(db.batched.length).toBe(splitSql(SCHEMA).filter((x) => !/^ALTER TABLE/i.test(x)).length);
     expect(state.hash).toBe(HASH);
     expect(await applySchema(db.asD1(), "CREATE TABLE IF NOT EXISTS x (a TEXT);")).toBe(1);
   });
@@ -216,7 +251,10 @@ describe("semillas de contenido", () => {
     state.tables = 5; // ya existen las tablas y la huella coincide
     const s2 = await guard.ensure(db.asD1());
     expect(s2.seeds?.[0]?.applied).toBe(false);
-    expect(db.batched).toHaveLength(splitSql(SCHEMA).length + 2);
+    // Los ALTER van uno a uno (fuera del lote); el resto del esquema + las 2 de la semilla sí van en lote.
+    expect(db.batched).toHaveLength(
+      splitSql(SCHEMA).filter((x) => !/^ALTER TABLE/i.test(x)).length + 2,
+    );
   });
 
   it("las semillas reales incrustadas: archivo de MundosCrypto (33 notas) y notas editoriales", () => {

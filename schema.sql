@@ -303,8 +303,34 @@ INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en)
    'Editor at losupe. She writes and reviews the economy, sales, technology and AI, crypto, and trends stories we publish every morning.',
    'Editora', 'Editor');
 
+
+-- Especialidades de cada autor (secciones que domina). Columna añadida el 23 ago 2026: en las bases
+-- que ya existían se agrega con ALTER (el guardián tolera que ya esté puesta).
+ALTER TABLE authors ADD COLUMN sections_json TEXT NOT NULL DEFAULT '[]';
+
+-- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
+INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES
+  ('andreea-blidar', 'Andreea Blidar', 'person', '["economia","tecnologia"]',
+   'Escribe sobre economía, dinero del día a día y tecnología en losupe. Le interesa explicar en claro lo que mueve los precios, las tasas y el trabajo, y qué significa cada novedad tecnológica para una persona normal. Revisa cada dato con la fuente original antes de publicarlo.',
+   'Writes about the economy, everyday money, and technology at losupe. She likes explaining in plain language what moves prices, rates, and jobs, and what each tech development means for an ordinary person. She checks every figure against the original source before publishing.',
+   'Economía y tecnología', 'Economy and technology', '/img/autores/andreea-blidar.jpg'),
+  ('merry-melina', 'Merry Melina', 'person', '["artistas","ventas"]',
+   'Cubre música, artistas y tendencias, y también historias de negocios y emprendimiento en losupe. Busca el lado humano de cada tema: quién está detrás, qué cambió para la gente y por qué importa hoy.',
+   'Covers music, artists, and trends, plus business and entrepreneurship stories at losupe. She looks for the human side of every topic: who is behind it, what changed for people, and why it matters today.',
+   'Artistas, tendencias y negocios', 'Artists, trends, and business', '/img/autores/merry-melina.jpg'),
+  ('pedro-llerena', 'Pedro Llerena', 'person', '["cripto","ventas"]',
+   'Escribe sobre criptomonedas, tecnología aplicada al comercio y emprendimiento en losupe. Empresario con experiencia en comercio electrónico, cuenta lo que pasa en el mercado con los pies en la tierra y sin promesas fáciles.',
+   'Writes about cryptocurrencies, commerce technology, and entrepreneurship at losupe. An entrepreneur with e-commerce experience, he covers the market with both feet on the ground and no easy promises.',
+   'Cripto y emprendimiento', 'Crypto and entrepreneurship', '/img/autores/pedro-llerena.jpg');
+
+-- Magaly Molina no llegó a incorporarse: queda inactiva y sus notas pasan al equipo actual.
+UPDATE authors SET active = 0 WHERE id = 'magaly-molina';
+UPDATE authors SET sections_json = '[]' WHERE id IN ('equipo-losupe', 'kevin-rondon');
+UPDATE articles SET author_id = 'andreea-blidar' WHERE author_id = 'magaly-molina' AND section_id = 'economia';
+UPDATE articles SET author_id = 'merry-melina' WHERE author_id = 'magaly-molina';
+
 INSERT OR IGNORE INTO settings (key, value) VALUES
-  ('default_author', 'magaly-molina'),
+  ('default_author', 'andreea-blidar'),
   ('robot_paused', '1'),
   ('daily_budget_usd', '1.00'),
   ('notes_per_day', '6'),

@@ -212,8 +212,8 @@ describe("otros", () => {
       BASE,
       "es",
       {
-        id: "magaly-molina",
-        name: "Magaly Molina",
+        id: "andreea-blidar",
+        name: "Andreea Blidar",
         kind: "person",
         bio: "Editora",
         role: "Editora",
@@ -223,6 +223,6 @@ describe("otros", () => {
     ) as { "@type": string; mainEntity: { "@type": string; url: string } };
     expect(ld["@type"]).toBe("ProfilePage");
     expect(ld.mainEntity["@type"]).toBe("Person");
-    expect(ld.mainEntity.url).toBe(`${BASE}/es/autor/magaly-molina`);
+    expect(ld.mainEntity.url).toBe(`${BASE}/es/autor/andreea-blidar`);
   });
 });

@@ -129,10 +129,32 @@ export async function hasCoreTables(db: D1Database): Promise<boolean> {
   return (row?.n ?? 0) >= 5;
 }
 
+/**
+ * Añadir una columna a una tabla que ya existe no se puede hacer con `IF NOT EXISTS` en SQLite: si
+ * la columna ya está, `ALTER TABLE ... ADD COLUMN` falla y tumbaría todo el lote. Por eso los ALTER
+ * se ejecutan uno a uno y se tolera SOLO el error de «columna duplicada»; cualquier otro fallo se
+ * propaga (nada de errores en silencio).
+ */
+async function applyAlters(db: D1Database, alters: readonly string[]): Promise<void> {
+  for (const sql of alters) {
+    try {
+      await db.prepare(sql).run();
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      if (/duplicate column name/i.test(message)) continue;
+      throw error;
+    }
+  }
+}
+
 export async function applySchema(db: D1Database, schemaSql: string): Promise<number> {
-  const statements = splitSql(schemaSql);
-  await db.batch(statements.map((s) => db.prepare(s)));
-  return statements.length;
+  const all = splitSql(schemaSql);
+  const alters = all.filter((s) => /^ALTER\s+TABLE/i.test(s));
+  const rest = all.filter((s) => !/^ALTER\s+TABLE/i.test(s));
+  // Primero las columnas nuevas: lo que venga después puede necesitarlas.
+  await applyAlters(db, alters);
+  await db.batch(rest.map((s) => db.prepare(s)));
+  return all.length;
 }
 
 export async function ensureSchema(

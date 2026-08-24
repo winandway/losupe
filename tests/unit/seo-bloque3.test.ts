@@ -68,8 +68,8 @@ describe("datos estructurados para Google News y las IA", () => {
       BASE,
       "es",
       {
-        id: "magaly-molina",
-        name: "Magaly Molina",
+        id: "andreea-blidar",
+        name: "Andreea Blidar",
         kind: "person",
         bio: "Editora",
         role: "Editora",

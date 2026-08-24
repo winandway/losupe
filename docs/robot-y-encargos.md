@@ -87,6 +87,15 @@ entra por el enlace «Entrar al panel» del pie de página (y del menú en celul
 | Candados de costo | `src/lib/robot/model-guard.ts`, `budget.ts` | Lista blanca de modelos (tope $0.05/imagen), lista negra explícita, `assert` delante de cada llamada; tope diario `settings.daily_budget_usd` (hoy **$1.00**) con `spend_log`.                                                                |
 | Publicación       | `src/lib/robot/publish.ts`                  | Inserta artículo + ES/EN, slugs únicos, índice de búsqueda, estado `review` o `published`; etiqueta de patrocinador para la nota.                                                                                                             |
 
+**Firmas (23 ago 2026):** el equipo son tres personas reales —**Andreea Blidar** (economía y
+tecnología), **Merry Melina** (artistas, tendencias y negocios) y **Pedro Llerena** (cripto y
+emprendimiento)—, cada una con su foto y su ficha. El robot **reparte las notas por turnos**
+(`src/lib/robot/authors.ts`): para cada nota elige primero entre quienes tienen esa sección como
+especialidad y, dentro de ese grupo, al que lleva más tiempo sin publicar. Así rota solo y ninguna
+firma se repite siempre. Magaly Molina no llegó a incorporarse: quedó inactiva y sus notas pasaron
+al equipo actual (la de Mercatren la firma Merry Melina, porque Pedro Llerena es el protagonista de
+esa nota y no puede firmarla).
+
 Ajustes en `settings`: `robot_paused` (1/0), `robot_auto_publish` (0/1), `notes_per_day` (6),
 `robot_notes_per_run` (1), `daily_budget_usd` (1.00), `evergreen_ratio` (0.7), `default_author`
 (`magaly-molina`), `robot_last_kind`.

@@ -390,6 +390,28 @@ export async function getAuthor(db: D1Database, id: string, lang: Lang): Promise
   return row ? mapAuthor(row, lang) : null;
 }
 
+/** Equipo de redacción activo (personas con especialidad), para la página «Acerca». */
+export async function listWriters(db: D1Database, lang: Lang): Promise<Author[]> {
+  const { results } = await db
+    .prepare(
+      `SELECT id, name, kind, bio_es, bio_en, role_es, role_en, avatar_url
+       FROM authors
+       WHERE active = 1 AND kind = 'person' AND sections_json IS NOT NULL AND sections_json != '[]'
+       ORDER BY name`,
+    )
+    .all<{
+      id: string;
+      name: string;
+      kind: string;
+      bio_es: string | null;
+      bio_en: string | null;
+      role_es: string | null;
+      role_en: string | null;
+      avatar_url: string | null;
+    }>();
+  return results.map((r) => mapAuthor(r, lang));
+}
+
 export type SitemapRow = {
   id: string;
   section_id: string;

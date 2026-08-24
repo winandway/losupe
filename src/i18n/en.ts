@@ -88,6 +88,9 @@ export const en: Dict = {
     title: "About losupe",
     intro:
       "losupe is a bilingual (Spanish/English) digital publication that explains what's happening in the economy, sales and entrepreneurship, technology and AI, crypto, and culture. Every morning we publish short stories and guides that are useful today and a year from now.",
+    teamTitle: "Who writes",
+    teamIntro:
+      "Real people who sign and review what we publish. Every story carries the name of who wrote it, with their profile.",
     principlesTitle: "How we work",
     principles: [
       "We read several sources before writing and cite where every fact comes from.",

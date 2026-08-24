@@ -54,7 +54,7 @@ function settings(over: Record<string, string> = {}): Record<string, string> {
     daily_budget_usd: "1.00",
     notes_per_day: "6",
     robot_auto_publish: "0",
-    default_author: "magaly-molina",
+    default_author: "andreea-blidar",
     evergreen_ratio: "0.7",
     robot_notes_per_run: "1",
     robot_last_kind: "universal",

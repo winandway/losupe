@@ -152,3 +152,20 @@ diario…`, 23 ago 2026).
   agrega una página pública nueva, se agrega también aquí (la prueba lo exige para las de venta).
 - **Nota operativa:** después de publicar varias veces seguidas conviene reenviar el sitemap en
   Search Console; Google reintenta solo, pero el reenvío acelera.
+
+## 9. Añadir una columna a una tabla que ya existe
+
+- **Cómo se vio (23 ago 2026):** al dar especialidades a los autores hizo falta una columna nueva
+  (`authors.sections_json`). En SQLite `ALTER TABLE … ADD COLUMN` **no admite `IF NOT EXISTS`**: en la
+  base local (y en producción, que ya tenía la tabla) la sentencia falla con «duplicate column name»
+  y, al ir dentro del lote, **tumbaba el esquema entero**.
+- **Qué se hizo:** `src/lib/schema-guard.ts` → `applySchema` separa los `ALTER TABLE` del resto y los
+  ejecuta **uno a uno**, tolerando **solo** el error de columna duplicada; cualquier otro error se
+  propaga (nada en silencio). Los ALTER van primero, porque lo que sigue puede necesitar la columna.
+- **Candado:** `tests/unit/schema-guard.test.ts` → «si la columna ya existe, sigue adelante;
+  cualquier otro error se propaga»: comprueba las dos ramas.
+- **Qué NO tocar:** no metas un `ALTER TABLE` dentro del lote general; y no uses `try/catch` general
+  para tragarte errores de esquema — solo el de columna duplicada.
+- **Ojo:** `npx wrangler d1 execute --file schema.sql` **no pasa por el guardián** (ejecuta SQL crudo),
+  así que en local fallará el ALTER si la columna ya está. Para pruebas locales, aplica el esquema sin
+  esa línea o deja que el worker lo haga.
