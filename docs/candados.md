@@ -228,5 +228,15 @@ diario…`, 23 ago 2026).
 - **Candado:** `tests/unit/correo-boletin.test.ts` → «piloto automático por tráfico»: no corre en
   pausa, no corre si la última fue hace poco (solo una petición gana), corre si pasó el intervalo y
   no explota sin base.
-- **Qué NO tocar:** no quites el latido «porque el cron ya va»; son dos caminos a propósito. Y no
-  lances el robot fuera de `ctx.waitUntil`: el lector no debe esperar a que se escriba una nota.
+- **Segundo intento (mismo día):** la primera versión hacía el trabajo dentro del `waitUntil` de la
+  visita y **la corrida se cortó a medias** (quedó «en marcha» para siempre). Escribir una nota tarda
+  entre 30 y 90 segundos y no cabe en la petición de un lector. Arreglado así:
+  1. El latido **no** hace el trabajo: pide `GET /__scheduled` a su propio sitio, que corre en una
+     **invocación aparte con su propio presupuesto de tiempo**. Si la visita se corta, la corrida ya
+     arrancó por su cuenta.
+  2. Esa llamada interna se firma con un **secreto que el sitio se genera solo** y guarda en la base
+     (`settings.robot_tick_token`), así el piloto automático no depende de configurar nada.
+  3. `closeStaleRuns()` cierra como error las corridas que llevan más de 15 minutos «en marcha»: el
+     panel muestra lo que de verdad pasó y el turno se puede reintentar.
+- **Qué NO tocar:** no quites el latido «porque el cron ya va» (son dos caminos a propósito); no
+  hagas el trabajo dentro del `waitUntil` de una visita; y no dejes corridas sin cerrar.

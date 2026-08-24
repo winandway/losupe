@@ -237,3 +237,50 @@ describe("escribir una nota a mano", () => {
     expect(p).toContain("versión en inglés");
   });
 });
+
+describe("recuperación de corridas cortadas y llamada interna", () => {
+  it("una corrida colgada se cierra como error, y la sana no se toca", async () => {
+    const { closeStaleRuns } = await import("@/lib/robot/heartbeat");
+    let sql = "";
+    let params: unknown[] = [];
+    const db = {
+      prepare: (s: string) => ({
+        bind: (...p: unknown[]) => {
+          sql = s;
+          params = p;
+          return { run: async () => ({ meta: { changes: 1 } }) };
+        },
+      }),
+    } as unknown as D1Database;
+    expect(await closeStaleRuns(db, 15)).toBe(1);
+    expect(sql).toContain("status = 'running'");
+    expect(sql).toContain("started_at < ?1");
+    expect(String(params[0]) < new Date().toISOString()).toBe(true);
+    // Si la base falla, no explota
+    const rota = {
+      prepare: () => {
+        throw new Error("sin base");
+      },
+    } as unknown as D1Database;
+    expect(await closeStaleRuns(rota)).toBe(0);
+  });
+
+  it("el secreto interno se crea una sola vez y se reutiliza", async () => {
+    const { getTickToken } = await import("@/lib/robot/heartbeat");
+    let guardado: string | null = null;
+    const db = {
+      prepare: (s: string) => ({
+        bind: (...p: unknown[]) => ({
+          first: async () => (guardado ? { value: guardado } : null),
+          run: async () => {
+            if (s.startsWith("INSERT OR REPLACE")) guardado = String(p[1]);
+            return { meta: { changes: 1 } };
+          },
+        }),
+      }),
+    } as unknown as D1Database;
+    const uno = await getTickToken(db);
+    expect(uno).toHaveLength(44);
+    expect(await getTickToken(db)).toBe(uno);
+  });
+});

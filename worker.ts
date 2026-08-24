@@ -26,7 +26,7 @@ import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow"
 import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { legacyRedirectTarget } from "./src/lib/legacy-redirects";
-import { claimTick } from "./src/lib/robot/heartbeat";
+import { claimTick, closeStaleRuns, getTickToken } from "./src/lib/robot/heartbeat";
 import { robotStatus } from "./src/lib/robot/pipeline";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
 import { createSchemaGuard } from "./src/lib/schema-guard";
@@ -156,9 +156,19 @@ export default {
       !FEED_PATHS.has(pathname)
     ) {
       ctx.waitUntil(
-        claimTick(env.DB).then((d) =>
-          d.run ? runScheduled(env, "cron", { base }).catch(() => undefined) : undefined,
-        ),
+        (async () => {
+          // Una corrida que se cortó no debe quedar «en marcha» para siempre.
+          await closeStaleRuns(env.DB);
+          const decision = await claimTick(env.DB);
+          if (!decision.run) return;
+          // El trabajo NO se hace aquí: se pide a /__scheduled, que corre en su propia invocación
+          // con su propio presupuesto de tiempo. Si esta petición se corta, aquella ya arrancó.
+          const token = await getTickToken(env.DB);
+          if (!token) return;
+          await fetch(`${base}/__scheduled?key=${encodeURIComponent(token)}`, {
+            headers: { "user-agent": "losupe-heartbeat/1.0" },
+          }).catch(() => undefined);
+        })(),
       );
     }
 

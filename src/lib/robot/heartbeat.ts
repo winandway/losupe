@@ -12,6 +12,7 @@
  */
 
 export const TICK_KEY = "robot_last_tick";
+export const TICK_TOKEN_KEY = "robot_tick_token";
 /** Cada cuánto, como mucho, se lanza una corrida por tráfico. */
 export const DEFAULT_INTERVAL_MINUTES = 120;
 
@@ -62,5 +63,50 @@ export async function claimTick(
     return { run: true, since: before?.value || null };
   } catch {
     return { run: false, reason: "error" };
+  }
+}
+
+/**
+ * Secreto interno para que el sitio pueda llamarse a sí mismo a `/__scheduled`. Se genera solo la
+ * primera vez y vive en la base: así el piloto automático no depende de que nadie configure nada.
+ */
+export async function getTickToken(db: D1Database): Promise<string | null> {
+  try {
+    const row = await db
+      .prepare(`SELECT value FROM settings WHERE key = ?1`)
+      .bind(TICK_TOKEN_KEY)
+      .first<{ value: string }>();
+    if (row?.value) return row.value;
+    const token = crypto.randomUUID().replace(/-/g, "") + crypto.randomUUID().slice(0, 12);
+    await db
+      .prepare(
+        `INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, datetime('now'))`,
+      )
+      .bind(TICK_TOKEN_KEY, token)
+      .run();
+    return token;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Corridas que se quedaron a medias (el worker se cortó antes de terminar). Se marcan como error
+ * para que el estado no mienta y el panel muestre lo que de verdad pasó.
+ */
+export async function closeStaleRuns(db: D1Database, maxMinutes = 15): Promise<number> {
+  try {
+    const limit = new Date(Date.now() - maxMinutes * 60_000).toISOString();
+    const res = await db
+      .prepare(
+        `UPDATE runs SET status = 'error', finished_at = datetime('now'),
+           error = 'la corrida se cortó antes de terminar (se reintentará)'
+         WHERE status = 'running' AND started_at < ?1`,
+      )
+      .bind(limit)
+      .run();
+    return res.meta?.changes ?? 0;
+  } catch {
+    return 0;
   }
 }

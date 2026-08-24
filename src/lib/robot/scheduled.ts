@@ -51,11 +51,27 @@ export async function runScheduled(
   };
 }
 
-/** ¿Puede esta petición disparar el robot? Solo el programador de YaDominios o la clave manual. */
-export function isScheduledRequestAuthorized(request: Request, env: ScheduledEnv): boolean {
+/**
+ * ¿Puede esta petición disparar el robot? Tres formas: el programador de YaDominios (su cabecera),
+ * la clave manual (`CRON_SECRET`) o el secreto interno que el propio sitio usa para llamarse a sí
+ * mismo (el latido). Cualquier otra cosa recibe un 404.
+ */
+export async function isScheduledRequestAuthorized(
+  request: Request,
+  env: ScheduledEnv,
+): Promise<boolean> {
   if (request.headers.has("x-yad-cron")) return true;
   const key = new URL(request.url).searchParams.get("key");
-  return Boolean(env.CRON_SECRET && key && timingSafeEqual(key, env.CRON_SECRET));
+  if (!key) return false;
+  if (env.CRON_SECRET && timingSafeEqual(key, env.CRON_SECRET)) return true;
+  try {
+    const row = await env.DB.prepare(
+      `SELECT value FROM settings WHERE key = 'robot_tick_token'`,
+    ).first<{ value: string }>();
+    return Boolean(row?.value && timingSafeEqual(key, row.value));
+  } catch {
+    return false;
+  }
 }
 
 export function timingSafeEqual(a: string, b: string): boolean {
@@ -69,7 +85,7 @@ export async function handleScheduledRequest(
   request: Request,
   env: ScheduledEnv,
 ): Promise<Response> {
-  if (!isScheduledRequestAuthorized(request, env)) {
+  if (!(await isScheduledRequestAuthorized(request, env))) {
     return new Response("Not found", { status: 404 });
   }
   if (request.method !== "GET" && request.method !== "POST") {

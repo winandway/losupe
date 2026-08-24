@@ -33,38 +33,40 @@ describe("robot programado", () => {
     expect(String(update?.params[4])).toContain("robot_paused");
   });
 
-  it("solo deja pasar al programador o a la clave manual (nunca al modo desarrollo)", () => {
+  it("solo deja pasar al programador o a la clave manual (nunca al modo desarrollo)", async () => {
     const db = new FakeD1();
     const req = (url: string, headers: Record<string, string> = {}) =>
       new Request(url, { headers });
-    expect(isScheduledRequestAuthorized(req("https://x/__scheduled"), envWith(db))).toBe(false);
+    expect(await isScheduledRequestAuthorized(req("https://x/__scheduled"), envWith(db))).toBe(
+      false,
+    );
     expect(
-      isScheduledRequestAuthorized(
+      await isScheduledRequestAuthorized(
         req("https://x/__scheduled", { "x-yad-cron": "1" }),
         envWith(db),
       ),
     ).toBe(true);
     expect(
-      isScheduledRequestAuthorized(
+      await isScheduledRequestAuthorized(
         req("https://x/__scheduled?key=abc"),
         envWith(db, { CRON_SECRET: "abc" }),
       ),
     ).toBe(true);
     expect(
-      isScheduledRequestAuthorized(
+      await isScheduledRequestAuthorized(
         req("https://x/__scheduled?key=abd"),
         envWith(db, { CRON_SECRET: "abc" }),
       ),
     ).toBe(false);
     expect(
-      isScheduledRequestAuthorized(
+      await isScheduledRequestAuthorized(
         req("https://x/__scheduled"),
         envWith(db, { NEXTJS_ENV: "development" }),
       ),
     ).toBe(false);
-    expect(isScheduledRequestAuthorized(req("https://x/__scheduled?key=abc"), envWith(db))).toBe(
-      false,
-    );
+    expect(
+      await isScheduledRequestAuthorized(req("https://x/__scheduled?key=abc"), envWith(db)),
+    ).toBe(false);
   });
 
   it("responde 404 sin permiso y JSON con permiso", async () => {
