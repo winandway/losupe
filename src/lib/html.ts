@@ -112,3 +112,33 @@ export function splitAfterParagraph(
   const at = positions[afterParagraph - 1]!;
   return { before: html.slice(0, at), after: html.slice(at) };
 }
+
+/**
+ * ¿Este párrafo es solo una firma («Por Ana López», «By John Smith»)? Con lógica simple, no con una
+ * expresión regular anidada (que con textos raros puede colgarse).
+ */
+export function isBylineParagraph(texto: string): boolean {
+  const limpio = texto
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\s*\.$/, "")
+    .trim();
+  const partes = limpio.split(" ").filter(Boolean);
+  if (partes.length < 2 || partes.length > 5) return false;
+  const primera = partes[0]!.toLowerCase();
+  if (primera !== "por" && primera !== "by") return false;
+  return partes.slice(1).every((w) => /^[A-ZÁÉÍÓÚÑ][\p{L}'.-]*$/u.test(w));
+}
+
+/**
+ * Quita del cuerpo las líneas de firma («Por Nombre Apellido»). El sitio ya pone la firma con nombre
+ * y foto al pie de cada nota, así que dentro del texto solo duplica —y en el peor caso deja el
+ * nombre de alguien que ya no escribe aquí. Se aplica al LEER, así que también limpia lo ya
+ * publicado, en el sitio, en el RSS y en el markdown para agentes.
+ */
+export function stripInlineBylines(html: string): string {
+  if (!/<p>\s*(?:Por|By)\s/i.test(html)) return html;
+  return html.replace(/<p>([^<]{0,60})<\/p>/g, (m, dentro: string) =>
+    isBylineParagraph(dentro) ? "" : m,
+  );
+}

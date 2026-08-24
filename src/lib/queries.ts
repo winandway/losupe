@@ -1,5 +1,6 @@
 import type { Lang } from "@/i18n/config";
 import { isSectionId, type SectionId } from "./sections";
+import { stripInlineBylines } from "./html";
 import { nowIso } from "./dates";
 
 export type ArticleCard = {
@@ -153,7 +154,8 @@ export function mapFull(
 ): ArticleFull {
   return {
     ...mapCard(row, requested),
-    contentHtml: row.content_html,
+    // Se limpian las firmas incrustadas al leer: así también quedan limpias las notas ya publicadas.
+    contentHtml: stripInlineBylines(row.content_html),
     metaTitle: row.meta_title,
     metaDescription: row.meta_description,
     tags: parseJsonArray<string>(row.tags_json).filter((t) => typeof t === "string"),

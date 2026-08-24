@@ -83,6 +83,37 @@ describe("datos estructurados para Google News y las IA", () => {
   });
 });
 
+describe("firmas incrustadas en el cuerpo", () => {
+  it("se quitan al leer la nota, así también quedan limpias las ya publicadas", async () => {
+    const { isBylineParagraph, stripInlineBylines } = await import("@/lib/html");
+    expect(isBylineParagraph("Por Magaly Molina")).toBe(true);
+    expect(isBylineParagraph("By Andreea Blidar")).toBe(true);
+    expect(isBylineParagraph("Por  Pedro Llerena .")).toBe(true);
+    // Frases normales que empiezan por «Por» no se tocan
+    expect(isBylineParagraph("Por eso el mercado subió con fuerza esta semana")).toBe(false);
+    expect(isBylineParagraph("Por ahora")).toBe(false);
+    expect(isBylineParagraph("Texto cualquiera")).toBe(false);
+
+    expect(stripInlineBylines("<p>Cuerpo.</p><p>Por Magaly Molina</p>")).toBe("<p>Cuerpo.</p>");
+    expect(stripInlineBylines("<p>Cuerpo.</p>")).toBe("<p>Cuerpo.</p>");
+    expect(
+      stripInlineBylines("<p>Por eso el mercado subió con fuerza durante la semana.</p>"),
+    ).toBe("<p>Por eso el mercado subió con fuerza durante la semana.</p>");
+  });
+
+  it("la nota que llega del lector ya viene sin la firma incrustada", async () => {
+    const { mapFull } = await import("@/lib/queries");
+    const { sampleFullRow } = await import("./fake-d1");
+    const conFirma = {
+      ...sampleFullRow,
+      content_html: "<p>Cuerpo de la nota.</p>\n<p>Por Magaly Molina</p>",
+    };
+    const nota = mapFull(conFirma, "es", { es: conFirma.slug });
+    expect(nota.contentHtml).toBe("<p>Cuerpo de la nota.</p>\n");
+    expect(nota.contentHtml).not.toMatch(/Magaly/);
+  });
+});
+
 describe("enlaces internos", () => {
   it("parte el cuerpo tras el segundo párrafo, y no parte notas cortas", () => {
     const html = "<p>Uno.</p><p>Dos.</p><h2>T</h2><p>Tres.</p><p>Cuatro.</p>";

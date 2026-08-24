@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { sanitizeHtml, stripHtml } from "@/lib/html";
+import { sanitizeHtml, stripHtml, stripInlineBylines } from "@/lib/html";
 import { getSection, type SectionId } from "@/lib/sections";
 import { generateJson, type GeminiJsonResult } from "./gemini";
 import type { TextModel } from "./model-guard";
@@ -67,26 +67,8 @@ export function cleanEditorialHtml(html: string): string {
   });
   // El modelo a veces firma el texto («Por Nombre Apellido»). El sitio ya pone la firma con foto, así
   // que esa línea duplica —y en el peor caso deja el nombre de alguien que ya no escribe aquí.
-  out = out.replace(/<p>([^<]{0,60})<\/p>/g, (m, dentro: string) => (esFirma(dentro) ? "" : m));
+  out = stripInlineBylines(out);
   return out.replace(/\n{3,}/g, "\n\n").trim();
-}
-
-/**
- * ¿Este párrafo es solo una firma («Por Ana López», «By John Smith»)? Se comprueba con lógica
- * simple en vez de una expresión regular anidada, que con textos raros puede colgarse.
- */
-export function esFirma(texto: string): boolean {
-  const limpio = texto
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\s*\.$/, "")
-    .trim();
-  const partes = limpio.split(" ").filter(Boolean);
-  if (partes.length < 2 || partes.length > 5) return false;
-  const primera = partes[0]!.toLowerCase();
-  if (primera !== "por" && primera !== "by") return false;
-  // Todo lo que sigue tiene que parecer un nombre propio: empieza en mayúscula y no lleva números.
-  return partes.slice(1).every((w) => /^[A-ZÁÉÍÓÚÑ][\p{L}'.-]*$/u.test(w));
 }
 
 /** Fragmentos de N palabras (sin acentos ni signos) para comparar textos. */
