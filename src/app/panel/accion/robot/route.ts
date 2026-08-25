@@ -13,6 +13,7 @@ const schema = z.object({
   dailyBudget: z.coerce.number().min(0).max(10).optional(),
   sponsorGapHours: z.coerce.number().int().min(0).max(720).optional(),
   sponsorMaxPerWeek: z.coerce.number().int().min(1).max(14).optional(),
+  mesaRatioPropias: z.coerce.number().int().min(0).max(100).optional(),
 });
 
 function back(path: string, status = 303) {
@@ -50,6 +51,9 @@ export async function POST(request: Request) {
       }
       if (d.sponsorMaxPerWeek !== undefined) {
         await setSetting(env.DB, "sponsor_max_per_week", String(d.sponsorMaxPerWeek));
+      }
+      if (d.mesaRatioPropias !== undefined) {
+        await setSetting(env.DB, "mesa_ratio_propias", String(d.mesaRatioPropias / 100));
       }
       return back("/panel?ok=settingsSaved");
     }

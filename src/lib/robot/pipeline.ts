@@ -36,7 +36,11 @@ import {
 import { SQL_NOW } from "../sql-time";
 import { FRANJAS, franjaActiva, NOMBRE_FRANJA, partesEnZona, ZONA } from "./franjas";
 import { TICK_KEY } from "./heartbeat";
+import { encargoDelTurno, reglasDeLaMesa } from "./mesa";
+import { buscarArticulos } from "./wikipedia";
+import { fetchPage } from "./research";
 import {
+  buildPiezaPropiaPrompt,
   buildSponsoredPrompt,
   buildUniversalPrompt,
   writeDraft,
@@ -87,6 +91,8 @@ export type NoteResult = {
   sponsor?: string;
   /** Cuántos intentos hicieron falta para que la nota pasara el control anticopia. */
   attempts?: number;
+  /** Qué decidió la mesa de redacción: actualidad, pieza propia o efeméride. */
+  genero?: "actualidad" | "propia" | "efemeride";
   /** A cuántos correos se avisó (equipo + suscriptores) y el fallo si lo hubo. */
   notified?: number;
   notifyError?: string;
@@ -114,6 +120,8 @@ export type RobotStatus = {
   evergreenRatio: number;
   mail: { configured: boolean; recipients: string[] };
   sponsorPace: { gapHours: number; maxPerWeek: number };
+  /** La mesa de redacción: cuánto se escribe de cosecha propia y si se usan las efemérides. */
+  mesa: { ratioPropias: number; efemerides: boolean };
   /** A qué horas publica el diario (hora del Este de EE. UU.) y en cuál estamos. */
   horario: {
     zona: string;
@@ -225,6 +233,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
     evergreenRatio: Math.min(1, Math.max(0, Number(ratio ?? "0.5") || 0)),
     mail: { configured: mailConfigured(env), recipients: parseRecipients(notifyEmails) },
     sponsorPace: pace,
+    mesa: await reglasDeLaMesa(db),
     queue,
     lastRun: last
       ? {
@@ -372,6 +381,53 @@ async function noteItem(
       patch.sources ? JSON.stringify(patch.sources) : null,
     )
     .run();
+}
+
+/** Titulares publicados en los últimos meses: la mesa los usa para no repetir tema. */
+async function titularesRecientes(db: D1Database, limite = 120): Promise<string[]> {
+  try {
+    const { results } = await db
+      .prepare(
+        `SELECT i.title FROM article_i18n i JOIN articles a ON a.id = i.article_id
+         WHERE i.lang = 'es' ORDER BY a.created_at DESC LIMIT ?1`,
+      )
+      .bind(limite)
+      .all<{ title: string }>();
+    return results.map((r) => r.title);
+  } catch {
+    return [];
+  }
+}
+
+/** Secciones que todavía tienen cupo hoy, en orden de cuánto les queda. */
+async function seccionesConCupo(db: D1Database, ahora: Date): Promise<SectionId[]> {
+  try {
+    const [{ results: cupos }, hoy] = await Promise.all([
+      db
+        .prepare(`SELECT id, notes_per_day FROM sections WHERE active = 1 ORDER BY sort_order`)
+        .all<{ id: string; notes_per_day: number }>(),
+      robotNotesToday(db, ahora),
+    ]);
+    return cupos
+      .map((c) => ({ id: c.id as SectionId, libre: Number(c.notes_per_day) - (hoy[c.id] ?? 0) }))
+      .filter((c) => c.libre > 0)
+      .sort((a, b) => b.libre - a.libre)
+      .map((c) => c.id);
+  } catch {
+    return [];
+  }
+}
+
+/** Lee unas páginas y las deja listas como material para el redactor. */
+async function leerPaginas(urls: readonly string[], fetchImpl: typeof fetch): Promise<SourceDoc[]> {
+  const leidas = await Promise.all(
+    urls
+      .slice(0, 4)
+      .map((url) => fetchPage(url, { fetchImpl, maxChars: 12_000 }).catch(() => null)),
+  );
+  return leidas
+    .filter((p): p is NonNullable<typeof p> => Boolean(p?.text && p.text.length > 400))
+    .map((p) => ({ title: p.title || p.url, url: p.url, text: p.text }));
 }
 
 export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise<RunSummary> {
@@ -639,29 +695,101 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           cost: result.costUsd,
           sources: sources.map((s) => s.url),
         });
-      } else if (kind === "universal" && nextCandidate) {
-        const c = nextCandidate;
-        await noteItem(db, runId, itemId, {
-          status: "working",
-          step: "research",
-          section: c.sectionId,
-          topic: c.title,
-        });
-        const docs = await gatherSources(db, c, fetchImpl);
-        if (docs.length === 0) {
-          await markCandidate(db, c.id, "skipped");
-          throw new Error(`No se pudo leer la fuente: ${c.url}`);
+      } else if (kind === "universal") {
+        // LA MESA DE REDACCIÓN decide qué se escribe: la actualidad que trajo el RSS, una pieza
+        // propia (curiosidades, errores, guía) o la efeméride del día. Antes solo existía lo
+        // primero, y por eso se perdían notas que la gente estaba esperando.
+        const encargo = await encargoDelTurno(db, {
+          notasHoy: todayTotal,
+          hayActualidad: Boolean(nextCandidate),
+          titularesRecientes: await titularesRecientes(db),
+          seccionesConCupo: await seccionesConCupo(db, now),
+          ahora: now,
+          fetchImpl,
+        }).catch(() => ({ genero: "actualidad" as const }));
+
+        let seccion: SectionId;
+        let tema: string;
+        let docs: SourceDoc[];
+        let prompt: string;
+        let noteKind: "news" | "evergreen";
+        let candidatoUsado: typeof nextCandidate = null;
+
+        if (encargo.genero === "actualidad") {
+          if (!nextCandidate) throw new Error("No hay actualidad ni pieza propia que escribir");
+          const c = nextCandidate;
+          candidatoUsado = c;
+          seccion = c.sectionId;
+          tema = c.title;
+          result.genero = "actualidad";
+          await noteItem(db, runId, itemId, {
+            status: "working",
+            step: "research",
+            section: seccion,
+            topic: tema,
+          });
+          docs = await gatherSources(db, c, fetchImpl);
+          if (docs.length === 0) {
+            await markCandidate(db, c.id, "skipped");
+            throw new Error(`No se pudo leer la fuente: ${c.url}`);
+          }
+          noteKind = todayTotal % 10 < Math.round(evergreenRatio * 10) ? "evergreen" : "news";
+          await noteItem(db, runId, itemId, { status: "working", step: "write" });
+          prompt = buildUniversalPrompt({
+            sectionId: seccion,
+            topicTitle: tema,
+            topicSummary: c.summary,
+            kind: noteKind,
+            sources: docs,
+            internalLinks: await internalLinksFor(db, seccion),
+          });
+        } else {
+          const propio =
+            encargo.genero === "propia"
+              ? {
+                  seccion: encargo.idea.sectionId,
+                  titular: encargo.idea.titular,
+                  genero: encargo.idea.genero,
+                  buscar: encargo.idea.busqueda,
+                  urls: [] as string[],
+                }
+              : {
+                  seccion: encargo.sectionId,
+                  titular: encargo.titular,
+                  genero: "curiosidades" as const,
+                  buscar: encargo.efemeride.texto,
+                  urls: encargo.efemeride.fuentes.map((f) => f.url),
+                };
+          seccion = propio.seccion;
+          tema = propio.titular;
+          result.genero = encargo.genero;
+          await noteItem(db, runId, itemId, {
+            status: "working",
+            step: "research",
+            section: seccion,
+            topic: tema,
+          });
+          // Una pieza propia también se documenta: sin fuentes, una lista de curiosidades se
+          // inventa sola, que es exactamente lo que no queremos.
+          const encontrados =
+            propio.urls.length > 0
+              ? propio.urls
+              : (await buscarArticulos(propio.buscar, 3, fetchImpl)).map((a) => a.url);
+          docs = await leerPaginas(encontrados, fetchImpl);
+          if (docs.length === 0) {
+            throw new Error(`No se encontró material para documentar «${tema}»`);
+          }
+          noteKind = "evergreen";
+          await noteItem(db, runId, itemId, { status: "working", step: "write" });
+          prompt = buildPiezaPropiaPrompt({
+            titularPropuesto: propio.titular,
+            genero: propio.genero,
+            sectionId: seccion,
+            sources: docs,
+            internalLinks: await internalLinksFor(db, seccion),
+          });
         }
-        const noteKind = todayTotal % 10 < Math.round(evergreenRatio * 10) ? "evergreen" : "news";
-        await noteItem(db, runId, itemId, { status: "working", step: "write" });
-        const prompt = buildUniversalPrompt({
-          sectionId: c.sectionId,
-          topicTitle: c.title,
-          topicSummary: c.summary,
-          kind: noteKind,
-          sources: docs,
-          internalLinks: await internalLinksFor(db, c.sectionId),
-        });
+        const c = candidatoUsado ?? { id: "", sectionId: seccion, title: tema, url: "" };
         const written = await writeDraft(
           prompt,
           docs.map((d) => d.text),

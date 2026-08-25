@@ -372,6 +372,9 @@ export const es = {
       runResult: "Resultado de la corrida",
       settings: "Ajustes",
       notesPerDay: "Notas por día (robot + encargos)",
+      ownPieces: "Porcentaje de piezas propias (curiosidades y listas)",
+      ownPiecesHint:
+        "Lo demás es actualidad. Las curiosidades y las listas no caducan y son lo que más se comparte.",
       evergreenShare: "Porcentaje de notas duraderas (guías) frente a actualidad",
       dailyBudget: "Tope de gasto diario (USD)",
       saveSettings: "Guardar ajustes",

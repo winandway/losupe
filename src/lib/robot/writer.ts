@@ -229,6 +229,44 @@ export function internalLinksBlock(links: readonly InternalLink[]): string {
 }
 
 /** Nota universal: una noticia o guía duradera a partir de fuentes públicas. */
+/**
+ * El encargo de una pieza propia: curiosidades, errores o guía (ver `mesa.ts` e `ideas.ts`).
+ *
+ * Una lista de diez curiosidades NO se escribe como una noticia, y ese es justo el género donde una
+ * IA se pone a inventar datos que suenan bien. Por eso este encargo insiste en lo mismo que el
+ * resto —cada dato con su fuente— y añade una salida honesta: si con el material no se llega a diez,
+ * se escriben las que haya. Mejor siete comprobadas que diez inventadas.
+ */
+export function buildPiezaPropiaPrompt(b: {
+  titularPropuesto: string;
+  genero: "curiosidades" | "errores" | "guia";
+  sectionId: SectionId;
+  sources: readonly SourceDoc[];
+  internalLinks?: readonly InternalLink[];
+}): string {
+  const section = getSection(b.sectionId);
+  const forma = {
+    curiosidades:
+      "Es una LISTA DE CURIOSIDADES. Cada punto va con su <h3> y dos o tres párrafos que cuenten el dato, de dónde sale y por qué sorprende. Que se lea como quien cuenta algo bueno en una sobremesa, no como una ficha de enciclopedia. El primer punto tiene que ser el más fuerte: es el que decide si siguen leyendo.",
+    errores:
+      "Es una LISTA DE ERRORES. Cada punto va con su <h3>: el error, por qué se comete, qué pasa cuando se comete y qué hacer en su lugar. Concreto y sin sermones: quien lee está cometiendo alguno de esos errores ahora mismo.",
+    guia: "Es una GUÍA que sigue sirviendo dentro de un año. Pasos claros, con ejemplos y cifras reales.",
+  }[b.genero];
+  return `ENCARGO: pieza propia para la sección "${section?.name.es ?? b.sectionId}".
+TITULAR PROPUESTO: ${b.titularPropuesto}
+FORMA: ${forma}
+
+REGLAS DE ESTE GÉNERO (van en serio):
+- Cada dato, cifra o fecha sale del material de abajo y se cita con su enlace. NADA de memoria propia.
+- Si el material no da para diez puntos, escribe los que sí puedas documentar y ajusta el titular al
+  número real. Siete comprobadas valen más que diez inventadas.
+- Puedes mejorar el titular propuesto si se te ocurre uno mejor, pero mantén el tema y el número.
+- Nada de rellenar con obviedades para llegar a la cuenta.
+
+MATERIAL:
+${sourcesBlock(b.sources)}${internalLinksBlock(b.internalLinks ?? [])}`;
+}
+
 export function buildUniversalPrompt(b: UniversalBrief): string {
   const section = getSection(b.sectionId);
   const kindText =
@@ -257,8 +295,8 @@ export class DraftRejectedError extends Error {
 }
 
 /** Valida y limpia lo que devolvió el modelo; rechaza si copió fuentes. */
-export /** Corta un texto en el último espacio antes del límite, para no partir una palabra por la mitad. */
-function recortar(texto: string, max: number): string {
+/** Corta un texto en el último espacio antes del límite, para no partir una palabra por la mitad. */
+export function recortar(texto: string, max: number): string {
   const t = texto.trim();
   if (t.length <= max) return t;
   const corte = t.slice(0, max);

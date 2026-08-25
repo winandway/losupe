@@ -338,7 +338,11 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('robot_last_kind', 'universal'),
   ('robot_notes_per_run', '1'),
   ('sponsor_min_gap_hours', '72'),
-  ('sponsor_max_per_week', '2');
+  ('sponsor_max_per_week', '2'),
+  -- La mesa de redaccion: cuantas de cada diez notas propias son piezas de curiosidades y listas,
+  -- y si se aprovechan las efemerides del dia (los 10 años sin Juan Gabriel, etc).
+  ('mesa_ratio_propias', '0.4'),
+  ('mesa_efemerides', '1');
 
 -- Fuentes iniciales del robot (RSS públicos). Se pueden apagar o ampliar desde el panel.
 INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VALUES

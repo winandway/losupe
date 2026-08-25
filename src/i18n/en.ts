@@ -372,6 +372,9 @@ export const en: Dict = {
       runResult: "Run result",
       settings: "Settings",
       notesPerDay: "Stories per day (robot + assignments)",
+      ownPieces: "Share of original pieces (lists and trivia)",
+      ownPiecesHint:
+        "The rest is breaking news. Lists and trivia never go stale and get shared the most.",
       evergreenShare: "Share of evergreen guides vs. news (percent)",
       dailyBudget: "Daily spend cap (USD)",
       saveSettings: "Save settings",

@@ -624,3 +624,38 @@ diario…`, 23 ago 2026).
 - **Lo que falta y NO es trabajo de código:** el alta en Google Publisher Center, el correo de
   contacto definitivo (hoy `contacto@losupe.com`, ajustable en `settings.contact_email`) y los
   perfiles reales de LinkedIn/X del equipo. Esos datos son de Richard: no se inventan.
+
+## 24. La mesa de redacción: el diario ya no solo reacciona
+
+- **De dónde sale (24 ago 2026):** Richard, después de leer una nota bien escrita pero anodina:
+  _«deberíamos tener un cerebro, que sería como el gerente que prepara todo antes de llegar a la IA
+  que escribe… el que manda al redactor»_. Y puso los ejemplos: los diez años sin Juan Gabriel que
+  no publicamos, «10 curiosidades sobre las ventas por internet», «los 10 errores más grandes de las
+  empresas chinas».
+- **Cuál era el problema real:** el robot **solo reaccionaba**. Escribía lo que trajera el RSS y, si
+  las fuentes no lo mencionaban, para nosotros no existía. Un diario así no tiene criterio propio:
+  tiene un lector de titulares ajenos.
+- **Qué se hizo:**
+  1. `src/lib/robot/mesa.ts` — el jefe de redacción. Antes de escribir nada decide el género del
+     turno: **actualidad** (RSS y tendencias), **pieza propia** (curiosidades, errores, guía) o
+     **efeméride**. El reparto se ajusta en el panel y es **estable, sin azar**: la misma situación
+     da la misma decisión, que es lo que permite probarlo.
+  2. `src/lib/robot/ideas.ts` — el banco de ideas: más de cincuenta piezas por sección, con las
+     plantillas que pidió Richard y el tema de cada una. No repite un tema ya publicado.
+  3. `src/lib/robot/efemerides.ts` — qué se cumple hoy, desde Wikipedia (abierta, gratis y
+     **citable**). Solo se usan los aniversarios **redondos**: «hace 37 años» no le importa a nadie,
+     «diez años sin Juan Gabriel» sí. Una efeméride redonda **manda** sobre el reparto, porque solo
+     se puede contar ese día.
+  4. `buildPiezaPropiaPrompt()` — una lista de diez curiosidades no se escribe como una noticia.
+- **EL RIESGO DE ESTE GÉNERO, y cómo se cierra:** una lista de curiosidades es exactamente donde una
+  IA se pone a inventar datos que suenan bien. Por eso una idea del banco **no es una nota**: es un
+  encargo que pasa por la misma investigación y las mismas fuentes citadas que todo lo demás. Se
+  buscan artículos reales, se leen, y si no hay material **no se escribe**. El prompt lo dice con
+  todas las letras: _«si el material no da para diez puntos, escribe los que sí puedas documentar y
+  ajusta el titular. Siete comprobadas valen más que diez inventadas»_.
+- **Candado:** `tests/unit/mesa.test.ts` — el banco de ideas (incluidos los titulares exactos que
+  pidió Richard), el caso «10 años sin Juan Gabriel», que una efeméride **sin fuente no se usa**, que
+  si Wikipedia se cae el diario sigue, y que el reparto es estable y respeta el ajuste.
+- **Qué NO tocar:** no dejes que una pieza propia se escriba sin fuentes leídas —es el único freno
+  contra los datos inventados—; no metas azar en el reparto (deja de ser comprobable); y no uses
+  aniversarios que no sean redondos, que es la diferencia entre una nota que se comparte y relleno.
