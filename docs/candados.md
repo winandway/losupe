@@ -727,3 +727,42 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no quites el `wait=1` del workflow (sin él, nadie espera al worker); no
   confíes el diario a las visitas; y si el robot deja de publicar, mira **la pestaña Actions** antes
   que nada: ahora el fallo se ve ahí.
+
+## 27. «A los suscriptores no llegó nada» — y estaba bien, pero no se veía
+
+- **Cómo se vio (25 ago 2026):** Richard: _«las notificaciones a windoce1@gmail.com llegaron pero
+  solo a ese correo, a los otros usuarios que estaban inscritos no llegó nada»_.
+- **Qué pasaba de verdad:** había **2 suscriptores pendientes y 0 confirmados**, sin **ni un** fallo
+  de envío. O sea: el correo de confirmación **sí les llegó**, pero no tocaron el botón. Con doble
+  confirmación eso significa que no reciben nada — y es lo correcto, porque impide que alguien
+  apunte a otro sin permiso. Pero era **invisible**: desde fuera parecía que el sistema no enviaba.
+- **La lección:** un comportamiento correcto que no se puede ver **es indistinguible de un fallo**.
+  Costó una petición de arreglo para algo que no estaba roto.
+- **Qué se hizo:**
+  1. `/__health` y el panel muestran los suscriptores **por estado** (confirmados, sin confirmar,
+     dados de baja, con fallo de envío). Solo cuentas, ningún correo.
+  2. **Recordatorio de confirmación** (`recordarConfirmacion`): a quien lleva 20 horas sin confirmar
+     se le manda **uno solo**, y queda marcado. Insistir más es la forma más rápida de acabar en la
+     carpeta de spam, que es peor que no mandar nada. Se marca **aunque el envío falle**: uno y no
+     más.
+  3. Va dentro de la corrida del robot, que ya se ejecuta tres veces al día: no hacía falta otro
+     reloj para algo que manda un correo de vez en cuando.
+- **Candado:** en `tests/unit/correo-boletin.test.ts`, «recordatorio a quien se apuntó y no
+  confirmó»: solo pendientes, solo una vez, y sin correo configurado no explota.
+- **Qué NO tocar:** no quites la doble confirmación «para que lleguen más» — es lo que separa un
+  boletín de una lista de spam; y no mandes más de un recordatorio.
+
+## 28. Las piezas propias salían demasiado cortas
+
+- **Cómo se vio (25 ago 2026):** la franja de la tarde se perdió entera. El error, ya explícito:
+  **«El borrador en es es muy corto (342 palabras)»**, cinco veces seguidas.
+- **La causa:** el encargo de una pieza propia (curiosidades, errores, guía) **no decía nada del
+  largo**. El modelo entendía «lista de diez puntos» y entregaba diez frases sueltas. Una nota del
+  diario son 700-1.100 palabras; 342 no llegan ni al mínimo.
+- **Qué se hizo:** el encargo pide el largo con todas las letras y explica por qué —_«una lista de
+  diez puntos con dos líneas cada uno no es una nota, es un tuit largo»_—; y si aun así sale corta,
+  el reintento **nombra el problema real** («el cuerpo era DEMASIADO CORTO») en vez del aviso
+  genérico de formato, que hablaba de largos de campos y no ayudaba en nada.
+- **Candado:** en `tests/unit/mesa.test.ts`, «una pieza propia es una nota, no un resumen».
+- **Qué NO tocar:** no bajes el mínimo de palabras para que pasen más notas — el problema es la
+  nota, no el listón.

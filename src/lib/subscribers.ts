@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { Lang } from "@/i18n/config";
-import { sendMail, type MailEnv } from "@/lib/mail";
+import { mailConfigured, sendMail, type MailEnv } from "@/lib/mail";
 import { SQL_NOW } from "./sql-time";
 
 /**
@@ -48,6 +48,69 @@ const TEXTS = {
  * Si el envío falla estando en segundo plano NO se pierde el rastro: queda anotado en la fila del
  * suscriptor (`mail_error`), que es lo que mira el panel.
  */
+/**
+ * RECORDATORIO DE CONFIRMACIÓN.
+ *
+ * El 25 ago 2026 había dos personas apuntadas y **ninguna confirmada**: el correo les llegó (no
+ * hubo ni un fallo de envío) pero no tocaron el botón. Es lo más normal del mundo — se apunta uno,
+ * se distrae, el correo baja en la bandeja — y sin recordatorio esa persona no vuelve nunca.
+ *
+ * Se manda UNO solo, pasadas unas horas, y queda marcado. Insistir más es la forma más rápida de
+ * acabar en la carpeta de spam, que es peor que no mandar nada.
+ */
+export const HORAS_ANTES_DE_RECORDAR = 20;
+
+export async function recordarConfirmacion(
+  db: D1Database,
+  env: MailEnv,
+  base: string,
+  ahora = new Date(),
+  fetchImpl: typeof fetch = fetch,
+): Promise<{ enviados: number; errores: string[] }> {
+  const out = { enviados: 0, errores: [] as string[] };
+  if (!mailConfigured(env)) return out;
+  try {
+    const limite = new Date(ahora.getTime() - HORAS_ANTES_DE_RECORDAR * 3_600_000).toISOString();
+    const { results } = await db
+      .prepare(
+        `SELECT email, token, lang FROM subscribers
+         WHERE status = 'pending' AND reminded_at IS NULL AND created_at < ?1
+         ORDER BY created_at LIMIT 50`,
+      )
+      .bind(limite)
+      .all<{ email: string; token: string; lang: string }>();
+    for (const s of results) {
+      const lang: Lang = s.lang === "en" ? "en" : "es";
+      const t = TEXTS[lang];
+      const url = `${base}/datos/boletin?alta=${encodeURIComponent(s.token)}`;
+      const res = await sendMail(
+        env,
+        {
+          to: [s.email],
+          subject: lang === "en" ? "One tap and you're in" : "Te falta un toque para entrar",
+          text: `${t.intro}\n\n${url}\n\n${t.ignore}`,
+          html: `<div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;max-width:520px;margin:0 auto;color:#0b1f3a">
+<p style="font-size:16px;line-height:1.6;margin:0 0 20px">${t.intro}</p>
+<p style="margin:0 0 24px"><a href="${url}" style="background:#FFD60A;color:#0b1f3a;text-decoration:none;font-weight:700;padding:12px 22px;border-radius:999px;display:inline-block">${t.button}</a></p>
+<p style="font-size:12px;color:#5b6b82;margin:0">${t.ignore}</p></div>`,
+        },
+        fetchImpl,
+      );
+      // Se marca pase lo que pase: uno y no más, aunque el envío falle.
+      await db
+        .prepare(`UPDATE subscribers SET reminded_at = ${SQL_NOW} WHERE email = ?1`)
+        .bind(s.email)
+        .run()
+        .catch(() => undefined);
+      if (res.ok) out.enviados += 1;
+      else out.errores.push(`${s.email}: ${res.reason}`);
+    }
+  } catch (e) {
+    out.errores.push(e instanceof Error ? e.message : String(e));
+  }
+  return out;
+}
+
 export async function subscribe(
   db: D1Database,
   env: MailEnv,

@@ -421,3 +421,49 @@ describe("una corrida cortada no se lleva la nota del turno", () => {
     });
   });
 });
+
+describe("recordatorio a quien se apuntó y no confirmó", () => {
+  const ENV_OK = { YAD_SITE: "losupe", YAD_TOKEN: "t", MAIL_FROM: "avisos@losupe.com" };
+
+  it("solo a los que llevan horas esperando, y UNA sola vez", async () => {
+    const { recordarConfirmacion, HORAS_ANTES_DE_RECORDAR } = await import("@/lib/subscribers");
+    // El 25 ago 2026 había 2 apuntados y 0 confirmados: el correo les llegó y no lo tocaron.
+    expect(HORAS_ANTES_DE_RECORDAR).toBeGreaterThanOrEqual(6);
+    let sql = "";
+    let enviados = 0;
+    const db = {
+      prepare: (s: string) => ({
+        bind: () => ({
+          all: async () => {
+            sql = s;
+            return { results: [{ email: "a@b.com", token: "tok", lang: "es" }] };
+          },
+          run: async () => {
+            if (s.includes("reminded_at =")) sql += " | MARCADO";
+            return { meta: { changes: 1 } };
+          },
+        }),
+      }),
+    } as unknown as D1Database;
+    const fetchImpl: typeof fetch = async () => {
+      enviados += 1;
+      return new Response("{}", { status: 200 });
+    };
+    const r = await recordarConfirmacion(db, ENV_OK, "https://losupe.com", new Date(), fetchImpl);
+    expect(r.enviados).toBe(1);
+    expect(enviados).toBe(1);
+    // La consulta solo mira pendientes que no hayan recibido ya el recordatorio.
+    expect(sql).toContain("status = 'pending'");
+    expect(sql).toContain("reminded_at IS NULL");
+    expect(sql).toContain("MARCADO");
+  });
+
+  it("sin correo configurado no hace nada y no explota", async () => {
+    const { recordarConfirmacion } = await import("@/lib/subscribers");
+    const db = {} as D1Database;
+    expect(await recordarConfirmacion(db, {}, "https://losupe.com")).toEqual({
+      enviados: 0,
+      errores: [],
+    });
+  });
+});

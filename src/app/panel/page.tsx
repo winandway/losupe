@@ -310,7 +310,30 @@ export default async function PanelHome({ searchParams }: Props) {
               </button>
             </div>
           </form>
-          <form action="/panel/accion/correos" method="post" className="mt-2">
+          {/* Los suscriptores por estado. Sin esto no se entiende por qué un aviso «no llega a
+              nadie»: quien no toca el enlace de su correo no recibe nada, y eso era invisible. */}
+          <div className="mt-4 border-t border-line pt-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted">
+              {p.mailSettings.subscribers}
+            </p>
+            <ul className="mt-2 flex flex-wrap gap-1.5 text-xs font-bold">
+              <li className="rounded-full bg-mint/30 px-2.5 py-1">
+                {status.subscribers.confirmed} {p.mailSettings.confirmed}
+              </li>
+              <li className="rounded-full bg-accent/40 px-2.5 py-1">
+                {status.subscribers.pending} {p.mailSettings.pending}
+              </li>
+              {status.subscribers.withError > 0 ? (
+                <li className="rounded-full bg-coral/20 px-2.5 py-1 text-coral">
+                  {status.subscribers.withError} {p.mailSettings.failed}
+                </li>
+              ) : null}
+            </ul>
+            {status.subscribers.pending > 0 ? (
+              <p className="mt-1.5 text-xs text-muted">{p.mailSettings.pendingHint}</p>
+            ) : null}
+          </div>
+          <form action="/panel/accion/correos" method="post" className="mt-3">
             <input type="hidden" name="op" value="test" />
             <button
               type="submit"

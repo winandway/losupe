@@ -423,6 +423,12 @@ export const en: Dict = {
       missing: "The site email is not set up yet",
       save: "Save emails",
       saved: "Emails saved.",
+      subscribers: "Subscribers",
+      confirmed: "confirmed",
+      pending: "unconfirmed",
+      failed: "delivery failed",
+      pendingHint:
+        "People who never tap the link in their email get no alerts. The robot sends one reminder, just one, the next day.",
       test: "Send a test",
       tested: "Test sent.",
       testFailed: "The test could not be sent",

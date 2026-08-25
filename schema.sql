@@ -298,6 +298,9 @@ ALTER TABLE authors ADD COLUMN expertise_en TEXT;
 -- la imagen para quien no la ve); el pie cuenta algo y es de lo mas leido de una pagina.
 ALTER TABLE articles ADD COLUMN image_caption_es TEXT;
 ALTER TABLE articles ADD COLUMN image_caption_en TEXT;
+-- Cuando se le mando el recordatorio de confirmar. Sin esta marca se le mandaria uno cada dia, que
+-- es la forma mas rapida de acabar en la carpeta de spam.
+ALTER TABLE subscribers ADD COLUMN reminded_at TEXT;
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
 INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES

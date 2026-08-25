@@ -422,6 +422,12 @@ export const es = {
       missing: "Falta configurar el correo del sitio",
       save: "Guardar correos",
       saved: "Correos guardados.",
+      subscribers: "Suscriptores",
+      confirmed: "confirmados",
+      pending: "sin confirmar",
+      failed: "con fallo de envío",
+      pendingHint:
+        "Quien no toca el enlace de su correo no recibe los avisos. El robot les manda un recordatorio, uno solo, al día siguiente.",
       test: "Enviar una prueba",
       tested: "Prueba enviada.",
       testFailed: "No se pudo enviar la prueba",
