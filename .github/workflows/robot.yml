@@ -1,0 +1,46 @@
+# EL RELOJ DEL DIARIO.
+#
+# El robot se despertaba de dos formas y ninguna era fiable: el cron de la plataforma no llegó a
+# dispararse ni una vez, y el «latido» depende de que alguien visite el sitio — a las siete de la
+# mañana no entra nadie. El 24 y el 25 de agosto de 2026 el diario no publicó por esto.
+#
+# Esto es un reloj de verdad: GitHub dispara a su hora, pase lo que pase, y espera a que la nota
+# termine de escribirse (`wait=1`), así el worker no muere a media faena por no tener quien espere.
+name: robot
+
+on:
+  schedule:
+    # Las tres franjas, en UTC. Se disparan las dos horas posibles de cada una porque el horario de
+    # verano mueve el reloj y el cron no lo entiende; el turno se apunta por franja y día local, así
+    # que el segundo disparo no repite nota.
+    #   7:00 ET -> 11:00 UTC (verano) / 12:00 UTC (invierno)
+    #  12:00 ET -> 16:00 / 17:00
+    #  17:00 ET -> 21:00 / 22:00
+    - cron: "5 11,12,16,17,21,22 * * *"
+  workflow_dispatch: # y a mano desde la pestaña Actions, cuando haga falta
+
+# Si una corrida anterior sigue viva, no se lanza otra encima.
+concurrency:
+  group: robot
+  cancel-in-progress: false
+
+jobs:
+  publicar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Escribir la nota del turno
+        run: |
+          set -o pipefail
+          echo "Hora UTC: $(date -u +%H:%M)"
+          RESP=$(curl -sS -m 300 \
+            -H "x-yad-cron: github-actions" \
+            ${CRON_SECRET:+--url-query "key=$CRON_SECRET"} \
+            "https://losupe.com/__scheduled?wait=1")
+          echo "$RESP"
+          # Que el trabajo se ponga en rojo si la corrida falla: un fallo en silencio es como no
+          # tener reloj. `skipped` es normal (ya se publicó el turno o se llegó al cupo).
+          echo "$RESP" | grep -q '"status":"error"' && exit 1
+          exit 0
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}

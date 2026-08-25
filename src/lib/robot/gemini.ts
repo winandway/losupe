@@ -51,6 +51,46 @@ export function extractJson(text: string): string {
   return start >= 0 && end > start ? body.slice(start, end + 1) : body;
 }
 
+/**
+ * Arregla el JSON que devuelve el modelo cuando trae saltos de línea DENTRO de un texto.
+ *
+ * Este fue el fallo del 25 ago 2026, y costó dos días de diario sin publicar. El modelo devolvía un
+ * JSON completo y bien cerrado —el error decía «motivo: STOP, 15107 caracteres» y terminaba en `}`—
+ * pero `JSON.parse` lo rechazaba igual. El motivo: dentro del HTML de la nota venían saltos de línea
+ * de verdad, y el formato JSON exige que ahí vaya `\n` escrito, no un salto real. Es un descuido
+ * clásico de los modelos y no hay forma de pedirle que no lo haga: se arregla al leer.
+ *
+ * Recorre el texto sabiendo si está dentro o fuera de unas comillas, y escapa solo los caracteres de
+ * control que estén dentro. Lo de fuera (los saltos entre campos) no se toca: ahí son legales.
+ */
+export function repararJson(texto: string): string {
+  let out = "";
+  let dentro = false;
+  let escapado = false;
+  for (const ch of texto) {
+    if (escapado) {
+      out += ch;
+      escapado = false;
+      continue;
+    }
+    if (ch === "\\") {
+      out += ch;
+      escapado = dentro;
+      continue;
+    }
+    if (ch === '"') {
+      dentro = !dentro;
+      out += ch;
+      continue;
+    }
+    if (dentro && ch === "\n") out += "\\n";
+    else if (dentro && ch === "\r") out += "\\r";
+    else if (dentro && ch === "\t") out += "\\t";
+    else out += ch;
+  }
+  return out;
+}
+
 export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonResult<T>> {
   assertTextModelAllowed(opts.model);
   if (!opts.apiKey) throw new GeminiError("Falta GEMINI_API_KEY");
@@ -78,15 +118,34 @@ export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonRe
     usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
     promptFeedback?: { blockReason?: string };
   };
+  const terminar = (data: T): GeminiJsonResult<T> => {
+    const inputTokens = body.usageMetadata?.promptTokenCount ?? 0;
+    const outputTokens = body.usageMetadata?.candidatesTokenCount ?? 0;
+    return {
+      data,
+      inputTokens,
+      outputTokens,
+      costUsd: textCostUsd(opts.model, inputTokens, outputTokens),
+      model: opts.model,
+    };
+  };
   const text = body.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
   if (!text) {
     const why = body.promptFeedback?.blockReason ?? body.candidates?.[0]?.finishReason ?? "vacío";
     throw new GeminiError(`Gemini no devolvió texto (${why})`);
   }
   let data: T;
+  const crudo = extractJson(text);
   try {
-    data = JSON.parse(extractJson(text)) as T;
+    data = JSON.parse(crudo) as T;
   } catch {
+    // Segundo intento: casi siempre son saltos de línea sin escapar dentro del HTML de la nota.
+    try {
+      data = JSON.parse(repararJson(crudo)) as T;
+      return terminar(data);
+    } catch {
+      /* si tampoco así, se cae al error de abajo, que sí explica qué pasó */
+    }
     // NADA DE ERRORES MUDOS. «JSON inválido» a secas no dice si la respuesta se cortó, si vino con
     // texto de más o si el modelo se fue por otro lado, y sin eso no hay forma de arreglarlo: pasó
     // el 24 ago 2026 y costó una tarde. Aquí va la evidencia: por qué paró el modelo, cuánto
@@ -100,13 +159,5 @@ export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonRe
         : `Gemini devolvió un JSON inválido (motivo del modelo: ${razon}, ${text.length} caracteres). Termina en: «…${final}»`,
     );
   }
-  const inputTokens = body.usageMetadata?.promptTokenCount ?? 0;
-  const outputTokens = body.usageMetadata?.candidatesTokenCount ?? 0;
-  return {
-    data,
-    inputTokens,
-    outputTokens,
-    costUsd: textCostUsd(opts.model, inputTokens, outputTokens),
-    model: opts.model,
-  };
+  return terminar(data);
 }

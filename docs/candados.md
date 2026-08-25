@@ -689,3 +689,41 @@ diario…`, 23 ago 2026).
   dar más de cero.
 - **Qué NO tocar:** no quites las imágenes del sitemap; no vuelvas a armar el nombre del archivo a
   mano; y no pongas nombres de fotógrafos que no existan.
+
+## 26. Dos días sin publicar: un JSON con saltos de línea y un reloj que no era reloj
+
+- **Cómo se vio (25 ago 2026, 9:13 AM):** Richard: _«ya son las 9:13 y no veo que se lanzó ninguna
+  noticia, ya tenemos hoy 2 días fallando»_. Cierto: el 24 salieron tres notas de madrugada y el 25
+  no salió ninguna.
+- **Dos fallos distintos, encadenados.**
+
+### A) El JSON venía completo y aun así no se podía leer
+
+- **Qué decía el error** (gracias al arreglo del candado que lo hizo hablar): _«Gemini devolvió un
+  JSON inválido (motivo del modelo: STOP, 15107 caracteres). Termina en: …"video_keywords": [] }»_.
+  Es decir: el modelo **no se cortó** —terminó por su cuenta— y el JSON **cerraba bien**.
+- **La causa:** dentro del HTML de la nota venían **saltos de línea de verdad**. El formato JSON
+  exige que dentro de unas comillas vaya `\n` escrito, no un salto real. Es un descuido clásico de
+  los modelos y no hay forma de pedirle que no lo cometa.
+- **El arreglo:** `repararJson()` recorre el texto sabiendo si está dentro o fuera de unas comillas
+  y escapa solo los caracteres de control de dentro. Se intenta el `JSON.parse` normal primero y,
+  si falla, se repara — **sin gastar otra llamada al modelo**.
+- **Lo que hizo posible encontrarlo:** el error explícito del candado anterior. La misma
+  investigación, con el mensaje mudo de antes, costó una tarde entera; con el mensaje nuevo, un
+  minuto. **Un error que no explica nada es una hora de trabajo escondida.**
+
+### B) El robot no tenía reloj
+
+- **Cómo despertaba hasta ahora:** el cron de la plataforma (que **no se ha disparado ni una vez**)
+  y el «latido», que aprovecha las visitas al sitio. A las siete de la mañana en un diario nuevo no
+  entra nadie, así que no había quien lo despertara.
+- **El arreglo:** `.github/workflows/robot.yml`. GitHub dispara a su hora pase lo que pase, y llama
+  con `?wait=1`, así que **espera a que la nota termine de escribirse**. Eso importa: con la
+  respuesta inmediata el worker se queda sin quien lo espere y puede morir a media faena (candado
+  21); con un cliente esperando de verdad, llega hasta el final. Y si la corrida falla, el trabajo
+  se pone en rojo en GitHub, que es donde se ve.
+- **Comprobado antes de publicarlo:** una llamada a mano a `/__scheduled?wait=1` completó en **48
+  segundos** y devolvió el detalle del error. El camino funciona.
+- **Qué NO tocar:** no quites el `wait=1` del workflow (sin él, nadie espera al worker); no
+  confíes el diario a las visitas; y si el robot deja de publicar, mira **la pestaña Actions** antes
+  que nada: ahora el fallo se ve ahí.

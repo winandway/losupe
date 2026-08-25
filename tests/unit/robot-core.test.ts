@@ -402,3 +402,50 @@ describe("cuando el modelo devuelve algo que no se puede leer, el error lo DICE"
     expect(extractJson('```\n{"a":1}\n```')).toBe('{"a":1}');
   });
 });
+
+describe("el JSON con saltos de línea dentro del HTML se repara (el fallo del 25 ago 2026)", () => {
+  it("un salto de línea real dentro de un texto ya no tira la nota", async () => {
+    const { repararJson } = await import("@/lib/robot/gemini");
+    // Así es como lo devuelve el modelo: el HTML con saltos de verdad dentro de las comillas.
+    const roto = '{"html":"<p>Primera línea\nSegunda línea</p>","n":1}';
+    expect(() => JSON.parse(roto)).toThrow();
+    const arreglado = JSON.parse(repararJson(roto)) as { html: string; n: number };
+    expect(arreglado.n).toBe(1);
+    expect(arreglado.html).toContain("Primera línea");
+    expect(arreglado.html).toContain("Segunda línea");
+  });
+
+  it("no toca los saltos que están FUERA de las comillas: ahí son legales", async () => {
+    const { repararJson } = await import("@/lib/robot/gemini");
+    const bonito = '{\n  "a": 1,\n  "b": "hola"\n}';
+    expect(JSON.parse(repararJson(bonito))).toEqual({ a: 1, b: "hola" });
+  });
+
+  it("respeta lo que ya venía escapado", async () => {
+    const { repararJson } = await import("@/lib/robot/gemini");
+    const ok = '{"a":"linea1\\nlinea2","b":"comilla \\" dentro"}';
+    const r = JSON.parse(repararJson(ok)) as { a: string; b: string };
+    expect(r.a).toBe("linea1\nlinea2");
+    expect(r.b).toBe('comilla " dentro');
+  });
+
+  it("generateJson se recupera solo, sin gastar otra llamada al modelo", async () => {
+    const conSalto = JSON.stringify({ es: { title: "x" } }).replace('"x"', '"prime\nra"');
+    const fetchImpl: typeof fetch = async () =>
+      new Response(
+        JSON.stringify({
+          candidates: [{ content: { parts: [{ text: conSalto }] }, finishReason: "STOP" }],
+          usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 10 },
+        }),
+        { headers: { "content-type": "application/json" } },
+      );
+    const r = await generateJson<{ es: { title: string } }>({
+      apiKey: "k",
+      model: "gemini-2.5-flash",
+      system: "s",
+      prompt: "p",
+      fetchImpl,
+    });
+    expect(r.data.es.title).toContain("prime");
+  });
+});
