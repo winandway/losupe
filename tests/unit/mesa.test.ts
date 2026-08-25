@@ -157,3 +157,60 @@ describe("la mesa reparte el trabajo del día", () => {
     expect(encargo.genero).toBe("actualidad");
   });
 });
+
+describe("una pieza propia es una nota, no un resumen", () => {
+  it("el encargo pide el largo de una nota de diario", async () => {
+    const { buildPiezaPropiaPrompt } = await import("@/lib/robot/writer");
+    const prompt = buildPiezaPropiaPrompt({
+      titularPropuesto: "10 curiosidades sobre bitcoin que casi nadie conoce",
+      genero: "curiosidades",
+      sectionId: "cripto",
+      sources: [{ title: "Bitcoin", url: "https://es.wikipedia.org/wiki/Bitcoin", text: "texto" }],
+    });
+    // El 25 ago 2026 la franja de la tarde se perdió entera con «el borrador es muy corto
+    // (342 palabras)»: el encargo no decía nada del largo y salían listas de dos líneas por punto.
+    expect(prompt).toContain("700");
+    expect(prompt).toContain("1.100 palabras");
+    expect(prompt).toMatch(/cada punto necesita su párrafo/i);
+  });
+
+  it("si sale corta, el reintento se lo dice con esas palabras", async () => {
+    const { writeDraft } = await import("@/lib/robot/writer");
+    const prompts: string[] = [];
+    const corto = {
+      es: {
+        title: "Un titular suficientemente largo para pasar",
+        excerpt: "Una entradilla que pasa el mínimo de sesenta caracteres sin problema alguno.",
+        // Pasa el mínimo de caracteres del esquema pero se queda muy por debajo de las 450
+        // palabras: es exactamente el caso que tumbó la franja de la tarde.
+        content_html: `<p>${"palabradelargaquesuma ".repeat(90)}</p>`,
+        meta_title: "Un meta titulo valido",
+        meta_description: "Una meta descripcion que pasa el minimo de cincuenta caracteres.",
+        tags: ["aa", "bb", "ccc"],
+      },
+      kind: "evergreen",
+      image_prompt: "una foto de prensa",
+      image_alt_es: "texto alternativo",
+      image_alt_en: "alt text",
+      image_keywords: ["foto"],
+    };
+    const fetchImpl: typeof fetch = async (_u, init) => {
+      prompts.push(JSON.parse(String(init?.body)).contents[0].parts[0].text as string);
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            { content: { parts: [{ text: JSON.stringify({ ...corto, en: corto.es }) }] } },
+          ],
+          usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 10 },
+        }),
+        { headers: { "content-type": "application/json" } },
+      );
+    };
+    await writeDraft("prompt", ["fuente"], { apiKey: "k", fetchImpl, retries: 1 }).catch(
+      () => null,
+    );
+    expect(prompts).toHaveLength(2);
+    expect(prompts[1]).toContain("DEMASIADO CORTO");
+    expect(prompts[1]).toContain("450 palabras");
+  });
+});

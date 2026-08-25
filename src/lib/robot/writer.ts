@@ -311,6 +311,10 @@ export function buildPiezaPropiaPrompt(b: {
 TITULAR PROPUESTO: ${b.titularPropuesto}
 FORMA: ${forma}
 
+LARGO: entre 700 y 1.100 palabras en CADA idioma, igual que cualquier nota del diario. Una lista de
+diez puntos con dos líneas cada uno no es una nota, es un tuit largo: cada punto necesita su párrafo
+o dos, con el dato, de dónde sale y por qué importa.
+
 REGLAS DE ESTE GÉNERO (van en serio):
 - Cada dato, cifra o fecha sale del material de abajo y se cita con su enlace. NADA de memoria propia.
 - Si el material no da para diez puntos, escribe los que sí puedas documentar y ajusta el titular al
@@ -493,7 +497,9 @@ export async function writeDraft(
           ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}`
           : copiaba
             ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
-            : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
+            : motivo.includes("muy corto")
+              ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque el cuerpo era DEMASIADO CORTO (${motivo}). El mínimo son 450 palabras por idioma y lo normal son entre 700 y 1.100. Desarrolla cada punto: el dato, de dónde sale, un ejemplo y por qué le importa a quien lee. No es un resumen, es una nota de diario.`
+              : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
     const usage = await generateJson<unknown>({
       apiKey: opts.apiKey,
       model: opts.model ?? WRITER_MODEL,

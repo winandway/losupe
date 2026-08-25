@@ -123,6 +123,8 @@ export type RobotStatus = {
   sponsorPace: { gapHours: number; maxPerWeek: number };
   /** La mesa de redacción: cuánto se escribe de cosecha propia y si se usan las efemérides. */
   mesa: { ratioPropias: number; efemerides: boolean };
+  /** Suscriptores por estado. Solo cuentas, ningún correo: sirve para saber si el boletín llega. */
+  subscribers: { confirmed: number; pending: number; unsubscribed: number; withError: number };
   /** A qué horas publica el diario (hora del Este de EE. UU.) y en cuál estamos. */
   horario: {
     zona: string;
@@ -235,6 +237,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
     mail: { configured: mailConfigured(env), recipients: parseRecipients(notifyEmails) },
     sponsorPace: pace,
     mesa: await reglasDeLaMesa(db),
+    subscribers: await contarSuscriptores(db),
     queue,
     lastRun: last
       ? {
@@ -382,6 +385,34 @@ async function noteItem(
       patch.sources ? JSON.stringify(patch.sources) : null,
     )
     .run();
+}
+
+/**
+ * Cuántos suscriptores hay y en qué estado. Sin esto no había forma de saber por qué un aviso «no
+ * llegaba a nadie»: con la doble confirmación, quien no toca el enlace de su correo NO recibe nada,
+ * y eso es correcto pero invisible.
+ */
+async function contarSuscriptores(
+  db: D1Database,
+): Promise<{ confirmed: number; pending: number; unsubscribed: number; withError: number }> {
+  const out = { confirmed: 0, pending: 0, unsubscribed: 0, withError: 0 };
+  try {
+    const { results } = await db
+      .prepare(`SELECT status, COUNT(*) AS n FROM subscribers GROUP BY status`)
+      .all<{ status: string; n: number }>();
+    for (const r of results) {
+      if (r.status === "confirmed") out.confirmed = Number(r.n);
+      else if (r.status === "pending") out.pending = Number(r.n);
+      else if (r.status === "unsubscribed") out.unsubscribed = Number(r.n);
+    }
+    const err = await db
+      .prepare(`SELECT COUNT(*) AS n FROM subscribers WHERE mail_error IS NOT NULL`)
+      .first<{ n: number }>();
+    out.withError = Number(err?.n ?? 0);
+  } catch {
+    /* si la tabla aún no existe, se devuelven ceros */
+  }
+  return out;
 }
 
 /** Titulares publicados en los últimos meses: la mesa los usa para no repetir tema. */
