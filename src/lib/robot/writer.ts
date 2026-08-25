@@ -404,7 +404,11 @@ export async function writeDraft(
       system: SYSTEM_PROMPT,
       prompt: prompt + aviso,
       temperature: attempt === 1 ? 0.7 : 0.9,
-      maxOutputTokens: 16_000,
+      // Dos idiomas de 700-1.100 palabras con HTML no caben en 16.000 tokens con holgura, y si la
+      // respuesta se corta el JSON queda roto y la nota se pierde entera. Gemini 2.5 Flash admite
+      // mucho más; el costo va por tokens usados, no por el límite, así que subirlo no cuesta nada
+      // salvo cuando de verdad hace falta.
+      maxOutputTokens: 32_000,
       fetchImpl: opts.fetchImpl,
     });
     try {

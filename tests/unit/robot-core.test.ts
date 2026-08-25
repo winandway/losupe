@@ -363,3 +363,42 @@ describe("fuentes RSS", () => {
     expect(unwrapTrackingUrl("no url")).toBe("no url");
   });
 });
+
+describe("cuando el modelo devuelve algo que no se puede leer, el error lo DICE", () => {
+  const ok = (body: unknown) =>
+    new Response(JSON.stringify(body), { headers: { "content-type": "application/json" } });
+
+  it("si la respuesta se cortó por el límite, lo dice con esas palabras", async () => {
+    // Es lo que pasó el 24 ago 2026: el panel solo decía «Gemini devolvió un JSON inválido» y no
+    // había forma de saber que el texto venía cortado a la mitad.
+    const truncada = '{"es":{"title":"Una nota que se quedó a medio escri';
+    const fetchImpl: typeof fetch = async () =>
+      ok({
+        candidates: [{ content: { parts: [{ text: truncada }] }, finishReason: "MAX_TOKENS" }],
+        usageMetadata: { promptTokenCount: 1000, candidatesTokenCount: 32000 },
+      });
+    await expect(
+      generateJson({ apiKey: "k", model: "gemini-2.5-flash", system: "s", prompt: "p", fetchImpl }),
+    ).rejects.toThrow(/se cortó por el límite de tokens/);
+  });
+
+  it("si no se cortó, el error trae el motivo del modelo y cómo termina el texto", async () => {
+    const fetchImpl: typeof fetch = async () =>
+      ok({
+        candidates: [
+          { content: { parts: [{ text: "esto no es json en absoluto" }] }, finishReason: "STOP" },
+        ],
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 10 },
+      });
+    await expect(
+      generateJson({ apiKey: "k", model: "gemini-2.5-flash", system: "s", prompt: "p", fetchImpl }),
+    ).rejects.toThrow(/motivo del modelo: STOP.*Termina en/s);
+  });
+
+  it("una valla de markdown sin cerrar no tira la respuesta", () => {
+    // Pasa cuando el texto se corta justo después del JSON: la valla de apertura está, la de
+    // cierre no, y el JSON de dentro sí está completo.
+    expect(extractJson('```json\n{"a":1}')).toBe('{"a":1}');
+    expect(extractJson('```\n{"a":1}\n```')).toBe('{"a":1}');
+  });
+});

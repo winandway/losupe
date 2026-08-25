@@ -38,8 +38,13 @@ export type GeminiOptions = {
 
 /** Quita vallas ```json ... ``` si el modelo las devuelve igual. */
 export function extractJson(text: string): string {
-  const trimmed = text.trim();
+  let trimmed = text.trim();
   const fenced = trimmed.match(/^```(?:json)?\s*([\s\S]*?)\s*```$/i);
+  // Valla de markdown sin cerrar: pasa cuando la respuesta se corta a media escritura. Se quita la
+  // de apertura igual, porque el JSON de dentro puede estar completo aunque falte el cierre.
+  if (!fenced && /^```(?:json)?\s/i.test(trimmed)) {
+    trimmed = trimmed.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "");
+  }
   const body = fenced?.[1] ?? trimmed;
   const start = body.indexOf("{");
   const end = body.lastIndexOf("}");
@@ -82,7 +87,18 @@ export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonRe
   try {
     data = JSON.parse(extractJson(text)) as T;
   } catch {
-    throw new GeminiError("Gemini devolvió un JSON inválido");
+    // NADA DE ERRORES MUDOS. «JSON inválido» a secas no dice si la respuesta se cortó, si vino con
+    // texto de más o si el modelo se fue por otro lado, y sin eso no hay forma de arreglarlo: pasó
+    // el 24 ago 2026 y costó una tarde. Aquí va la evidencia: por qué paró el modelo, cuánto
+    // escribió y cómo termina el texto, que es donde se ve el corte.
+    const razon = body.candidates?.[0]?.finishReason ?? "?";
+    const final = text.slice(-80).replace(/\s+/g, " ");
+    const cortada = razon === "MAX_TOKENS";
+    throw new GeminiError(
+      cortada
+        ? `La respuesta se cortó por el límite de tokens (${text.length} caracteres escritos). Termina en: «…${final}»`
+        : `Gemini devolvió un JSON inválido (motivo del modelo: ${razon}, ${text.length} caracteres). Termina en: «…${final}»`,
+    );
   }
   const inputTokens = body.usageMetadata?.promptTokenCount ?? 0;
   const outputTokens = body.usageMetadata?.candidatesTokenCount ?? 0;
