@@ -43,6 +43,48 @@ export type SourceDoc = { title: string; url: string; text: string };
 
 export const WRITER_MODEL: TextModel = "gemini-2.5-flash";
 
+/**
+ * El esquema que se le pasa a la API para que GARANTICE la forma de la respuesta.
+ *
+ * El 25 ago 2026 el diario estuvo dos días sin publicar porque el modelo devolvía un JSON completo
+ * pero mal formado, y no hay forma de pedirle por escrito que no lo haga. Con `responseSchema` deja
+ * de ser una petición y pasa a ser una garantía: la propia API se encarga de que salga válido.
+ *
+ * Se escribe a mano y no desde zod porque la API acepta un subconjunto de OpenAPI, no JSON Schema
+ * completo. Si se añade un campo al borrador, hay que añadirlo AQUÍ también — la prueba lo vigila.
+ */
+const TEXTO = { type: "STRING" } as const;
+const LANG_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    title: TEXTO,
+    excerpt: TEXTO,
+    content_html: TEXTO,
+    meta_title: TEXTO,
+    meta_description: TEXTO,
+    tags: { type: "ARRAY", items: TEXTO },
+  },
+  required: ["title", "excerpt", "content_html", "meta_title", "meta_description", "tags"],
+} as const;
+
+export const DRAFT_RESPONSE_SCHEMA = {
+  type: "OBJECT",
+  properties: {
+    es: LANG_SCHEMA,
+    en: LANG_SCHEMA,
+    kind: { type: "STRING", enum: ["news", "evergreen"] },
+    image_prompt: TEXTO,
+    image_alt_es: TEXTO,
+    image_alt_en: TEXTO,
+    image_caption_es: TEXTO,
+    image_caption_en: TEXTO,
+    image_keywords: { type: "ARRAY", items: TEXTO },
+    wants_video: { type: "BOOLEAN" },
+    video_keywords: { type: "ARRAY", items: TEXTO },
+  },
+  required: ["es", "en", "kind", "image_prompt", "image_alt_es", "image_alt_en", "image_keywords"],
+} as const;
+
 const ALLOWED_TAGS = /^(p|h2|h3|h4|ul|ol|li|strong|em|a|blockquote|br|figure|figcaption)$/i;
 
 /** Deja solo etiquetas editoriales (sin img ni scripts) y enlaces http(s) con rel/target seguros. */
@@ -463,6 +505,7 @@ export async function writeDraft(
       // mucho más; el costo va por tokens usados, no por el límite, así que subirlo no cuesta nada
       // salvo cuando de verdad hace falta.
       maxOutputTokens: 32_000,
+      responseSchema: DRAFT_RESPONSE_SCHEMA,
       fetchImpl: opts.fetchImpl,
     });
     try {

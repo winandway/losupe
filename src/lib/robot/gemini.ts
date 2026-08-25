@@ -32,6 +32,8 @@ export type GeminiOptions = {
   prompt: string;
   temperature?: number;
   maxOutputTokens?: number;
+  /** Esquema de la respuesta. Con esto la API GARANTIZA JSON válido; sin esto, hay que rezar. */
+  responseSchema?: unknown;
   fetchImpl?: typeof fetch;
   timeoutMs?: number;
 };
@@ -103,6 +105,7 @@ export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonRe
       contents: [{ role: "user", parts: [{ text: opts.prompt }] }],
       generationConfig: {
         responseMimeType: "application/json",
+        ...(opts.responseSchema ? { responseSchema: opts.responseSchema } : {}),
         temperature: opts.temperature ?? 0.7,
         maxOutputTokens: opts.maxOutputTokens ?? 8192,
       },
@@ -151,12 +154,24 @@ export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonRe
     // el 24 ago 2026 y costó una tarde. Aquí va la evidencia: por qué paró el modelo, cuánto
     // escribió y cómo termina el texto, que es donde se ve el corte.
     const razon = body.candidates?.[0]?.finishReason ?? "?";
+    // La posición exacta del fallo: es lo que dice si sobra una comilla, falta una coma o hay un
+    // carácter de control. Sin ella solo se sabe «está mal», que no lleva a ninguna parte.
+    let donde = "";
+    try {
+      JSON.parse(crudo);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : "";
+      const pos = Number(/position (\d+)/.exec(msg)?.[1] ?? NaN);
+      donde = Number.isFinite(pos)
+        ? ` Falla en el carácter ${pos}: «…${crudo.slice(Math.max(0, pos - 60), pos + 40).replace(/\s+/g, " ")}…»`
+        : ` ${msg}`;
+    }
     const final = text.slice(-80).replace(/\s+/g, " ");
     const cortada = razon === "MAX_TOKENS";
     throw new GeminiError(
       cortada
         ? `La respuesta se cortó por el límite de tokens (${text.length} caracteres escritos). Termina en: «…${final}»`
-        : `Gemini devolvió un JSON inválido (motivo del modelo: ${razon}, ${text.length} caracteres). Termina en: «…${final}»`,
+        : `Gemini devolvió un JSON inválido (motivo del modelo: ${razon}, ${text.length} caracteres).${donde} Termina en: «…${final}»`,
     );
   }
   return terminar(data);

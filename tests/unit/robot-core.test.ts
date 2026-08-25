@@ -449,3 +449,29 @@ describe("el JSON con saltos de línea dentro del HTML se repara (el fallo del 2
     expect(r.data.es.title).toContain("prime");
   });
 });
+
+describe("el esquema de respuesta es la garantía de que el JSON venga bien", () => {
+  it("cubre TODOS los campos que el borrador exige", async () => {
+    const { DRAFT_RESPONSE_SCHEMA, draftSchema } = await import("@/lib/robot/writer");
+    const esperados = Object.keys(draftSchema.shape);
+    const enEsquema = Object.keys(DRAFT_RESPONSE_SCHEMA.properties);
+    // Si alguien añade un campo al borrador y se olvida del esquema, esto se pone rojo.
+    for (const campo of esperados) expect(enEsquema).toContain(campo);
+  });
+
+  it("se le manda a la API en cada llamada del redactor", async () => {
+    const { writeDraft } = await import("@/lib/robot/writer");
+    let enviado: Record<string, unknown> | null = null;
+    const fetchImpl: typeof fetch = async (_u, init) => {
+      enviado = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      return new Response(JSON.stringify({ candidates: [] }), {
+        headers: { "content-type": "application/json" },
+      });
+    };
+    await writeDraft("prompt", ["fuente"], { apiKey: "k", fetchImpl }).catch(() => null);
+    const cfg = (enviado as unknown as { generationConfig?: Record<string, unknown> })
+      ?.generationConfig;
+    expect(cfg?.responseMimeType).toBe("application/json");
+    expect(cfg?.responseSchema).toBeTruthy();
+  });
+});
