@@ -188,8 +188,16 @@ export default async function ArticlePage({ params }: Props) {
                 decoding="async"
                 className="aspect-video w-full rounded-2xl object-cover"
               />
-              {article.imageCredit ? (
-                <figcaption className="mt-2 text-xs text-muted">{article.imageCredit}</figcaption>
+              {article.imageCaption || article.imageCredit ? (
+                <figcaption className="mt-2 text-sm text-muted">
+                  {/* El pie cuenta algo y sitúa la escena; el crédito va detrás, más pequeño. Así
+                      es como se lee una foto en cualquier diario. */}
+                  {article.imageCaption ? <span>{article.imageCaption}</span> : null}
+                  {article.imageCaption && article.imageCredit ? " " : null}
+                  {article.imageCredit ? (
+                    <span className="text-xs opacity-75">{article.imageCredit}</span>
+                  ) : null}
+                </figcaption>
               ) : null}
             </figure>
           ) : null}

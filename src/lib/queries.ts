@@ -33,6 +33,8 @@ export type ArticleFull = ArticleCard & {
   tags: string[];
   sources: ArticleSource[];
   imageCredit: string | null;
+  /** Pie de foto: lo que se lee debajo de la imagen. */
+  imageCaption: string | null;
   machineTranslated: boolean;
   /** Slug por idioma de las traducciones disponibles. */
   translations: Partial<Record<Lang, string>>;
@@ -83,6 +85,8 @@ type FullRow = CardRow & {
   tags_json: string | null;
   sources_json: string | null;
   image_credit: string | null;
+  image_caption_es: string | null;
+  image_caption_en: string | null;
   machine_translated: number;
 };
 
@@ -101,7 +105,7 @@ const FULL_COLUMNS = `${CARD_COLUMNS},
   COALESCE(t.meta_title, f.meta_title) AS meta_title,
   COALESCE(t.meta_description, f.meta_description) AS meta_description,
   COALESCE(t.tags_json, f.tags_json) AS tags_json,
-  a.sources_json, a.image_credit,
+  a.sources_json, a.image_credit, a.image_caption_es, a.image_caption_en,
   COALESCE(t.machine_translated, f.machine_translated, 0) AS machine_translated`;
 
 // ?1 = idioma pedido, ?2 = ahora (ISO). Siempre hay respaldo al español.
@@ -167,6 +171,10 @@ export function mapFull(
       (s) => s && typeof s.url === "string",
     ),
     imageCredit: row.image_credit,
+    imageCaption:
+      (requested === "en" ? row.image_caption_en : row.image_caption_es) ||
+      row.image_caption_es ||
+      null,
     machineTranslated: row.machine_translated === 1,
     translations,
   };
@@ -443,12 +451,14 @@ export type SitemapRow = {
   slug: string;
   published_at: string;
   updated_at: string;
+  /** La imagen de la nota. Va al sitemap: sin eso, Google no indexa nuestras fotos. */
+  image_url: string | null;
 };
 
 export async function listForSitemap(db: D1Database, limit = 5000): Promise<SitemapRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT a.id, a.section_id, t.lang, t.slug, a.published_at, a.updated_at
+      `SELECT a.id, a.section_id, t.lang, t.slug, a.published_at, a.updated_at, a.image_url
        FROM articles a JOIN article_i18n t ON t.article_id = a.id
        WHERE a.status = 'published' AND a.published_at IS NOT NULL AND a.published_at <= ?1
        ORDER BY a.published_at DESC LIMIT ?2`,

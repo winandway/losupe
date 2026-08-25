@@ -62,8 +62,8 @@ export async function saveArticle(db: D1Database, input: PublishInput): Promise<
   await db.batch([
     db
       .prepare(
-        `INSERT INTO articles (id, section_id, author_id, status, kind, origin, image_url, image_alt_es, image_alt_en, image_credit, sources_json, ai_assisted, reading_minutes, published_at, created_at, updated_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, 1, ?12, ?13, ?14, ?14)`,
+        `INSERT INTO articles (id, section_id, author_id, status, kind, origin, image_url, image_alt_es, image_alt_en, image_caption_es, image_caption_en, image_credit, sources_json, ai_assisted, reading_minutes, published_at, created_at, updated_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?15, ?16, ?10, ?11, 1, ?12, ?13, ?14, ?14)`,
       )
       .bind(
         id,
@@ -80,6 +80,8 @@ export async function saveArticle(db: D1Database, input: PublishInput): Promise<
         minutes,
         publishedAt,
         now,
+        input.draft.image_caption_es || null,
+        input.draft.image_caption_en || null,
       ),
     ...(["es", "en"] as const).map((lang) =>
       db

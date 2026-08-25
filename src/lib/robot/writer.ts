@@ -28,6 +28,11 @@ export const draftSchema = z.object({
   image_prompt: z.string().min(10).max(500),
   image_alt_es: z.string().min(5).max(200),
   image_alt_en: z.string().min(5).max(200),
+  // El pie de foto: lo que se lee DEBAJO de la imagen. Es distinto del texto alternativo (ese lo
+  // lee un lector de pantalla y describe la imagen); el pie cuenta algo, sitúa la escena y es una
+  // de las cosas más leídas de una página. Sin él, una foto se ve suelta y amateur.
+  image_caption_es: z.string().min(15).max(220).optional().default(""),
+  image_caption_en: z.string().min(15).max(220).optional().default(""),
   image_keywords: z.array(z.string().min(2).max(30)).min(1).max(5),
   wants_video: z.boolean().optional().default(false),
   video_keywords: z.array(z.string().min(2).max(30)).max(4).optional().default([]),
@@ -123,6 +128,14 @@ VOZ (lo que nunca se pierde)
 - Español neutro de Estados Unidos (tú, nada de voseo ni regionalismos). El inglés es inglés nativo de EE. UU., no traducción literal: escribe la versión en inglés de nuevo, con naturalidad y la misma calidez.
 - Tono "pensar en grande, con los pies en la tierra": ambicioso pero medido. Prohibido exagerar, prohibidos los superlativos sin fuente ("el mejor", "el primero", "revoluciona") y las comparaciones con gigantes para inflar ("compite con Amazon"). Di lo mismo con elegancia: qué hace, para quién, con qué respaldo, qué viene.
 
+LA IMAGEN Y SU PIE
+- El campo image_prompt: describe una FOTOGRAFÍA de prensa, no una ilustración. Escena concreta, con
+  personas o lugares reales de la historia, luz natural, profundidad de campo de cámara réflex, sin
+  texto ni logotipos dentro de la imagen. Piensa qué foto abriría esta nota en un diario.
+- Los campos image_caption_es / image_caption_en: el pie de foto, lo que se lee DEBAJO de la imagen. No
+  repitas el titular ni describas lo obvio («un hombre en una oficina»): sitúa la escena y aporta un
+  dato que no esté en el titular. Una o dos frases, como en cualquier diario.
+
 QUE NO SE NOTE QUE ESCRIBE UNA MÁQUINA (esto es lo que más se nota y lo que más nos cuesta)
 - Escribe como habla una persona que sabe del tema y te lo está contando. Frases de largos distintos: algunas cortas de verdad. Una idea por frase. Si una frase no se puede leer en voz alta de un tirón, pártela.
 - HAY PALABRAS QUE DELATAN A UNA IA. Las más típicas: "resiliencia", "robusto", "panorama actual", "en la era digital", "cabe destacar", "es crucial", "es fundamental", "juega un papel clave", "punto de inflexión", "hoja de ruta", "desbloquear", "profundizar en", "un testimonio de", "en resumen", "en un mundo cada vez más…". En inglés: "delve", "leverage", "robust", "seamless", "landscape", "tapestry", "a testament to", "navigate", "unlock", "harness", "pivotal", "crucial", "underscores", "myriad", "in today's fast-paced world", "it's worth noting", "game-changer".
@@ -146,7 +159,7 @@ FORMA
 9. Video: Pexels también tiene videos cortos de archivo (paisajes, ciudades, manos trabajando, pantallas, música, comida…). Pide uno SOLO cuando de verdad sume a la nota (guías, lugares, productos, música, ambiente) poniendo wants_video en true y video_keywords con 2-3 palabras en inglés; si no suma, wants_video en false. Nunca en notas delicadas (muertes, tragedias).
 
 RESPONDE SOLO con un JSON válido con esta forma exacta:
-{"es":{"title":"","excerpt":"","content_html":"","meta_title":"","meta_description":"","tags":[]},"en":{"title":"","excerpt":"","content_html":"","meta_title":"","meta_description":"","tags":[]},"kind":"news|evergreen","image_prompt":"","image_alt_es":"","image_alt_en":"","image_keywords":[],"wants_video":false,"video_keywords":[]}`;
+{"es":{"title":"","excerpt":"","content_html":"","meta_title":"","meta_description":"","tags":[]},"en":{"title":"","excerpt":"","content_html":"","meta_title":"","meta_description":"","tags":[]},"kind":"news|evergreen","image_prompt":"","image_alt_es":"","image_alt_en":"","image_caption_es":"","image_caption_en":"","image_keywords":[],"wants_video":false,"video_keywords":[]}`;
 
 /** Nombre legible de un medio a partir de su URL (para citarlo bien: "según The New York Times"). */
 export function sourceDisplayName(url: string): string {
@@ -337,6 +350,9 @@ export function ajustarMetadatos(raw: unknown): unknown {
   }
   for (const campo of ["image_alt_es", "image_alt_en"] as const) {
     if (typeof d[campo] === "string") d[campo] = recortar(d[campo] as string, 200);
+  }
+  for (const campo of ["image_caption_es", "image_caption_en"] as const) {
+    if (typeof d[campo] === "string") d[campo] = recortar(d[campo] as string, 220);
   }
   if (typeof d.image_prompt === "string") d.image_prompt = recortar(d.image_prompt, 500);
   if (Array.isArray(d.image_keywords)) d.image_keywords = d.image_keywords.slice(0, 5);

@@ -659,3 +659,33 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no dejes que una pieza propia se escriba sin fuentes leídas —es el único freno
   contra los datos inventados—; no metas azar en el reparto (deja de ser comprobable); y no uses
   aniversarios que no sean redondos, que es la diferencia entre una nota que se comparte y relleno.
+
+## 25. Ni una foto nuestra en Google Imágenes
+
+- **Cómo se vio (24 ago 2026):** Richard buscó «losupe» en Google Imágenes y **no salió ni una foto
+  nuestra**. Su lectura: _«no está indexando las imágenes de nuestras noticias porque no son
+  nuestras»_. Medio acertada — la causa principal era otra, y más tonta.
+- **Las tres causas, por orden de importancia:**
+  1. **El sitemap no llevaba ni una imagen.** Ninguna. Google no tenía por dónde encontrarlas: no
+     basta con que la foto esté en la página, hay que declararla. Esta era la grande.
+  2. **Los nombres de archivo se comían las tildes.** El slug se hacía a mano con
+     `replace(/[^a-z0-9]+/g, "-")`, así que «guía para empresas» quedaba en `gu-a-para-empresas`. El
+     nombre del archivo es una señal de Google Imágenes, y así no dice nada. Ahora usa `slugify()`,
+     que las transcribe.
+  3. **Las fotos eran de banco.** Aquí Richard tenía razón: una foto de Pexels la tienen otros mil
+     sitios y no nos posiciona. El orden ya era el correcto (imagen propia primero, banco de
+     respaldo), pero sin `FAL_KEY` nunca llega a la primera opción.
+- **Y el pie de foto**, que faltaba entero: el redactor entrega ahora `image_caption_es/en` y se
+  muestra bajo la imagen, con el crédito detrás en pequeño. No es cosmética — un pie de foto es de
+  lo más leído de una página y es lo que hace que una foto se vea de diario y no pegada.
+- **LO QUE NO SE HIZO, Y POR QUÉ.** Richard pidió firmar las fotos con nombres de fotógrafos
+  inventados, para dar «realismo psicológico». No se hizo: atribuir una imagen generada a una
+  persona que no existe es una atribución falsa, y **Google News la penaliza expresamente** — sería
+  jugarse el alta en Publisher Center, que es justo el trámite siguiente. Se consigue lo mismo,
+  y de verdad, con un buen pie de foto y el crédito del propio medio.
+- **Candado:** `tests/unit/imagenes-seo.test.ts` (tildes en el nombre, el pie en el esquema del
+  redactor) y, en el e2e, «las imágenes de las notas están en el sitemap».
+- **Cómo se comprueba:** `curl -s https://losupe.com/sitemap.xml | grep -c "image:loc"` tiene que
+  dar más de cero.
+- **Qué NO tocar:** no quites las imágenes del sitemap; no vuelvas a armar el nombre del archivo a
+  mano; y no pongas nombres de fotógrafos que no existan.

@@ -857,3 +857,18 @@ test("Google Noticias: la portada no mezcla lo de hoy con el archivo viejo", asy
     }
   }
 });
+
+test("las imágenes de las notas están en el sitemap (si no, Google no las indexa)", async ({
+  request,
+}) => {
+  const res = await request.get("/sitemap.xml");
+  expect(res.status()).toBe(200);
+  const xml = await res.text();
+  // El espacio de nombres de imágenes tiene que estar declarado…
+  expect(xml).toContain("http://www.google.com/schemas/sitemap-image/1.1");
+  // …y las notas con foto la tienen que traer. Esto es lo que faltaba el 24 ago 2026: ni una foto
+  // nuestra salía en Google Imágenes porque no había por dónde encontrarlas.
+  const conImagen = (xml.match(/<image:loc>/g) ?? []).length;
+  const notas = (xml.match(/<loc>[^<]*\/(es|en)\/[^<]*\/[^<]*<\/loc>/g) ?? []).length;
+  if (notas > 0) expect(conImagen).toBeGreaterThan(0);
+});

@@ -79,5 +79,7 @@ export const sampleFullRow = {
   tags_json: '["bitcoin","mercado"]',
   sources_json: '[{"title":"Fuente","url":"https://example.com/f"}]',
   image_credit: null,
+  image_caption_es: null,
+  image_caption_en: null,
   machine_translated: 0,
 };

@@ -1,5 +1,6 @@
 import { pingIndexNow } from "@/lib/indexnow";
 import type { SectionId } from "@/lib/sections";
+import { slugify } from "@/lib/slug";
 import { absoluteUrl, articlePath } from "@/lib/urls";
 import {
   assertBudget,
@@ -613,10 +614,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           db,
           prompt: draft.image_prompt,
           keywords: draft.image_keywords,
-          slug: `${now.toISOString().slice(0, 10)}-${slugBase
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .slice(0, 60)}`,
+          slug: `${now.toISOString().slice(0, 10)}-${slugify(slugBase).slice(0, 60)}`,
           runId,
           fetchImpl,
         });
@@ -818,10 +816,9 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           db,
           prompt: draft.image_prompt,
           keywords: draft.image_keywords,
-          slug: `${now.toISOString().slice(0, 10)}-${draft.es.title
-            .toLowerCase()
-            .replace(/[^a-z0-9]+/g, "-")
-            .slice(0, 60)}`,
+          // El nombre del archivo cuenta para Google Imágenes. Antes se hacía a mano y las tildes
+          // se convertían en guiones («gu-a-para-empresas»); `slugify` las transcribe («guia»).
+          slug: `${now.toISOString().slice(0, 10)}-${slugify(draft.es.title).slice(0, 60)}`,
           runId,
           fetchImpl,
         });

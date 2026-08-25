@@ -294,6 +294,10 @@ ALTER TABLE authors ADD COLUMN x_url TEXT;
 ALTER TABLE authors ADD COLUMN public_email TEXT;
 ALTER TABLE authors ADD COLUMN expertise_es TEXT;
 ALTER TABLE authors ADD COLUMN expertise_en TEXT;
+-- Pie de foto: lo que se lee DEBAJO de la imagen. Es distinto del texto alternativo (ese describe
+-- la imagen para quien no la ve); el pie cuenta algo y es de lo mas leido de una pagina.
+ALTER TABLE articles ADD COLUMN image_caption_es TEXT;
+ALTER TABLE articles ADD COLUMN image_caption_en TEXT;
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
 INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES

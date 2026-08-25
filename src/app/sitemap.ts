@@ -85,10 +85,14 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Agrupa traducciones por artículo para declarar hreflang.
   const byArticle = new Map<
     string,
-    { es?: string; en?: string; updated: string; section: string }
+    { es?: string; en?: string; updated: string; section: string; image?: string }
   >();
   for (const r of rows) {
-    const entry = byArticle.get(r.id) ?? { updated: r.updated_at, section: r.section_id };
+    const entry = byArticle.get(r.id) ?? {
+      updated: r.updated_at,
+      section: r.section_id,
+      image: r.image_url ?? undefined,
+    };
     if (r.lang === "es") entry.es = r.slug;
     if (r.lang === "en") entry.en = r.slug;
     byArticle.set(r.id, entry);
@@ -107,6 +111,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         changeFrequency: "weekly",
         priority: 0.7,
         alternates: { languages },
+        // LA IMAGEN VA EN EL SITEMAP. Sin esto Google no tiene por dónde encontrarla, y por eso
+        // buscar «losupe» en Google Imágenes no devolvía ni una foto nuestra (24 ago 2026).
+        ...(entry.image ? { images: [absoluteUrl(base, entry.image)] } : {}),
       });
     }
   }
