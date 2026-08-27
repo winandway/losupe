@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CampoPase } from "@/components/CampoPase";
 import { Container } from "@/components/Container";
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
@@ -13,7 +14,7 @@ const field =
  * Página pública de venta: «Publica tu noticia». El pedido va a /datos/pedido (sin JavaScript
  * también funciona) y aparece en Panel → Pedidos.
  */
-export function PublishPage({
+export async function PublishPage({
   lang,
   dict,
   state,
@@ -105,6 +106,9 @@ export function PublishPage({
             </p>
           ) : null}
           <form action="/datos/pedido" method="post" className="mt-4 grid gap-4 sm:grid-cols-2">
+            {/* Pase firmado y trampa: es el formulario más goloso para el spam, porque aquí se
+                pide un servicio de pago. Ver src/lib/anti-bots.ts. */}
+            <CampoPase />
             <input type="hidden" name="lang" value={lang} />
             <label className="block text-sm font-semibold text-ink">
               {p.company}

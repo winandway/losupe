@@ -1,12 +1,15 @@
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { BoletinForm } from "./BoletinForm";
+import { crearPase } from "@/lib/anti-bots";
+import { getDb } from "@/lib/db";
 
 /**
  * Alta al aviso de notas nuevas. Funciona sin JavaScript (formulario normal) y no apunta a nadie
  * sin que confirme desde su correo.
  */
-export function Boletin({ lang, dict, state }: { lang: Lang; dict: Dict; state?: string }) {
+export async function Boletin({ lang, dict, state }: { lang: Lang; dict: Dict; state?: string }) {
+  const pase = await crearPase(await getDb()).catch(() => "");
   const b = dict.newsletter;
   const mensajes: Record<string, string> = {
     revisa: b.checkInbox,
@@ -39,6 +42,7 @@ export function Boletin({ lang, dict, state }: { lang: Lang; dict: Dict; state?:
           </p>
         ) : null}
         <BoletinForm
+          pase={pase}
           lang={lang}
           t={{
             placeholder: b.placeholder,

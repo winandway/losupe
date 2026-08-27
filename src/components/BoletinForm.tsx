@@ -27,7 +27,7 @@ type Textos = {
   mailDown: string;
 };
 
-export function BoletinForm({ lang, t }: { lang: Lang; t: Textos }) {
+export function BoletinForm({ lang, t, pase }: { lang: Lang; t: Textos; pase: string }) {
   const [estado, setEstado] = useState<"idle" | "enviando" | "listo">("idle");
   const [mensaje, setMensaje] = useState<{ texto: string; bueno: boolean } | null>(null);
 
@@ -82,6 +82,14 @@ export function BoletinForm({ lang, t }: { lang: Lang; t: Textos }) {
         className="mx-auto mt-5 flex max-w-md flex-col gap-2 sm:flex-row"
       >
         <input type="hidden" name="lang" value={lang} />
+        <input type="hidden" name="pase" value={pase} />
+        {/* Trampa: una persona no ve nunca este campo. Si viene relleno, era un robot. */}
+        <div aria-hidden="true" className="absolute left-[-9999px] h-0 w-0 overflow-hidden">
+          <label>
+            Web
+            <input name="web" tabIndex={-1} autoComplete="off" />
+          </label>
+        </div>
         <label htmlFor="boletin-email" className="sr-only">
           {t.placeholder}
         </label>

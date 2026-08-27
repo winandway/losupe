@@ -793,3 +793,37 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no cuentes la visita en el servidor «para no perder ninguna» — ahí es donde
   entran los robots y el contador deja de servir; no guardes la IP ni pongas cookies (además de
   estar mal, obligaría a poner el cartel de cookies); y no alargues el historial sin motivo.
+
+## 30. Blindaje de los formularios: solo personas
+
+- **Cómo se vio (25 ago 2026):** entró por el formulario de contacto un correo de spam de un tal
+  «Cyrus Havens» vendiendo indexación en Google. Richard: _«que solo humanos puedan mandar
+  información, nada de robots, bloquéalos a todos con sistemas de seguridad robustos»_.
+- **CUATRO CAPAS, y el orden importa.** Las tres primeras **no dependen de ningún servicio ajeno ni
+  de ninguna llave**: si mañana se cae el proveedor de la cuarta, el formulario sigue protegido.
+  1. **Pase firmado.** La página entrega un pase con su hora dentro, firmado por nosotros (HMAC).
+     Quien manda un POST directo —que es como trabaja casi todo el spam— no lo tiene. Y caduca, así
+     que no se puede guardar y reutilizar mil veces.
+  2. **Tiempo mínimo.** Un robot rellena y envía en milisegundos. **Y no es el mismo número para
+     todos:** el boletín es UN campo que el navegador autocompleta (1,5 s), «publica tu noticia»
+     tiene siete campos (3 s). Poner el listón alto en el corto sería echar a lectores de verdad,
+     que es peor que un spam.
+  3. **Límite por dirección:** cinco envíos por hora.
+  4. **Turnstile de Cloudflare**, comprobado **en el servidor** (el recuadro del navegador solo lo
+     pide; cualquiera puede saltárselo y hablarle directo a la dirección del formulario). Se enciende
+     sola cuando estén las llaves; sin ellas **no bloquea a nadie**.
+- **Y la trampa** (un campo escondido que una persona no ve) en los tres formularios.
+- **Al robot se le responde como a una persona.** Si se le dice «rechazado», aprende qué probar
+  después. Se le devuelve «gracias» y no se guarda nada.
+- **Si Cloudflare no responde, se deja pasar.** Detrás siguen las otras tres capas; tumbar el
+  formulario de todos los lectores por un mal minuto de un servicio ajeno no compensa.
+- **Lo destapó una prueba:** el e2e de «publica tu noticia» empezó a fallar porque Playwright
+  rellenaba en menos de 3 segundos. Eso mismo le puede pasar a una persona con autocompletado — de
+  ahí el umbral distinto por formulario. **Una prueba en rojo evitó echar a usuarios de verdad.**
+- **Candado:** `tests/unit/anti-bots.test.ts` (11 pruebas: pase inventado, POST directo, relleno
+  instantáneo, pase caducado, límite por hora, y que sin llaves Turnstile no bloquee) y, en el e2e,
+  «los formularios públicos rechazan un envío de robot», que comprueba además que el pase y la
+  trampa están en **los tres** formularios.
+- **Qué NO tocar:** no quites el pase de un formulario nuevo (cópialo de los que ya lo tienen); no
+  subas el tiempo mínimo sin mirar cuántos campos tiene el formulario; y no le digas nunca al robot
+  por qué fue rechazado.

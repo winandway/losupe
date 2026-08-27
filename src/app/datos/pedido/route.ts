@@ -2,6 +2,9 @@ import { getDb } from "@/lib/db";
 import { createOrder, orderSchema } from "@/lib/orders";
 import { staticPath } from "@/lib/urls";
 import { toLang } from "@/i18n";
+import { getCloudflareContext } from "@opennextjs/cloudflare";
+import { guardiaDeFormulario } from "@/lib/anti-bots";
+import { ipDe } from "@/lib/ip";
 
 export const dynamic = "force-dynamic";
 
@@ -34,10 +37,19 @@ export async function POST(request: Request) {
   if (!parsed.success) return to("error");
   try {
     const db = await getDb();
+    // La misma puerta que el resto de formularios públicos. Este es el más goloso para el spam:
+    // aquí se pide un servicio de pago.
+    const { env } = await getCloudflareContext({ async: true });
+    const guardia = await guardiaDeFormulario(db, env, {
+      pase: raw.pase || null,
+      trampa: raw.web ?? "",
+      turnstile: raw["cf-turnstile-response"] || null,
+      ip: ipDe(request),
+    });
+    // Al robot se le responde «ok» para que no aprenda, pero no se guarda el pedido.
+    if (!guardia.ok) return to("ok");
     await createOrder(db, parsed.data, {
-      ip:
-        request.headers.get("cf-connecting-ip") ??
-        request.headers.get("x-forwarded-for")?.split(",")[0]?.trim(),
+      ip: ipDe(request),
     });
     return to("ok");
   } catch {

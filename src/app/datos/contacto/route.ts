@@ -1,6 +1,8 @@
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { getDb } from "@/lib/db";
 import { contactoSchema, enviarContacto } from "@/lib/contacto";
+import { guardiaDeFormulario } from "@/lib/anti-bots";
+import { ipDe } from "@/lib/ip";
 import { toLang } from "@/i18n";
 import { contactPath } from "@/lib/urls";
 
@@ -40,6 +42,19 @@ export async function POST(request: Request) {
 
   const { env, ctx } = await getCloudflareContext({ async: true });
   const db = await getDb();
+
+  // La puerta: pase firmado, tiempo mínimo, límite por dirección y Turnstile si está encendido.
+  const guardia = await guardiaDeFormulario(db, env, {
+    pase: String(form.get("pase") ?? "") || null,
+    trampa: String(form.get("web") ?? ""),
+    turnstile: String(form.get("cf-turnstile-response") ?? "") || null,
+    ip: ipDe(request),
+  });
+  if (!guardia.ok) {
+    // Al robot se le contesta como a una persona para que no aprenda nada, pero no se manda nada.
+    return responder(guardia.motivo === "demasiados" ? "demasiados" : "gracias");
+  }
+
   const res = await enviarContacto(db, env, parsed.data, fetch, (p) => ctx.waitUntil(p));
   if (!res.ok) return responder(res.reason === "sincorreo" ? "sincorreo" : "error");
   return responder("gracias");

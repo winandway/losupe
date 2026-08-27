@@ -564,6 +564,9 @@ test("publica tu noticia: el pedido llega al panel y se convierte en encargo", a
   await page.getByLabel("Correo electrónico").fill("prueba@example.com");
   await page.getByLabel("Paquete").selectOption("basica");
   await page.getByLabel("Cuéntanos de tu empresa").fill("Vendemos pan artesanal a domicilio.");
+  // Una persona tarda en rellenar siete campos; el blindaje anti-robots rechaza los envíos
+  // instantáneos (ver src/lib/anti-bots.ts), así que la prueba también se toma su tiempo.
+  await page.waitForTimeout(3500);
   await page.getByRole("button", { name: "Enviar mi pedido" }).click();
   await expect(page).toHaveURL(/\/es\/publica\?estado=ok$/);
   await expect(page.getByRole("heading", { name: /Recibimos tu pedido/ })).toBeVisible();
@@ -896,4 +899,44 @@ test("el contador de lectores solo lo ve el dueño", async ({ page, context }) =
   await context.clearCookies();
   await page.goto("/panel/lectores");
   await expect(page).toHaveURL(/\/panel\/entrar$/);
+});
+
+test("los formularios públicos rechazan un envío de robot", async ({ request, page }) => {
+  // 1) POST DIRECTO, sin pasar por la página: así trabaja casi todo el spam. No entra.
+  const directo = await request.post("/datos/contacto", {
+    headers: { Accept: "application/json" },
+    form: {
+      nombre: "Cyrus Havens",
+      email: "spam@ejemplo.com",
+      mensaje: "Incluyamos tu sitio en el índice de Google, visita nuestro enlace ahora.",
+      lang: "es",
+    },
+  });
+  // Se le responde como a una persona para que no aprenda nada, pero no se manda el mensaje.
+  expect(directo.status()).toBe(200);
+
+  // 2) La trampa: un campo que una persona no ve nunca.
+  await page.goto("/es/contacto");
+  const pase = await page.locator('#contacto input[name="pase"]').inputValue();
+  expect(pase).toContain(".");
+  const conTrampa = await request.post("/datos/contacto", {
+    headers: { Accept: "application/json" },
+    form: {
+      nombre: "Robot",
+      email: "bot@ejemplo.com",
+      mensaje: "Mensaje automático de publicidad no deseada para el sitio.",
+      lang: "es",
+      pase,
+      web: "http://spam.example",
+    },
+  });
+  expect(conTrampa.status()).toBe(200);
+
+  // 3) El pase existe en los TRES formularios públicos, no solo en uno.
+  await page.goto("/es");
+  await expect(page.locator('#boletin input[name="pase"]')).toHaveCount(1);
+  await expect(page.locator('#boletin input[name="web"]')).toHaveCount(1);
+  await page.goto("/es/publica");
+  await expect(page.locator('form[action="/datos/pedido"] input[name="pase"]')).toHaveCount(1);
+  await expect(page.locator('form[action="/datos/pedido"] input[name="web"]')).toHaveCount(1);
 });

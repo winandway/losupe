@@ -28,7 +28,7 @@ type Textos = {
 const campo =
   "mt-1 w-full rounded-xl border border-line bg-white px-4 py-3 text-base text-ink outline-none ring-accent focus:ring-4";
 
-export function FormularioContacto({ lang, t }: { lang: Lang; t: Textos }) {
+export function FormularioContacto({ lang, t, pase }: { lang: Lang; t: Textos; pase: string }) {
   const [estado, setEstado] = useState<"idle" | "enviando">("idle");
   const [aviso, setAviso] = useState<{ texto: string; bueno: boolean } | null>(null);
 
@@ -71,6 +71,8 @@ export function FormularioContacto({ lang, t }: { lang: Lang; t: Textos }) {
       className="mt-6 rounded-2xl border border-line bg-paper p-5 md:p-6"
     >
       <input type="hidden" name="lang" value={lang} />
+      {/* El pase que firma el servidor: sin él, un POST directo no entra (ver src/lib/anti-bots.ts). */}
+      <input type="hidden" name="pase" value={pase} />
       {aviso ? (
         <p
           role="status"

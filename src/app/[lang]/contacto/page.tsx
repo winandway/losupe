@@ -5,6 +5,7 @@ import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { getSetting } from "@/lib/robot/budget";
+import { crearPase } from "@/lib/anti-bots";
 import { safeJsonLd } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
 import { absoluteUrl, contactPath, staticPath } from "@/lib/urls";
@@ -97,6 +98,7 @@ export default async function ContactoPage({ params }: Props) {
         </ul>
 
         <FormularioContacto
+          pase={await crearPase(await getDb())}
           lang={lang}
           t={{
             name: c.name,

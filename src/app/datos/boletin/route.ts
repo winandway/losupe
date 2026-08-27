@@ -2,6 +2,8 @@ import { getDb } from "@/lib/db";
 import { getCloudflareContext } from "@opennextjs/cloudflare";
 import { confirmSubscriber, subscribe, subscribeSchema, unsubscribe } from "@/lib/subscribers";
 import { toLang } from "@/i18n";
+import { guardiaDeFormulario, MINIMO_BOLETIN } from "@/lib/anti-bots";
+import { ipDe } from "@/lib/ip";
 import { homePath } from "@/lib/urls";
 
 export const dynamic = "force-dynamic";
@@ -48,6 +50,17 @@ export async function POST(request: Request) {
   if (!parsed.success) return to("invalido");
   const { env, ctx } = await getCloudflareContext({ async: true });
   const db = await getDb();
+
+  const guardia = await guardiaDeFormulario(db, env, {
+    pase: String(form.get("pase") ?? "") || null,
+    trampa: String(form.get("web") ?? ""),
+    turnstile: String(form.get("cf-turnstile-response") ?? "") || null,
+    ip: ipDe(request),
+    // Un solo campo, que el navegador puede autocompletar: aquí un humano SÍ puede ser rápido.
+    minimoSegundos: MINIMO_BOLETIN,
+  });
+  // Se le responde «revisa tu correo» igual, para no darle pistas a quien lo intenta.
+  if (!guardia.ok) return to("revisa");
   const base = env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
   // El correo sale por detrás: la persona no tiene por qué esperar al servicio de correo.
   const res = await subscribe(db, env, base, parsed.data, fetch, (p) => ctx.waitUntil(p));
