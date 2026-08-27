@@ -213,6 +213,27 @@ CREATE TABLE IF NOT EXISTS candidates (
 );
 CREATE INDEX IF NOT EXISTS idx_candidates_pick ON candidates(status, section_id, score DESC, published_at DESC);
 
+-- ---------------------------------------------------------------------------
+-- LECTORES DE VERDAD
+-- Cada fila es una visita confirmada por el navegador (ver src/lib/lectores.ts).
+-- NO se guarda la direccion IP ni nada que identifique a una persona: `visitante` es una huella
+-- anonima que cambia cada dia, asi que sirve para contar sin poder seguir a nadie.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS visitas (
+  id TEXT PRIMARY KEY,
+  ts TEXT NOT NULL,
+  dia TEXT NOT NULL,
+  pais TEXT,
+  ruta TEXT NOT NULL,
+  lang TEXT,
+  visitante TEXT NOT NULL,
+  referente TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_visitas_dia ON visitas(dia);
+CREATE INDEX IF NOT EXISTS idx_visitas_ts ON visitas(ts DESC);
+CREATE INDEX IF NOT EXISTS idx_visitas_pais ON visitas(dia, pais);
+CREATE INDEX IF NOT EXISTS idx_visitas_ruta ON visitas(dia, ruta);
+
 -- Sesiones del panel (se borran al cerrar sesión) e intentos de entrada (límite por IP).
 CREATE TABLE IF NOT EXISTS panel_sessions (
   id TEXT PRIMARY KEY,
@@ -301,6 +322,8 @@ ALTER TABLE articles ADD COLUMN image_caption_en TEXT;
 -- Cuando se le mando el recordatorio de confirmar. Sin esta marca se le mandaria uno cada dia, que
 -- es la forma mas rapida de acabar en la carpeta de spam.
 ALTER TABLE subscribers ADD COLUMN reminded_at TEXT;
+
+
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
 INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES

@@ -766,3 +766,30 @@ diario…`, 23 ago 2026).
 - **Candado:** en `tests/unit/mesa.test.ts`, «una pieza propia es una nota, no un resumen».
 - **Qué NO tocar:** no bajes el mínimo de palabras para que pasen más notas — el problema es la
   nota, no el listón.
+
+## 29. Contador de lectores propio: solo personas, sin rastrear a nadie
+
+- **De dónde sale (25 ago 2026):** Richard: _«un contador de lectores reales que yo pueda ver desde
+  qué país me visitan, pero que sean reales, no quiero que cuenten los bots… y que el contador solo
+  lo pueda ver yo»_.
+- **CÓMO SE SEPARA UN LECTOR DE UN ROBOT**, que es lo único que hace útil un contador:
+  1. **La visita la confirma el navegador.** No se cuenta al servir la página: se cuenta cuando el
+     navegador ejecuta el sensor desde la propia pantalla (`/datos/visita`). Los rastreadores, los
+     que copian sitios y casi todos los robots piden el HTML y se van sin ejecutar nada. **Este es
+     el filtro que de verdad decide.**
+  2. **Lista de robots conocidos** por si alguno sí ejecuta código. Segunda red, no la primera.
+  3. Solo cuenta mientras la pestaña está **a la vista**: una pestaña olvidada no es un lector.
+- **PRIVACIDAD, Y NO ES UN ADORNO.** No se guarda **ninguna dirección IP** ni nada que identifique a
+  una persona, y **no se usan cookies** — por eso el sitio no necesita el cartel de aceptar cookies.
+  Para contar personas distintas se usa una huella que mezcla datos técnicos **con la fecha** y pasa
+  por una función que no se puede deshacer: la misma persona da otra huella mañana, así que sirve
+  para contar y **no para seguir a nadie**. El detalle se borra solo a los 120 días, desde la misma
+  corrida del robot (no hacía falta otro reloj).
+- **Solo lo ve el dueño:** vive en `/panel/lectores`, detrás de la contraseña del panel. Hay una
+  prueba que entra sin sesión y exige que mande a la pantalla de entrar.
+- **Candado:** `tests/unit/lectores.test.ts` — que los robots no cuentan, que una persona sí, que la
+  IP **no aparece en ninguno de los valores que se guardan**, y que la huella cambia de un día para
+  otro. En el e2e: que el sensor dispara desde el navegador y que el tablero está protegido.
+- **Qué NO tocar:** no cuentes la visita en el servidor «para no perder ninguna» — ahí es donde
+  entran los robots y el contador deja de servir; no guardes la IP ni pongas cookies (además de
+  estar mal, obligaría a poner el cartel de cookies); y no alargues el historial sin motivo.

@@ -229,6 +229,13 @@ export const es = {
         "Explicamos qué datos se procesan cuando visitas losupe.com, para qué y qué puedes hacer al respecto. En pocas palabras: no te pedimos registro, no usamos cookies de seguimiento propias y no vendemos datos.",
       sections: [
         {
+          h: "Cómo contamos las visitas",
+          p: [
+            "Contamos cuánta gente nos lee y desde qué país con un contador propio: no usamos Google Analytics ni ningún rastreador de terceros. No guardamos direcciones IP ni usamos cookies para eso.",
+            "Para contar personas distintas usamos una huella anónima hecha con datos técnicos y la fecha, que no se puede deshacer y cambia cada día: sirve para contar cuánta gente nos lee, no para seguir a nadie de un día para otro. Ese detalle se borra solo a los 120 días.",
+          ],
+        },
+        {
           h: "Qué datos se procesan",
           p: [
             "Hoy no pedimos cuenta ni registro. El buscador del sitio no guarda tus consultas asociadas a tu persona. La plataforma que aloja el sitio (YaDominios Cloud, sobre la red de Cloudflare) procesa datos técnicos como la dirección IP, el tipo de navegador y el país para seguridad, rendimiento y estadísticas agregadas de visitas (sin cookies ni perfiles individuales).",
@@ -329,6 +336,7 @@ export const es = {
       write: "Escribir",
       notes: "Notas",
       sources: "Fuentes",
+      readers: "Lectores",
       roadmap: "Roadmap",
       logout: "Cerrar sesión",
       openMenu: "Abrir el menú",
@@ -467,6 +475,25 @@ export const es = {
         done: "Publicado",
         canceled: "Cancelado",
       },
+    },
+    readers: {
+      title: "Lectores",
+      online: "leyendo ahora mismo",
+      onlineOne: "leyendo ahora mismo",
+      onlineHint:
+        "Personas con la página abierta y a la vista en los últimos {min} minutos. No se cuentan robots ni rastreadores: solo se anota a quien abre el sitio en un navegador de verdad.",
+      today: "Hoy",
+      week: "Últimos 7 días",
+      month: "Últimos 30 días",
+      readers: "lectores",
+      views: "visitas",
+      countries: "De dónde nos leen",
+      mostRead: "Lo más leído (7 días)",
+      byHour: "A qué hora nos leen hoy",
+      byHourHint: "Hora del Este de EE. UU.",
+      empty: "Todavía no hay datos. En cuanto entre alguien, aparece aquí.",
+      privacy:
+        "No guardamos direcciones IP ni usamos cookies para esto. Para contar personas distintas se usa una huella anónima que cambia cada día, así que sirve para contar y no para seguir a nadie. El detalle se borra solo a los {dias} días.",
     },
     sponsors: {
       title: "Encargos (notas patrocinadas)",

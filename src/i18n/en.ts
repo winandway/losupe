@@ -229,6 +229,13 @@ export const en: Dict = {
         "Here is what data is processed when you visit losupe.com, why, and what you can do about it. In short: we don't require an account, we don't use our own tracking cookies, and we don't sell data.",
       sections: [
         {
+          h: "How we count visits",
+          p: [
+            "We count how many people read us and which country they come from with our own counter: no Google Analytics, no third-party trackers. We store no IP addresses and use no cookies for it.",
+            "To count unique readers we use an anonymous fingerprint built from technical data and the date. It cannot be reversed and it changes every day: it counts how many people read us, it does not follow anyone from one day to the next. That detail is deleted after 120 days.",
+          ],
+        },
+        {
           h: "What data is processed",
           p: [
             "We currently do not require an account or sign-up. The site search does not store your queries linked to you. The platform that hosts the site (YaDominios Cloud, on Cloudflare's network) processes technical data such as IP address, browser type, and country for security, performance, and aggregate visit statistics (no cookies, no individual profiles).",
@@ -329,6 +336,7 @@ export const en: Dict = {
       write: "Write",
       notes: "Stories",
       sources: "Sources",
+      readers: "Readers",
       roadmap: "Roadmap",
       logout: "Sign out",
       openMenu: "Open menu",
@@ -468,6 +476,25 @@ export const en: Dict = {
         done: "Published",
         canceled: "Canceled",
       },
+    },
+    readers: {
+      title: "Readers",
+      online: "reading right now",
+      onlineOne: "reading right now",
+      onlineHint:
+        "People with the page open and in view in the last {min} minutes. Bots and crawlers are not counted: only real browsers get recorded.",
+      today: "Today",
+      week: "Last 7 days",
+      month: "Last 30 days",
+      readers: "readers",
+      views: "views",
+      countries: "Where they read us from",
+      mostRead: "Most read (7 days)",
+      byHour: "What time they read us today",
+      byHourHint: "US Eastern time",
+      empty: "No data yet. As soon as someone visits, it shows up here.",
+      privacy:
+        "We store no IP addresses and use no cookies for this. Unique readers are counted with an anonymous fingerprint that changes every day, so it counts people without tracking anyone. Detail is deleted after {dias} days.",
     },
     sponsors: {
       title: "Assignments (sponsored stories)",

@@ -872,3 +872,28 @@ test("las imágenes de las notas están en el sitemap (si no, Google no las inde
   const notas = (xml.match(/<loc>[^<]*\/(es|en)\/[^<]*\/[^<]*<\/loc>/g) ?? []).length;
   if (notas > 0) expect(conImagen).toBeGreaterThan(0);
 });
+
+test("el sensor de lectores avisa desde la página, no desde el servidor", async ({ page }) => {
+  const avisos: { metodo: string; cuerpo: string }[] = [];
+  page.on("request", (r) => {
+    if (r.url().includes("/datos/visita")) {
+      avisos.push({ metodo: r.method(), cuerpo: r.postData() ?? "" });
+    }
+  });
+  await page.goto("/es");
+  await page.waitForTimeout(1200);
+  // Que esto se ejecute ES la prueba de que hay un navegador de verdad: un rastreador pide el HTML
+  // y se va. Por eso el contador solo cuenta lectores reales.
+  expect(avisos.length).toBeGreaterThan(0);
+  expect(avisos[0]?.metodo).toBe("POST");
+  const cuerpo = JSON.parse(avisos[0]?.cuerpo || "{}") as Record<string, unknown>;
+  expect(cuerpo.ruta).toBe("/es");
+  // Y no se manda nada personal desde el navegador.
+  expect(JSON.stringify(cuerpo)).not.toMatch(/ip|cookie|email/i);
+});
+
+test("el contador de lectores solo lo ve el dueño", async ({ page, context }) => {
+  await context.clearCookies();
+  await page.goto("/panel/lectores");
+  await expect(page).toHaveURL(/\/panel\/entrar$/);
+});

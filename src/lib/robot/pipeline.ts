@@ -14,6 +14,7 @@ import { mailConfigured, parseRecipients } from "@/lib/mail";
 import { pickWriter } from "./authors";
 import { notifyPublished } from "./notify";
 import { recordarConfirmacion } from "@/lib/subscribers";
+import { limpiarVisitasViejas } from "@/lib/lectores";
 import { embedVideo, findPexelsVideo, illustrate } from "./images";
 import { saveArticle } from "./publish";
 import {
@@ -549,6 +550,8 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   // Y de paso, el recordatorio a quien se apuntó y no confirmó. Va aquí porque el robot ya corre
   // tres veces al día: no hace falta otro reloj para algo que manda un correo cada tanto.
   await recordarConfirmacion(db, env, opts.base).catch(() => undefined);
+  // Y el detalle de visitas que ya no sirve: se guarda lo justo y se borra solo.
+  await limpiarVisitasViejas(db, now).catch(() => 0);
   const discover = await discoverCandidates(db, { fetchImpl, now });
 
   // 5) Notas, alternando

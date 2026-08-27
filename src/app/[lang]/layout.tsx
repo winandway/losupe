@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader, Space_Grotesk } from "next/font/google";
 import "../globals.css";
 import { Footer } from "@/components/Footer";
+import { Sensor } from "@/components/Sensor";
 import { Header } from "@/components/Header";
 import { getDict, toLang } from "@/i18n";
 import { getBaseUrl } from "@/lib/site";
@@ -86,6 +87,9 @@ export default async function RootLayout({ children, params }: Props) {
           {children}
         </main>
         <Footer lang={lang} dict={dict} />
+        {/* El sensor de lectores: que este código se ejecute es la prueba de que hay una persona
+            de verdad al otro lado. Ver src/lib/lectores.ts. */}
+        <Sensor lang={lang} />
         <WebMcp lang={lang} />
       </body>
     </html>
