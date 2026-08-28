@@ -472,3 +472,9 @@ UPDATE authors SET expertise_es = 'Cultura, tendencias, redes sociales, ventas y
 UPDATE authors SET expertise_es = 'Criptomonedas, blockchain, emprendimiento y pequeños negocios',
                    expertise_en = 'Cryptocurrency, blockchain, entrepreneurship and small business'
  WHERE id = 'pedro-llerena';
+
+-- La escaleta pide CUATRO notas al dia (2 de actualidad + 2 de curiosidades). El ajuste ya existia
+-- con el valor viejo y el INSERT OR IGNORE de arriba no lo pisa, asi que se sube aqui. Solo se toca
+-- si sigue en el valor anterior: si Richard lo cambia a mano en el panel, se respeta.
+UPDATE settings SET value = '4', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+ WHERE key = 'notes_per_day' AND value IN ('3', '6');
