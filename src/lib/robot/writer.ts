@@ -294,7 +294,7 @@ export function internalLinksBlock(links: readonly InternalLink[]): string {
  */
 export function buildPiezaPropiaPrompt(b: {
   titularPropuesto: string;
-  genero: "curiosidades" | "errores" | "guia";
+  genero: "curiosidades" | "errores" | "guia" | "ranking";
   sectionId: SectionId;
   sources: readonly SourceDoc[];
   internalLinks?: readonly InternalLink[];
@@ -306,6 +306,8 @@ export function buildPiezaPropiaPrompt(b: {
     errores:
       "Es una LISTA DE ERRORES. Cada punto va con su <h3>: el error, por qué se comete, qué pasa cuando se comete y qué hacer en su lugar. Concreto y sin sermones: quien lee está cometiendo alguno de esos errores ahora mismo.",
     guia: "Es una GUÍA que sigue sirviendo dentro de un año. Pasos claros, con ejemplos y cifras reales.",
+    ranking:
+      "Es un RANKING con datos: responde la pregunta del titular con una lista ordenada, y **cada puesto lleva su cifra y de dónde sale**. Empieza contestando la pregunta en la primera frase, sin rodeos ni suspense — quien entra quiere el dato, no que se lo escondan. Después explica POR QUÉ es así, que es lo que hace que la nota valga la pena: qué hay detrás de ese número, desde cuándo, y qué está cambiando. Si el dato tiene matices (una cosa es lo más vendido en unidades y otra en dinero), dilo: ahí está la parte interesante.",
   }[b.genero];
   return `ENCARGO: pieza propia para la sección "${section?.name.es ?? b.sectionId}".
 TITULAR PROPUESTO: ${b.titularPropuesto}
@@ -320,6 +322,10 @@ REGLAS DE ESTE GÉNERO (van en serio):
 - Si el material no da para diez puntos, escribe los que sí puedas documentar y ajusta el titular al
   número real. Siete comprobadas valen más que diez inventadas.
 - Puedes mejorar el titular propuesto si se te ocurre uno mejor, pero mantén el tema y el número.
+- TITULARES: el gancho está en el TEMA, no en el adjetivo. «El producto más vendido del mundo lleva
+  2.000 años ganando» engancha; «la respuesta te sorprenderá» hace que no te lean nunca más. Si sabes
+  el dato, puedes ponerlo en el titular: quien lo lea entrará igual, y quien no, tampoco iba a entrar.
+  Prohibido el suspense vacío, las mayúsculas de más y los signos de admiración.
 - Nada de rellenar con obviedades para llegar a la cuenta.
 
 MATERIAL:

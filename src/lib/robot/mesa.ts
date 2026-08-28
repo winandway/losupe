@@ -159,7 +159,13 @@ export async function encargoDelTurno(
     for (let i = 0; i < opts.seccionesConCupo.length; i++) {
       const seccion = opts.seccionesConCupo[(opts.notasHoy + i) % opts.seccionesConCupo.length];
       if (!seccion) continue;
-      const idea = siguienteIdea(seccion, opts.titularesRecientes, opts.notasHoy);
+      // La franja dice qué clase de pieza toca: curiosidades al mediodía, rankings por la noche.
+      const idea = siguienteIdea(
+        seccion,
+        opts.titularesRecientes,
+        opts.notasHoy,
+        franja?.subgenero,
+      );
       if (idea) return { genero: "propia", idea };
     }
   }

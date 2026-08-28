@@ -37,7 +37,15 @@ import {
   limpiarCandidatosFueraDeTema,
 } from "./universal";
 import { SQL_NOW } from "../sql-time";
-import { FRANJAS, franjaActiva, NOMBRE_FRANJA, NOMBRE_GENERO, partesEnZona, ZONA } from "./franjas";
+import {
+  FRANJAS,
+  franjaActiva,
+  NOMBRE_FRANJA,
+  NOMBRE_GENERO,
+  NOMBRE_SUBGENERO,
+  partesEnZona,
+  ZONA,
+} from "./franjas";
 import { TICK_KEY } from "./heartbeat";
 import { encargoDelTurno, reglasDeLaMesa } from "./mesa";
 import { buscarArticulos } from "./wikipedia";
@@ -230,7 +238,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
         key: f.key,
         hour: f.hour,
         nombre: NOMBRE_FRANJA[f.key].es,
-        genero: NOMBRE_GENERO[f.genero].es,
+        genero: f.subgenero ? NOMBRE_SUBGENERO[f.subgenero].es : NOMBRE_GENERO[f.genero].es,
       })),
       ahora: `${String(partesEnZona(now).hh).padStart(2, "0")}:${String(partesEnZona(now).mm).padStart(2, "0")}`,
       franjaAbierta: franjaActiva(now)?.key ?? null,

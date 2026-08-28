@@ -17,7 +17,19 @@ import type { SectionId } from "@/lib/sections";
  * pasa por la misma investigación y las mismas fuentes citadas que todo lo demás (ver `mesa.ts`).
  */
 
-export type Genero = "curiosidades" | "errores" | "guia";
+/**
+ * Los cuatro géneros de pieza propia.
+ *
+ * `ranking` es el que pidió Richard el 28 ago 2026, después de buscar en Google «cuál es el producto
+ * más vendido del mundo» y encontrarse con que son el arroz y el trigo: *«ese tipo de curiosidades
+ * son importantes… qué es lo que más se vende en Estados Unidos, qué consume la generación Z, cuál
+ * es el país que bebe más licor»*.
+ *
+ * Y tenía razón en algo de fondo: el gancho está en **el tema**, no en el adjetivo. «El producto más
+ * vendido del mundo» se lee solo; «la respuesta te sorprenderá» es lo que hace que no te lean nunca
+ * más. Por eso los titulares de este género prometen un dato concreto, no una sorpresa.
+ */
+export type Genero = "curiosidades" | "errores" | "guia" | "ranking";
 
 export type Idea = {
   /** El titular que se le encarga al redactor. Él lo pulirá, pero el ángulo sale de aquí. */
@@ -32,7 +44,10 @@ export type Idea = {
  * Los temas de cada sección. Se escriben aquí y no en la base para que se puedan leer de un vistazo
  * y ampliar en el mismo trabajo en que se piensan.
  */
-const TEMAS: Record<SectionId, { curiosidades: string[]; errores: string[]; guia: string[] }> = {
+const TEMAS: Record<
+  SectionId,
+  { curiosidades: string[]; errores: string[]; guia: string[]; ranking: string[] }
+> = {
   economia: {
     curiosidades: [
       "el dólar estadounidense",
@@ -57,6 +72,15 @@ const TEMAS: Record<SectionId, { curiosidades: string[]; errores: string[]; guia
       "cómo leer un reporte de inflación",
       "qué mira un banco antes de darte un préstamo",
       "cómo funciona el crédito en Estados Unidos",
+    ],
+    ranking: [
+      "cuál es el producto más vendido del mundo",
+      "los países donde la gente ahorra más dinero",
+      "en qué se va de verdad el sueldo de una familia en Estados Unidos",
+      "los países con el salario mínimo más alto del mundo",
+      "cuánto cuesta vivir en las diez ciudades más caras del mundo",
+      "cuál es la moneda más fuerte del mundo",
+      "las diez empresas que más dinero ganan del planeta",
     ],
   },
   ventas: {
@@ -84,6 +108,15 @@ const TEMAS: Record<SectionId, { curiosidades: string[]; errores: string[]; guia
       "qué hacer cuando un cliente se queja en público",
       "cómo vender fuera de tu país sin morir en el intento",
     ],
+    ranking: [
+      "qué es lo que más se vende en Estados Unidos",
+      "qué compra de verdad la generación Z",
+      "los diez productos más vendidos por internet",
+      "qué es lo que más consumen los hogares mexicanos",
+      "las marcas más valiosas del mundo y cuánto valen",
+      "los países que más compran por internet",
+      "qué día del año se vende más en el mundo",
+    ],
   },
   tecnologia: {
     curiosidades: [
@@ -107,6 +140,14 @@ const TEMAS: Record<SectionId, { curiosidades: string[]; errores: string[]; guia
       "qué hacer si te roban una cuenta",
       "cómo elegir tecnología para un negocio pequeño",
     ],
+    ranking: [
+      "cuál es el celular más vendido de la historia",
+      "las aplicaciones más descargadas del mundo",
+      "los países con el internet más rápido",
+      "cuánto tiempo pasa cada país frente a una pantalla",
+      "los videojuegos más vendidos de todos los tiempos",
+      "las páginas web más visitadas del planeta",
+    ],
   },
   cripto: {
     curiosidades: [
@@ -125,6 +166,12 @@ const TEMAS: Record<SectionId, { curiosidades: string[]; errores: string[]; guia
       "cómo reconocer una estafa de criptomonedas",
       "qué es y qué no es una stablecoin",
       "cómo se declara una ganancia en criptomonedas",
+    ],
+    ranking: [
+      "los países donde más se usan las criptomonedas",
+      "cuáles son las diez criptomonedas más grandes y qué hace cada una",
+      "quiénes tienen más bitcoin del mundo",
+      "los países que prohibieron las criptomonedas y por qué",
     ],
   },
   artistas: {
@@ -149,6 +196,15 @@ const TEMAS: Record<SectionId, { curiosidades: string[]; errores: string[]; guia
       "qué hace un mánager de verdad",
       "cómo protege un artista sus derechos",
     ],
+    ranking: [
+      "cuál es la canción más escuchada de la historia",
+      "cuál es el país que más licor bebe del mundo",
+      "las películas más taquilleras de todos los tiempos",
+      "los artistas que más entradas han vendido en una gira",
+      "qué música escucha cada país",
+      "los diez libros más vendidos de la historia",
+      "qué país come más carne y cuál menos",
+    ],
   },
 };
 
@@ -156,12 +212,15 @@ const PLANTILLAS: Record<Genero, (tema: string) => string> = {
   curiosidades: (t) => `10 curiosidades sobre ${t} que casi nadie conoce`,
   errores: (t) => `Los 10 errores más grandes que cometen ${t}`,
   guia: (t) => `${t.charAt(0).toUpperCase()}${t.slice(1)}`,
+  // El titular es la propia pregunta, porque la pregunta ya engancha sola.
+  ranking: (t) => `${t.charAt(0).toUpperCase()}${t.slice(1)}`,
 };
 
 const QUE_BUSCAR: Record<Genero, (tema: string) => string> = {
   curiosidades: (t) => `datos verificables, cifras y hechos históricos sobre ${t}`,
   errores: (t) => `errores frecuentes, estudios y casos documentados sobre ${t}`,
   guia: (t) => `explicación con fuentes y datos actualizados sobre ${t}`,
+  ranking: (t) => `cifras oficiales, estadísticas y clasificaciones sobre ${t}`,
 };
 
 /** Todas las ideas posibles de una sección. */
@@ -169,7 +228,7 @@ export function ideasDeSeccion(sectionId: SectionId): Idea[] {
   const temas = TEMAS[sectionId];
   if (!temas) return [];
   const out: Idea[] = [];
-  for (const genero of ["curiosidades", "errores", "guia"] as const) {
+  for (const genero of ["curiosidades", "errores", "guia", "ranking"] as const) {
     for (const tema of temas[genero]) {
       out.push({
         titular: PLANTILLAS[genero](tema),
@@ -198,8 +257,17 @@ export function siguienteIdea(
   sectionId: SectionId,
   yaUsados: readonly string[],
   indice = 0,
+  /** Si se pide, solo ideas de esta clase (la franja de la noche pide rankings). */
+  soloGenero?: Genero | "curiosidades" | "ranking",
 ): Idea | null {
-  const ideas = ideasDeSeccion(sectionId);
+  const todas = ideasDeSeccion(sectionId);
+  // «curiosidades» a secas incluye también las listas de errores y las guías: son piezas del mismo
+  // tipo de lectura. El ranking sí va aparte, porque es otra cosa.
+  const ideas = soloGenero
+    ? todas.filter((i) =>
+        soloGenero === "ranking" ? i.genero === "ranking" : i.genero !== "ranking",
+      )
+    : todas;
   if (ideas.length === 0) return null;
   const usados = yaUsados.map((t) => normalizar(t));
   const libres = ideas.filter((idea) => {

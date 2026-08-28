@@ -236,3 +236,54 @@ describe("una pieza propia es una nota, no un resumen", () => {
     expect(prompts[1]).toContain("450 palabras");
   });
 });
+
+describe("rankings: la franja de la noche pregunta y responde", () => {
+  it("los temas que pidió Richard están en el banco", () => {
+    const rankings = todasLasIdeas().filter((i) => i.genero === "ranking");
+    expect(rankings.length).toBeGreaterThan(20);
+    const titulares = rankings.map((i) => i.titular.toLowerCase());
+    // El ejemplo con el que llegó: buscó en Google «el producto más vendido del mundo».
+    expect(titulares.some((t) => t.includes("producto más vendido del mundo"))).toBe(true);
+    expect(titulares.some((t) => t.includes("país que más licor bebe"))).toBe(true);
+    expect(titulares.some((t) => t.includes("generación z"))).toBe(true);
+    expect(titulares.some((t) => t.includes("más se vende en estados unidos"))).toBe(true);
+    expect(titulares.some((t) => t.includes("hogares mexicanos"))).toBe(true);
+  });
+
+  it("los titulares enganchan por el TEMA, sin suspense vacío", () => {
+    // «La respuesta te sorprenderá» es lo que hace que no vuelvan a leerte.
+    for (const idea of todasLasIdeas()) {
+      expect(idea.titular).not.toMatch(/sorprender|no vas a creer|increíble|impactante|!/i);
+      expect(idea.titular).not.toMatch(/[A-ZÁÉÍÓÚÑ]{4,}/); // sin gritos en mayúsculas
+    }
+  });
+
+  it("la noche pide rankings y el mediodía NO", () => {
+    const noche = siguienteIdea("artistas", [], 0, "ranking");
+    expect(noche?.genero).toBe("ranking");
+    const mediodia = siguienteIdea("artistas", [], 0, "curiosidades");
+    expect(mediodia?.genero).not.toBe("ranking");
+  });
+
+  it("la escaleta reparte las dos franjas propias en cosas distintas", async () => {
+    const { FRANJAS } = await import("@/lib/robot/franjas");
+    const propias = FRANJAS.filter((f) => f.genero === "propia");
+    expect(propias).toHaveLength(2);
+    // Antes las dos eran lo mismo y se notaba. Ahora una es de curiosidades y otra de rankings.
+    expect(new Set(propias.map((f) => f.subgenero)).size).toBe(2);
+    expect(FRANJAS.find((f) => f.key === "noche")?.subgenero).toBe("ranking");
+  });
+
+  it("el encargo de un ranking pide el dato en la primera frase, sin rodeos", async () => {
+    const { buildPiezaPropiaPrompt } = await import("@/lib/robot/writer");
+    const prompt = buildPiezaPropiaPrompt({
+      titularPropuesto: "Cuál es el producto más vendido del mundo",
+      genero: "ranking",
+      sectionId: "economia",
+      sources: [{ title: "Arroz", url: "https://es.wikipedia.org/wiki/Arroz", text: "texto" }],
+    });
+    expect(prompt).toMatch(/cada puesto lleva su cifra/i);
+    expect(prompt).toMatch(/sin rodeos ni suspense/i);
+    expect(prompt).toMatch(/gancho está en el TEMA/i);
+  });
+});

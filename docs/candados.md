@@ -898,3 +898,25 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no vuelvas a repartir géneros con un porcentaje sobre un contador que se
   reinicia; no pongas la efeméride antes que la escaleta; y si añades una franja, dale su género —
   la prueba exige que haya el mismo número de cada uno.
+
+## 33. Rankings y récords: la franja de la noche deja de repetir
+
+- **De dónde sale (28 ago 2026):** Richard buscó en Google «cuál es el producto más vendido del
+  mundo», se encontró con que son el arroz y el trigo, y dijo: _«las dos franjas de curiosidades son
+  lo mismo. Cambiemos una por algo con más enganche… qué es lo que más se vende en Estados Unidos,
+  qué consume la generación Z, cuál es el país que bebe más licor»_.
+- **Qué se hizo:** un género nuevo, `ranking`, y la franja de las 21:00 pasa a pedirlo. Las dos
+  franjas propias del día dejan de ser lo mismo: **mediodía curiosidades, noche rankings**. Hay una
+  prueba que exige que las dos franjas propias tengan subgénero distinto.
+- **EL TITULAR ENGANCHA POR EL TEMA, NO POR EL ADJETIVO.** Es la parte que importa y la que se puede
+  hacer mal muy fácil. «El producto más vendido del mundo lleva 2.000 años ganando» se lee solo; «la
+  respuesta te sorprenderá» hace que no te lean nunca más — y a Google Noticias tampoco le gusta.
+  Por eso el encargo le pide **contestar la pregunta en la primera frase, sin suspense**: quien entra
+  quiere el dato, no que se lo escondan. Lo interesante viene después: por qué es así, desde cuándo,
+  y qué matiz tiene (una cosa es lo más vendido en unidades y otra en dinero).
+- **Candado:** en `tests/unit/mesa.test.ts` → «rankings»: que los temas que pidió Richard estén en el
+  banco, que **ningún titular** del banco lleve «sorprenderá», «increíble», signos de admiración ni
+  gritos en mayúsculas, que la noche pida rankings y el mediodía no, y que el encargo pida el dato
+  sin rodeos.
+- **Qué NO tocar:** no metas titulares de suspense vacío «para que enganche más» — el precio es que
+  dejen de creerte; y si añades una franja propia, dale su subgénero, que la prueba lo exige.

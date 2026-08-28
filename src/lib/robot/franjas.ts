@@ -14,7 +14,8 @@
  *   07:00  mañana    · actualidad. La gente revisa noticias antes de las 8 y otra vez a las 9
  *   12:00  mediodía  · curiosidades. Pico del almuerzo, se lee con calma
  *   17:00  tarde     · actualidad. Salida del trabajo: «qué ha pasado hoy»
- *   21:00  noche     · curiosidades. El rato de más tráfico de internet (7–9 PM)
+ *   21:00  noche     · rankings («¿cuál es el producto más vendido del mundo?»). El rato de más
+ *                       tráfico de internet (7–9 PM), cuando se lee lo que se comparte
  *
  * Fuentes de los horarios: Pew Research (66 % consume noticias entre 5 y 9 PM; 56 % antes de las
  * 8 AM), Public Radio Biz Lab (picos a primera hora, 9 AM, mediodía y 5 PM) y Sprout Social 2026
@@ -44,6 +45,13 @@ export type Franja = {
    * asignado de antemano, y así el reparto es exacto y se puede comprobar de un vistazo.
    */
   genero: "actualidad" | "propia";
+  /**
+   * Si la franja es de pieza propia, qué CLASE de pieza. Sirve para que las dos franjas propias del
+   * día no sean lo mismo: al mediodía curiosidades y listas de errores, y por la noche rankings
+   * («cuál es el producto más vendido del mundo», «qué país bebe más»), que es lo que Richard pidió
+   * el 28 ago 2026 al ver que las dos se repetían.
+   */
+  subgenero?: "curiosidades" | "ranking";
 };
 
 /**
@@ -55,9 +63,9 @@ export type Franja = {
  */
 export const FRANJAS: readonly Franja[] = [
   { key: "manana", hour: 7, genero: "actualidad" },
-  { key: "mediodia", hour: 12, genero: "propia" },
+  { key: "mediodia", hour: 12, genero: "propia", subgenero: "curiosidades" },
   { key: "tarde", hour: 17, genero: "actualidad" },
-  { key: "noche", hour: 21, genero: "propia" },
+  { key: "noche", hour: 21, genero: "propia", subgenero: "ranking" },
 ];
 
 /**
@@ -160,4 +168,10 @@ export const NOMBRE_FRANJA: Record<Franja["key"], { es: string; en: string }> = 
 export const NOMBRE_GENERO: Record<Franja["genero"], { es: string; en: string }> = {
   actualidad: { es: "Actualidad", en: "Breaking news" },
   propia: { es: "Curiosidades", en: "Lists & trivia" },
+};
+
+/** El nombre de la clase de pieza propia, para el panel. */
+export const NOMBRE_SUBGENERO: Record<"curiosidades" | "ranking", { es: string; en: string }> = {
+  curiosidades: { es: "Curiosidades", en: "Trivia" },
+  ranking: { es: "Rankings y récords", en: "Rankings & records" },
 };
