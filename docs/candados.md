@@ -827,3 +827,34 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no quites el pase de un formulario nuevo (cópialo de los que ya lo tienen); no
   subas el tiempo mínimo sin mirar cuántos campos tiene el formulario; y no le digas nunca al robot
   por qué fue rechazado.
+
+## 31. Tráfico con historial: qué leyeron, por dónde llegaron y cuánto tiempo
+
+- **De dónde sale (25 ago 2026):** Richard, tras ver el contador: _«¿ese contador guarda el
+  historial? Cuántas personas entraron este mes, el mes pasado, esta semana, la pasada, hoy, ayer…
+  qué noticia leyeron, por dónde llegaron y cuánto tiempo estuvieron leyendo»_.
+- **Qué había y qué faltaba.** El contador ya guardaba fecha, ruta, país y referente de cada visita
+  — el historial estaba. Faltaban tres cosas: **el tiempo de lectura**, la **clasificación del
+  origen** y una pantalla para consultarlo por periodos.
+- **EL CAMBIO DE FONDO: una fila por LECTURA, no por aviso.** Antes cada aviso del sensor insertaba
+  una fila, así que una persona leyendo diez minutos contaba como cinco visitas. Ahora la clave es
+  (día + persona + página): el primer aviso crea la lectura y los siguientes **suman tiempo** sobre
+  la misma fila (`ON CONFLICT … segundos = segundos + ?`). Dos ventajas: el tiempo de lectura se
+  puede sumar de verdad, y la cuenta de lectores deja de inflarse con los avisos periódicos.
+- **El tiempo solo cuenta con la pestaña a la vista.** El sensor reinicia su reloj al volver de otra
+  pestaña, así que el rato que alguien tuvo la nota olvidada en segundo plano no se cuenta como
+  lectura. Y un aviso no puede sumar más de tres minutos (`MAX_SEGUNDOS_POR_AVISO`): una pestaña que
+  devuelva un número absurdo no ensucia las medias.
+- **Por dónde llegan:** buscadores, redes, otros sitios o directo. Es la pregunta que de verdad dice
+  si el trabajo de posicionamiento sirve — no es lo mismo que Google te mande gente a que entren
+  escribiendo la dirección.
+- **Los seis periodos**, cada uno comparado con su anterior comparable (hoy/ayer, 7 días/7 días
+  anteriores, 30/30), con la flecha de subida o bajada.
+- **Candado:** en `tests/unit/lectores.test.ts` → «historial de tráfico»: que la lectura se
+  ACTUALIZA en vez de duplicarse, que el tiempo se suma, que un aviso absurdo se recorta, que el
+  origen se clasifica bien y que los porcentajes de variación salen correctos. En el e2e: que la
+  sección tiene los seis periodos y las cuatro preguntas, y que sigue detrás de la contraseña.
+- **Qué NO tocar:** no vuelvas a insertar una fila por cada aviso del sensor (se infla todo y se
+  pierde el tiempo de lectura); no cuentes el tiempo con la pestaña oculta; y esto sigue sin Google
+  Analytics, sin cookies y sin guardar direcciones IP — es lo que permite no poner cartel de
+  cookies.

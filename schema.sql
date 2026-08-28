@@ -233,6 +233,9 @@ CREATE INDEX IF NOT EXISTS idx_visitas_dia ON visitas(dia);
 CREATE INDEX IF NOT EXISTS idx_visitas_ts ON visitas(ts DESC);
 CREATE INDEX IF NOT EXISTS idx_visitas_pais ON visitas(dia, pais);
 CREATE INDEX IF NOT EXISTS idx_visitas_ruta ON visitas(dia, ruta);
+-- Una fila por LECTURA (una persona, una nota, un dia), no por cada aviso del sensor: asi se puede
+-- ir sumando el tiempo que lleva leyendo sin inflar la cuenta de visitas.
+CREATE UNIQUE INDEX IF NOT EXISTS idx_visitas_lectura ON visitas(dia, visitante, ruta);
 
 -- Sesiones del panel (se borran al cerrar sesión) e intentos de entrada (límite por IP).
 CREATE TABLE IF NOT EXISTS panel_sessions (
@@ -322,6 +325,9 @@ ALTER TABLE articles ADD COLUMN image_caption_en TEXT;
 -- Cuando se le mando el recordatorio de confirmar. Sin esta marca se le mandaria uno cada dia, que
 -- es la forma mas rapida de acabar en la carpeta de spam.
 ALTER TABLE subscribers ADD COLUMN reminded_at TEXT;
+-- Cuanto tiempo lleva leyendo esa persona esa nota, en segundos, y de donde llego.
+ALTER TABLE visitas ADD COLUMN segundos INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE visitas ADD COLUMN origen TEXT;
 
 
 

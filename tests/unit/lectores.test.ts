@@ -123,3 +123,80 @@ describe("el tablero de lectores", () => {
     expect(nombreDePais("ZZ")).toBe("ZZ");
   });
 });
+
+describe("historial de tráfico", () => {
+  it("clasifica por dónde llegó cada lector", async () => {
+    const { clasificarOrigen } = await import("@/lib/lectores");
+    expect(clasificarOrigen("www.google.com")).toBe("buscador");
+    expect(clasificarOrigen("duckduckgo.com")).toBe("buscador");
+    expect(clasificarOrigen("t.co")).toBe("redes");
+    expect(clasificarOrigen("m.facebook.com")).toBe("redes");
+    expect(clasificarOrigen("otromedio.com")).toBe("referido");
+    // Directo: sin referente, o navegando dentro del propio sitio.
+    expect(clasificarOrigen(null)).toBe("directo");
+    expect(clasificarOrigen("")).toBe("directo");
+    expect(clasificarOrigen("losupe.com")).toBe("directo");
+  });
+
+  it("una lectura se ACTUALIZA en vez de duplicarse, y suma el tiempo", async () => {
+    const { anotarVisita } = await import("@/lib/lectores");
+    const db = new FakeD1(() => []);
+    await anotarVisita(db.asD1(), {
+      ruta: "/es/economia/una-nota",
+      lang: "es",
+      pais: "US",
+      referente: "google.com",
+      ip: "1.2.3.4",
+      userAgent: NAVEGADOR,
+      segundos: 45,
+    });
+    const insert = db.calls.find((c) => c.sql.includes("INSERT INTO visitas"));
+    // La misma persona leyendo la misma nota el mismo día es UNA lectura con más tiempo, no dos.
+    expect(insert?.sql).toContain("ON CONFLICT");
+    expect(insert?.sql).toContain("segundos = segundos +");
+    expect(insert?.params).toContain(45);
+  });
+
+  it("un aviso no puede sumar un tiempo absurdo", async () => {
+    const { anotarVisita, MAX_SEGUNDOS_POR_AVISO } = await import("@/lib/lectores");
+    const db = new FakeD1(() => []);
+    await anotarVisita(db.asD1(), {
+      ruta: "/es",
+      lang: "es",
+      pais: "US",
+      referente: null,
+      ip: "1.2.3.4",
+      userAgent: NAVEGADOR,
+      segundos: 999_999,
+    });
+    const insert = db.calls.find((c) => c.sql.includes("INSERT INTO visitas"));
+    expect(insert?.params).toContain(MAX_SEGUNDOS_POR_AVISO);
+    expect(insert?.params).not.toContain(999_999);
+  });
+
+  it("los periodos se comparan con el anterior y el tiempo se lee en palabras", async () => {
+    const { variacion, tiempoLegible, diaLegible } = await import("@/lib/trafico");
+    expect(variacion(150, 100)).toBe(50);
+    expect(variacion(50, 100)).toBe(-50);
+    expect(variacion(5, 0)).toBe(100);
+    expect(variacion(0, 0)).toBeNull();
+    expect(tiempoLegible(0)).toBe("—");
+    expect(tiempoLegible(45)).toBe("45 s");
+    expect(tiempoLegible(200)).toBe("3 min 20 s");
+    expect(tiempoLegible(180)).toBe("3 min");
+    expect(diaLegible("2026-08-25", "2026-08-25")).toBe("hoy");
+    expect(diaLegible("2026-08-24", "2026-08-25")).toMatch(/24/);
+  });
+
+  it("sin base, el tablero de tráfico sale vacío en vez de romperse", async () => {
+    const { resumenDeTrafico } = await import("@/lib/trafico");
+    const rota = {
+      prepare: () => {
+        throw new Error("sin base");
+      },
+    } as unknown as D1Database;
+    const t = await resumenDeTrafico(rota);
+    expect(t.periodos).toEqual([]);
+    expect(t.masLeidas).toEqual([]);
+  });
+});

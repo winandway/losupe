@@ -22,6 +22,7 @@ export async function POST(request: Request) {
       ruta?: string;
       lang?: string;
       referente?: string;
+      segundos?: number;
     } | null;
     if (!body?.ruta) return sinContenido;
 
@@ -43,6 +44,7 @@ export async function POST(request: Request) {
         referente: body.referente ? String(body.referente) : null,
         ip,
         userAgent: request.headers.get("user-agent") ?? "",
+        segundos: Number(body.segundos) || 0,
       }).catch(() => false),
     );
   } catch {

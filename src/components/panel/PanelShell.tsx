@@ -5,7 +5,7 @@ import { AvisoDeEnvio } from "./AvisoDeEnvio";
 import { PanelSidebar, type PanelNavItem } from "./PanelSidebar";
 
 export type PanelSection =
-  "dashboard" | "write" | "orders" | "sponsors" | "notes" | "sources" | "readers" | "roadmap";
+  "dashboard" | "write" | "orders" | "sponsors" | "notes" | "sources" | "traffic" | "roadmap";
 
 async function badges(): Promise<{ orders: number; notes: number }> {
   try {
@@ -60,7 +60,7 @@ export async function PanelShell({
     { key: "sponsors", href: "/panel/encargos", label: p.nav.sponsors, icon: "sponsors" },
     { key: "notes", href: "/panel/notas", label: p.nav.notes, icon: "notes", badge: count.notes },
     { key: "sources", href: "/panel/fuentes", label: p.nav.sources, icon: "sources" },
-    { key: "readers", href: "/panel/lectores", label: p.nav.readers, icon: "readers" },
+    { key: "traffic", href: "/panel/trafico", label: p.nav.traffic, icon: "traffic" },
     { key: "roadmap", href: "/panel/roadmap", label: p.nav.roadmap, icon: "roadmap" },
   ];
   const sectionTitle = title ?? items.find((i) => i.key === active)?.label ?? p.title;

@@ -35,6 +35,8 @@ export function esRobot(userAgent: string | null | undefined): boolean {
 export const MINUTOS_EN_LINEA = 5;
 /** Cuánto se guarda el detalle de las visitas. Lo viejo se borra solo. */
 export const DIAS_DE_HISTORIAL = 120;
+/** Tope de segundos que puede sumar un solo aviso del sensor (el sensor avisa cada 2 minutos). */
+export const MAX_SEGUNDOS_POR_AVISO = 180;
 
 /**
  * Huella anónima del visitante para el día de hoy. No se puede deshacer y cambia cada día: sirve
@@ -53,6 +55,25 @@ export async function huellaDelDia(
     .join("");
 }
 
+/**
+ * De dónde llegó quien está leyendo. Es la pregunta que de verdad importa para saber si el trabajo
+ * de posicionamiento sirve: no es lo mismo que Google te mande gente a que entren escribiendo la
+ * dirección.
+ */
+export type Origen = "buscador" | "redes" | "referido" | "directo";
+
+const BUSCADORES = /google|bing|duckduckgo|yahoo|ecosia|brave|yandex|baidu|qwant|startpage/i;
+const REDES =
+  /facebook|instagram|twitter|^t\.co$|x\.com|linkedin|whatsapp|telegram|tiktok|reddit|youtube|pinterest|threads|bsky|mastodon/i;
+
+export function clasificarOrigen(referente: string | null | undefined): Origen {
+  const r = (referente ?? "").trim().toLowerCase();
+  if (!r || r.includes("losupe.com")) return "directo";
+  if (BUSCADORES.test(r)) return "buscador";
+  if (REDES.test(r)) return "redes";
+  return "referido";
+}
+
 export type VisitaEntrante = {
   ruta: string;
   lang: string | null;
@@ -60,9 +81,17 @@ export type VisitaEntrante = {
   referente: string | null;
   ip: string;
   userAgent: string;
+  /** Segundos leídos desde el aviso anterior. */
+  segundos?: number;
 };
 
-/** Anota una visita. Nunca lanza: un contador jamás puede tumbar una página. */
+/**
+ * Anota (o actualiza) una lectura. Nunca lanza: un contador jamás puede tumbar una página.
+ *
+ * UNA FILA POR LECTURA, no por cada aviso del sensor: la misma persona leyendo la misma nota el
+ * mismo día es **una** lectura, y lo que va cambiando es cuánto tiempo lleva. Así el tiempo de
+ * lectura se puede sumar de verdad y la cuenta de lectores no se infla con los avisos periódicos.
+ */
 export async function anotarVisita(
   db: D1Database,
   v: VisitaEntrante,
@@ -71,12 +100,19 @@ export async function anotarVisita(
   if (esRobot(v.userAgent)) return false;
   const ruta = v.ruta.slice(0, 300);
   if (!ruta.startsWith("/")) return false;
+  // Un aviso no puede sumar más tiempo del que hay entre dos avisos: así una pestaña que devuelve
+  // un número absurdo no ensucia las cuentas.
+  const segundos = Math.max(0, Math.min(Math.round(v.segundos ?? 0), MAX_SEGUNDOS_POR_AVISO));
   try {
     const visitante = await huellaDelDia(v.ip, v.userAgent, ahora);
     await db
       .prepare(
-        `INSERT INTO visitas (id, ts, dia, pais, ruta, lang, visitante, referente)
-         VALUES (?1, ${SQL_NOW}, ?2, ?3, ?4, ?5, ?6, ?7)`,
+        `INSERT INTO visitas (id, ts, dia, pais, ruta, lang, visitante, referente, origen, segundos)
+         VALUES (?1, ${SQL_NOW}, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
+         ON CONFLICT(dia, visitante, ruta) DO UPDATE SET
+           ts = ${SQL_NOW},
+           segundos = segundos + ?9,
+           pais = COALESCE(visitas.pais, excluded.pais)`,
       )
       .bind(
         crypto.randomUUID(),
@@ -86,6 +122,8 @@ export async function anotarVisita(
         v.lang === "en" ? "en" : "es",
         visitante,
         v.referente ? v.referente.slice(0, 200) : null,
+        clasificarOrigen(v.referente),
+        segundos,
       )
       .run();
     return true;

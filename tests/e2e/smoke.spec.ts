@@ -891,13 +891,15 @@ test("el sensor de lectores avisa desde la página, no desde el servidor", async
   expect(avisos[0]?.metodo).toBe("POST");
   const cuerpo = JSON.parse(avisos[0]?.cuerpo || "{}") as Record<string, unknown>;
   expect(cuerpo.ruta).toBe("/es");
+  // Y manda el tiempo leído, que es lo que permite saber cuánto se queda la gente en cada nota.
+  expect(cuerpo).toHaveProperty("segundos");
   // Y no se manda nada personal desde el navegador.
   expect(JSON.stringify(cuerpo)).not.toMatch(/ip|cookie|email/i);
 });
 
-test("el contador de lectores solo lo ve el dueño", async ({ page, context }) => {
+test("el contador de tráfico solo lo ve el dueño", async ({ page, context }) => {
   await context.clearCookies();
-  await page.goto("/panel/lectores");
+  await page.goto("/panel/trafico");
   await expect(page).toHaveURL(/\/panel\/entrar$/);
 });
 
@@ -939,4 +941,35 @@ test("los formularios públicos rechazan un envío de robot", async ({ request, 
   await page.goto("/es/publica");
   await expect(page.locator('form[action="/datos/pedido"] input[name="pase"]')).toHaveCount(1);
   await expect(page.locator('form[action="/datos/pedido"] input[name="web"]')).toHaveCount(1);
+});
+
+test("panel: la sección de tráfico tiene el historial completo", async ({ page, isMobile }) => {
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/panel/entrar");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  // Desde la barra lateral, con su nombre propio
+  await page.goto("/panel");
+  if (isMobile) await abrirMenuPanel(page);
+  const side = page.getByRole("navigation", { name: "Panel de losupe" }).last();
+  await side.getByRole("link", { name: /Tráfico/ }).click();
+  await expect(page).toHaveURL(/\/panel\/trafico$/);
+
+  // Los seis periodos que pidió Richard
+  for (const t of [
+    "Hoy",
+    "Ayer",
+    "Últimos 7 días",
+    "7 días anteriores",
+    "Últimos 30 días",
+    "30 días anteriores",
+  ]) {
+    await expect(page.getByText(t, { exact: true }).first()).toBeVisible();
+  }
+  // Y las cuatro preguntas: qué leyeron, por dónde llegaron, desde dónde y cuánto tiempo
+  await expect(page.getByRole("heading", { name: "Lo más leído" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Por dónde llegan" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "De dónde nos leen" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Día a día/ })).toBeVisible();
+  await expect(page.getByText("Tiempo medio").first()).toBeVisible();
 });
