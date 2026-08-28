@@ -150,11 +150,12 @@ describe("historial de tráfico", () => {
       userAgent: NAVEGADOR,
       segundos: 45,
     });
-    const insert = db.calls.find((c) => c.sql.includes("INSERT INTO visitas"));
-    // La misma persona leyendo la misma nota el mismo día es UNA lectura con más tiempo, no dos.
-    expect(insert?.sql).toContain("ON CONFLICT");
-    expect(insert?.sql).toContain("segundos = segundos +");
-    expect(insert?.params).toContain(45);
+    // La misma persona leyendo la misma nota el mismo día es UNA lectura con más tiempo, no dos:
+    // primero se intenta sumar el tiempo a la que ya existe, y solo si no había ninguna se crea.
+    const upd = db.calls.find((c) => c.sql.startsWith("UPDATE visitas"));
+    expect(upd?.sql).toContain("segundos = segundos +");
+    expect(upd?.params).toContain(45);
+    expect(upd?.sql).toContain("WHERE dia = ?1 AND visitante = ?2 AND ruta = ?3");
   });
 
   it("un aviso no puede sumar un tiempo absurdo", async () => {
@@ -169,9 +170,9 @@ describe("historial de tráfico", () => {
       userAgent: NAVEGADOR,
       segundos: 999_999,
     });
-    const insert = db.calls.find((c) => c.sql.includes("INSERT INTO visitas"));
-    expect(insert?.params).toContain(MAX_SEGUNDOS_POR_AVISO);
-    expect(insert?.params).not.toContain(999_999);
+    const escritura = db.calls.find((c) => c.sql.includes("visitas"));
+    expect(escritura?.params).toContain(MAX_SEGUNDOS_POR_AVISO);
+    expect(escritura?.params).not.toContain(999_999);
   });
 
   it("los periodos se comparan con el anterior y el tiempo se lee en palabras", async () => {

@@ -233,9 +233,6 @@ CREATE INDEX IF NOT EXISTS idx_visitas_dia ON visitas(dia);
 CREATE INDEX IF NOT EXISTS idx_visitas_ts ON visitas(ts DESC);
 CREATE INDEX IF NOT EXISTS idx_visitas_pais ON visitas(dia, pais);
 CREATE INDEX IF NOT EXISTS idx_visitas_ruta ON visitas(dia, ruta);
--- Una fila por LECTURA (una persona, una nota, un dia), no por cada aviso del sensor: asi se puede
--- ir sumando el tiempo que lleva leyendo sin inflar la cuenta de visitas.
-CREATE UNIQUE INDEX IF NOT EXISTS idx_visitas_lectura ON visitas(dia, visitante, ruta);
 
 -- Sesiones del panel (se borran al cerrar sesión) e intentos de entrada (límite por IP).
 CREATE TABLE IF NOT EXISTS panel_sessions (
@@ -478,3 +475,9 @@ UPDATE authors SET expertise_es = 'Criptomonedas, blockchain, emprendimiento y p
 -- si sigue en el valor anterior: si Richard lo cambia a mano en el panel, se respeta.
 UPDATE settings SET value = '4', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
  WHERE key = 'notes_per_day' AND value IN ('3', '6');
+
+-- Indice para encontrar deprisa la lectura de una persona en una pagina y un dia. NO es unico a
+-- proposito: crear un indice unico sobre datos que ya existen falla si hay repetidos, y con el se
+-- cae TODO el resto del esquema (paso el 28 ago 2026). La unicidad se resuelve en el codigo, con un
+-- UPDATE y, solo si no habia nada que actualizar, un INSERT. Ver anotarVisita() en lectores.ts.
+CREATE INDEX IF NOT EXISTS idx_visitas_lectura ON visitas(dia, visitante, ruta);

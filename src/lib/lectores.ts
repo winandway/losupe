@@ -105,19 +105,29 @@ export async function anotarVisita(
   const segundos = Math.max(0, Math.min(Math.round(v.segundos ?? 0), MAX_SEGUNDOS_POR_AVISO));
   try {
     const visitante = await huellaDelDia(v.ip, v.userAgent, ahora);
+    const dia = diaLocal(ahora);
+    const pais = (v.pais ?? "").slice(0, 2).toUpperCase() || null;
+    // Primero se intenta sumar el tiempo a la lectura que ya existe. Si no había ninguna, se crea.
+    // Se hace así, y no con un índice único y ON CONFLICT, porque crear un índice único sobre datos
+    // que ya existen falla si hay repetidos — y con él se cae el esquema entero (28 ago 2026).
+    const upd = await db
+      .prepare(
+        `UPDATE visitas SET ts = ${SQL_NOW}, segundos = segundos + ?4, pais = COALESCE(pais, ?5)
+         WHERE dia = ?1 AND visitante = ?2 AND ruta = ?3`,
+      )
+      .bind(dia, visitante, ruta, segundos, pais)
+      .run();
+    if ((upd.meta?.changes ?? 0) > 0) return true;
+
     await db
       .prepare(
         `INSERT INTO visitas (id, ts, dia, pais, ruta, lang, visitante, referente, origen, segundos)
-         VALUES (?1, ${SQL_NOW}, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
-         ON CONFLICT(dia, visitante, ruta) DO UPDATE SET
-           ts = ${SQL_NOW},
-           segundos = segundos + ?9,
-           pais = COALESCE(visitas.pais, excluded.pais)`,
+         VALUES (?1, ${SQL_NOW}, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)`,
       )
       .bind(
         crypto.randomUUID(),
-        diaLocal(ahora),
-        (v.pais ?? "").slice(0, 2).toUpperCase() || null,
+        dia,
+        pais,
         ruta,
         v.lang === "en" ? "en" : "es",
         visitante,
