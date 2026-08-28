@@ -1,60 +1,39 @@
-# Plan: preparar losupe.com para Google Noticias
+# Plan: la parrilla del día (2 actualidad + 2 curiosidades)
 
-Auditoría previa (24 ago 2026) — lo que **ya estaba hecho** y no se toca:
+## Qué pasó, con los datos delante
 
-- `NewsArticle` / `Article` en JSON-LD con `datePublished` y `dateModified`.
-- `https://losupe.com/news-sitemap.xml` con ventana de 48 h y etiquetas `<news:news>`.
-- La firma de cada nota ya enlaza al perfil del autor (`Byline` → `/es/autor/...`).
-- Páginas de acerca, política editorial, privacidad y términos.
+Siete notas seguidas de curiosidades y efemérides, cero de actualidad desde el 24 de agosto. Dos
+causas, las dos demostradas:
 
-Lo que falta, en orden de importancia para el visto bueno de Google:
+1. **Fallo aritmético en el reparto.** `elegirGenero` hacía `notasHoy % 10 < 4`. Con tres notas al
+   día el contador vale 0, 1 y 2 — y los tres son menores que 4, así que **siempre** salía «propia».
+   El reparto 40/60 se pensó sobre diez notas seguidas, pero se reinicia cada día en cero y nunca
+   llegaba al umbral.
+2. **La efeméride mandaba sobre todo.** `if (hayEfemerideRedonda) return "efemeride"` iba antes que
+   cualquier otra cosa, y hay aniversarios redondos casi a diario.
 
-- [x] 1. Página de **Contacto** dedicada y bilingüe, con formulario que llega de verdad al correo,
-      dirección de correo visible, entidad responsable y tiempo de respuesta.
-- [x] 2. Página de **Equipo editorial** ("quiénes somos" ampliada): misión del medio, cómo
-      trabajamos, y la ficha de cada persona de la redacción con foto, cargo y enlace a su perfil.
-- [x] 3. **Redes y credenciales de los autores**: columnas nuevas en `authors` (LinkedIn, X, correo
-      profesional), mostradas en su perfil y publicadas en JSON-LD como `sameAs`, que es lo que
-      Google cruza para verificar a una persona.
-- [x] 4. **Enlaces institucionales visibles**: Contacto y Equipo en el pie de página y en el menú,
-      en los dos idiomas.
-- [x] 5. **Datos estructurados al día**: `ProfilePage` con las redes, `ContactPage` en la de
-      contacto, y comprobar que las fechas salen con zona horaria explícita.
-- [x] 6. **Frescura de la portada**: que lo reciente mande y el archivo viejo no se mezcle con la
-      actualidad del día.
-- [x] 7. **Mapas del sitio**: incluir las páginas nuevas en `sitemap.xml` y comprobar que
-      `news-sitemap.xml` sigue correcto.
-- [x] 8. **Candado y documentación**: pruebas que se pongan rojas si desaparece una página
-      institucional o si un autor se queda sin perfil enlazado; entrada en `docs/candados.md` y
-      guía en `docs/`.
-- [x] 9. **Verificación completa y publicación**: `npm run verify`, pruebas de navegador en móvil,
-      capturas y `git push`.
+## El arreglo: una escaleta, no un porcentaje
 
-Queda para Richard (no es trabajo mío): alta en Google Publisher Center, y darme los datos que solo
-él tiene — correo de contacto público, entidad legal y los perfiles reales de LinkedIn/X del equipo.
+Un porcentaje que se calcula sobre un contador que se reinicia es frágil por diseño. Una redacción
+no trabaja así: trabaja con una **escaleta** — cada franja tiene su género asignado de antemano.
 
----
+| Franja   | Hora (Este) | Género                      |
+| -------- | ----------- | --------------------------- |
+| Mañana   | 7:00        | Actualidad                  |
+| Mediodía | 12:00       | Curiosidades / pieza propia |
+| Tarde    | 17:00       | Actualidad                  |
+| Noche    | 21:00       | Curiosidades / pieza propia |
 
-# Plan: la mesa de redacción (el jefe que decide QUÉ se escribe)
+Cuatro notas: **2 de actualidad y 2 de curiosidades**, exacto y previsible.
 
-Pedido por Richard el 24 ago 2026, viendo que el robot escribe bien pero solo reacciona a lo que le
-traen las fuentes: _«deberíamos tener un cerebro, que sería como el gerente que prepara todo antes de
-llegar a la IA que escribe… el que manda al redactor»_. Y con un género concreto que hoy no
-existe: **las curiosidades y las listas**, que es lo que la gente lee y comparte.
-
-Lo que hoy se pierde: los diez años sin Juan Gabriel, las lluvias de Venezuela, «10 curiosidades
-sobre las ventas por Internet», «los 10 errores más grandes de las empresas chinas».
-
-- [x] 10. **La mesa de redacción** (`mesa.ts`): decide el género de cada turno —actualidad, pieza
-      propia o efeméride— con un reparto configurable, en vez de escribir siempre lo que trajo el RSS.
-- [x] 11. **Banco de ideas propias** (`ideas.ts`): plantillas de curiosidades y listas por sección
-      («10 curiosidades sobre…», «los 10 errores más grandes de…»), con los temas de cada sección.
-- [x] 12. **Efemérides del día**: qué se cumple hoy, desde una fuente pública y citable, para no
-      volver a perder un aniversario que le importa a la gente.
-- [x] 13. **El redactor sabe escribir listas**: un modo propio en el prompt, porque una lista de diez
-      curiosidades no se escribe como una noticia.
-- [x] 14. **Todo verificable**: las curiosidades también citan de dónde salen. Nada inventado, que es
-      justo el riesgo de este género.
-- [x] 15. **Control en el panel**: cuánto de actualidad y cuánto de piezas propias, y el banco de
-      ideas a la vista.
-- [x] 16. **Candado, documentación, pruebas y publicación.**
+- [x] 1. Cuarta franja (21:00) y **género asignado a cada franja** en `franjas.ts`.
+- [x] 2. `elegirGenero` obedece a la escaleta; fuera el cálculo por porcentaje.
+- [x] 3. **La efeméride deja de mandar**: solo puede ocupar un hueco de curiosidades, y máximo una
+      al día. Una efeméride no puede comerse la actualidad.
+- [x] 4. **Si el género asignado no tiene material, se cae al otro** y queda anotado. Nunca se
+      pierde una nota por no tener candidato del género que tocaba.
+- [x] 5. Cuota diaria a 4 y cron con la hora nueva (en `yadominios.json`, que es el que manda).
+- [x] 6. El panel muestra la escaleta: qué género toca en cada franja y cuál ya salió.
+- [x] 7. Candados: que con la escaleta salgan 2 y 2, que la efeméride no desplace la actualidad, y
+      que el fallo aritmético no pueda volver.
+- [x] 8. Verificación completa, documentación y publicación.

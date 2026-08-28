@@ -359,7 +359,7 @@ export const es = {
       of: "de",
       schedule: "Horario de publicación",
       scheduleHint:
-        "Hora del Este de EE. UU.: {hora}. Una nota por franja, cada una firmada por una persona distinta.",
+        "Hora del Este de EE. UU.: {hora}. Cuatro notas al día: dos de actualidad y dos de curiosidades, cada una firmada por una persona distinta.",
       quota: "Notas del robot hoy",
       autoPublish: "Publicación automática",
       autoOn: "Publica sola",

@@ -37,7 +37,7 @@ import {
   limpiarCandidatosFueraDeTema,
 } from "./universal";
 import { SQL_NOW } from "../sql-time";
-import { FRANJAS, franjaActiva, NOMBRE_FRANJA, partesEnZona, ZONA } from "./franjas";
+import { FRANJAS, franjaActiva, NOMBRE_FRANJA, NOMBRE_GENERO, partesEnZona, ZONA } from "./franjas";
 import { TICK_KEY } from "./heartbeat";
 import { encargoDelTurno, reglasDeLaMesa } from "./mesa";
 import { buscarArticulos } from "./wikipedia";
@@ -130,7 +130,7 @@ export type RobotStatus = {
   /** A qué horas publica el diario (hora del Este de EE. UU.) y en cuál estamos. */
   horario: {
     zona: string;
-    franjas: { key: string; hour: number; nombre: string }[];
+    franjas: { key: string; hour: number; nombre: string; genero: string }[];
     ahora: string;
     franjaAbierta: string | null;
     turnoHecho: string | null;
@@ -226,7 +226,12 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
     budget: { limitUsd: limit, spentTodayUsd: spent },
     horario: {
       zona: ZONA,
-      franjas: FRANJAS.map((f) => ({ key: f.key, hour: f.hour, nombre: NOMBRE_FRANJA[f.key].es })),
+      franjas: FRANJAS.map((f) => ({
+        key: f.key,
+        hour: f.hour,
+        nombre: NOMBRE_FRANJA[f.key].es,
+        genero: NOMBRE_GENERO[f.genero].es,
+      })),
       ahora: `${String(partesEnZona(now).hh).padStart(2, "0")}:${String(partesEnZona(now).mm).padStart(2, "0")}`,
       franjaAbierta: franjaActiva(now)?.key ?? null,
       turnoHecho: (await getSetting(db, TICK_KEY)) || null,
@@ -736,6 +741,9 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
         // propia (curiosidades, errores, guía) o la efeméride del día. Antes solo existía lo
         // primero, y por eso se perdían notas que la gente estaba esperando.
         const encargo = await encargoDelTurno(db, {
+          // La franja de este momento decide el género (la escaleta). Si la corrida es a mano y
+          // estamos fuera de horario, `encargoDelTurno` alterna por posición del día.
+          franja: franjaActiva(now),
           notasHoy: todayTotal,
           hayActualidad: Boolean(nextCandidate),
           titularesRecientes: await titularesRecientes(db),

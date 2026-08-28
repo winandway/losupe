@@ -16,7 +16,8 @@ on:
     #   7:00 ET -> 11:00 UTC (verano) / 12:00 UTC (invierno)
     #  12:00 ET -> 16:00 / 17:00
     #  17:00 ET -> 21:00 / 22:00
-    - cron: "5 11,12,16,17,21,22 * * *"
+    #  21:00 ET -> 01:00 UTC (verano) / 02:00 UTC (invierno) — del día siguiente
+    - cron: "5 11,12,16,17,21,22,1,2 * * *"
   workflow_dispatch: # y a mano desde la pestaña Actions, cuando haga falta
 
 # Si una corrida anterior sigue viva, no se lanza otra encima.

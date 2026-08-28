@@ -8,6 +8,7 @@ import {
 } from "@/lib/robot/efemerides";
 import { ideasDeSeccion, siguienteIdea, temaDe, todasLasIdeas } from "@/lib/robot/ideas";
 import { elegirGenero, encargoDelTurno, RATIO_PROPIAS_POR_DEFECTO } from "@/lib/robot/mesa";
+import { FRANJAS } from "@/lib/robot/franjas";
 import { FakeD1 } from "./fake-d1";
 
 const REGLAS = { ratioPropias: RATIO_PROPIAS_POR_DEFECTO, efemerides: true };
@@ -104,29 +105,50 @@ describe("efemérides: qué se cumple hoy", () => {
   });
 });
 
-describe("la mesa reparte el trabajo del día", () => {
-  it("una efeméride redonda MANDA: solo se puede contar hoy", () => {
-    expect(elegirGenero(0, REGLAS, true, true)).toBe("efemeride");
-    expect(elegirGenero(7, REGLAS, true, true)).toBe("efemeride");
+describe("la escaleta manda: 2 de actualidad y 2 de curiosidades", () => {
+  const F = Object.fromEntries(FRANJAS.map((f) => [f.key, f])) as Record<
+    string,
+    (typeof FRANJAS)[number]
+  >;
+
+  it("EL FALLO DEL 28 AGO 2026: siete notas seguidas de curiosidades, cero de actualidad", () => {
+    // La causa era aritmética: `notasHoy % 10 < 4` con tres notas al día da 0, 1 y 2 — los tres
+    // menores que 4, así que SIEMPRE salía «propia». Ahora manda la franja, y esto lo demuestra.
+    const dia = FRANJAS.map((f, i) => elegirGenero(f, i, REGLAS, true, true));
+    expect(dia).toEqual(["actualidad", "efemeride", "actualidad", "efemeride"]);
+    // Dos huecos de actualidad, pase lo que pase con las efemérides.
+    expect(dia.filter((g) => g === "actualidad")).toHaveLength(2);
   });
 
-  it("sin actualidad no se queda de brazos cruzados: escribe una propia", () => {
-    expect(elegirGenero(5, REGLAS, false, false)).toBe("propia");
+  it("una efeméride NO puede comerse la actualidad", () => {
+    // Antes: `if (hayEfemerideRedonda) return "efemeride"` iba antes que nada. Y hay aniversarios
+    // redondos casi a diario, así que se llevaba por delante todas las noticias.
+    expect(elegirGenero(F.manana!, 0, REGLAS, true, true)).toBe("actualidad");
+    expect(elegirGenero(F.tarde!, 2, REGLAS, true, true)).toBe("actualidad");
+    // En su hueco sí, porque un «diez años sin» solo se puede contar hoy.
+    expect(elegirGenero(F.mediodia!, 1, REGLAS, true, true)).toBe("efemeride");
+    expect(elegirGenero(F.noche!, 3, REGLAS, true, true)).toBe("efemeride");
   });
 
-  it("reparte según el ajuste, sin azar (mismo día, mismo resultado)", () => {
-    const generos = Array.from({ length: 10 }, (_, i) => elegirGenero(i, REGLAS, false, true));
-    // Con 0.4, cuatro de cada diez son propias.
-    expect(generos.filter((g) => g === "propia")).toHaveLength(4);
-    expect(generos.filter((g) => g === "actualidad")).toHaveLength(6);
-    // Y es estable: la misma entrada da la misma salida.
-    expect(elegirGenero(3, REGLAS, false, true)).toBe(elegirGenero(3, REGLAS, false, true));
+  it("si toca actualidad y no hay material, se escribe una propia en vez de perder la nota", () => {
+    expect(elegirGenero(F.manana!, 0, REGLAS, false, false)).toBe("propia");
   });
 
-  it("con el ajuste en cero, solo actualidad", () => {
-    const soloNoticias = { ratioPropias: 0, efemerides: false };
-    for (let i = 0; i < 10; i++)
-      expect(elegirGenero(i, soloNoticias, true, true)).toBe("actualidad");
+  it("con las efemérides apagadas, el hueco de curiosidades sigue siendo de curiosidades", () => {
+    const sinEfemerides = { ratioPropias: 0.4, efemerides: false };
+    expect(elegirGenero(F.mediodia!, 1, sinEfemerides, true, true)).toBe("propia");
+    expect(elegirGenero(F.manana!, 0, sinEfemerides, true, true)).toBe("actualidad");
+  });
+
+  it("a mano, fuera de franja, también alterna 50/50", () => {
+    const manual = [0, 1, 2, 3].map((i) => elegirGenero(null, i, REGLAS, false, true));
+    expect(manual).toEqual(["actualidad", "propia", "actualidad", "propia"]);
+  });
+
+  it("es estable: la misma situación da siempre la misma decisión", () => {
+    expect(elegirGenero(F.manana!, 0, REGLAS, true, true)).toBe(
+      elegirGenero(F.manana!, 0, REGLAS, true, true),
+    );
   });
 
   it("el encargo trae el tema resuelto, no solo el género", async () => {

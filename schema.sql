@@ -366,7 +366,7 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('default_author', 'andreea-blidar'),
   ('robot_paused', '1'),
   ('daily_budget_usd', '1.00'),
-  ('notes_per_day', '6'),
+  ('notes_per_day', '4'),
   ('languages', 'es,en'),
   ('timezone', 'America/New_York'),
   ('evergreen_ratio', '0.5'),

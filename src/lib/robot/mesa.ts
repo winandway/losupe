@@ -1,6 +1,7 @@
 import type { SectionId } from "@/lib/sections";
 import { getSetting } from "./budget";
 import { efemeridesDeHoy, titularDeEfemeride, type Efemeride } from "./efemerides";
+import { franjaActiva, type Franja } from "./franjas";
 import { siguienteIdea, type Idea } from "./ideas";
 
 /**
@@ -19,8 +20,16 @@ import { siguienteIdea, type Idea } from "./ideas";
  *                No caducan, se leen enteras y se comparten.
  *   EFEMÉRIDE    qué se cumple hoy, cuando toca un aniversario redondo.
  *
- * El reparto se ajusta en el panel. La efeméride manda cuando hay una redonda: un «diez años sin»
- * solo se puede publicar un día al año, y si se pasa, se pasó.
+ * QUIÉN DECIDE EL GÉNERO: la escaleta (`FRANJAS` en `franjas.ts`), no un porcentaje. Cada franja
+ * tiene el suyo asignado — 2 de actualidad y 2 de curiosidades al día.
+ *
+ * Antes esto era un porcentaje y salió mal: el cálculo se hacía sobre un contador que se reinicia
+ * cada día, así que con tres notas nunca llegaba al umbral y **todas** salían de curiosidades.
+ * Siete seguidas, cero de actualidad (25-28 ago 2026). Una redacción trabaja con escaleta, no con
+ * porcentajes.
+ *
+ * Y la efeméride **ya no manda sobre todo**: solo puede ocupar un hueco de curiosidades. Un «diez
+ * años sin» es una nota estupenda, pero no puede comerse la actualidad del día.
  */
 
 export type GeneroEncargo = "actualidad" | "propia" | "efemeride";
@@ -30,7 +39,10 @@ export type Encargo =
   | { genero: "propia"; idea: Idea }
   | { genero: "efemeride"; efemeride: Efemeride; titular: string; sectionId: SectionId };
 
-/** Cuántas de cada diez notas propias del robot son piezas de curiosidades y listas. */
+/**
+ * Se conserva por compatibilidad con los ajustes guardados, pero **ya no decide nada**: el género
+ * lo pone la escaleta. Se dejó a propósito para que un ajuste viejo en la base no rompa nada.
+ */
 export const RATIO_PROPIAS_POR_DEFECTO = 0.4;
 
 export type ReglasMesa = {
@@ -62,18 +74,27 @@ export async function reglasDeLaMesa(db: D1Database): Promise<ReglasMesa> {
  * día sin llevar una cuenta aparte que pueda desincronizarse.
  */
 export function elegirGenero(
+  franja: Franja | null,
   notasHoy: number,
   reglas: ReglasMesa,
   hayEfemerideRedonda: boolean,
   hayActualidad: boolean,
 ): GeneroEncargo {
-  // Una efeméride redonda solo se puede contar HOY. Si la hay, manda.
+  // 1) Manda la escaleta. Si la corrida es a mano (fuera de franja), se alterna por posición del
+  //    día, que da el mismo reparto: par → actualidad, impar → curiosidades.
+  const toca: Franja["genero"] = franja
+    ? franja.genero
+    : notasHoy % 2 === 0
+      ? "actualidad"
+      : "propia";
+
+  // 2) Si toca actualidad y la hay, se escribe actualidad. Punto. La efeméride NO se cuela aquí:
+  //    ese fue el fallo que dejó al diario siete notas sin una sola noticia.
+  if (toca === "actualidad") return hayActualidad ? "actualidad" : "propia";
+
+  // 3) En el hueco de curiosidades sí manda la efeméride, porque solo se puede contar HOY.
   if (reglas.efemerides && hayEfemerideRedonda) return "efemeride";
-  if (!hayActualidad) return "propia";
-  // Reparto estable: con 0.4, de cada 10 notas 4 son propias. Sin azar, para que sea previsible.
-  const cadaCuantas = Math.round(reglas.ratioPropias * 10);
-  if (cadaCuantas <= 0) return "actualidad";
-  return notasHoy % 10 < cadaCuantas ? "propia" : "actualidad";
+  return "propia";
 }
 
 /**
@@ -89,6 +110,8 @@ export async function encargoDelTurno(
     hayActualidad: boolean;
     titularesRecientes: readonly string[];
     seccionesConCupo: readonly SectionId[];
+    /** La franja de este turno. Si no se pasa, se deduce del reloj. */
+    franja?: Franja | null;
     ahora?: Date;
     fetchImpl?: typeof fetch;
   },
@@ -97,7 +120,9 @@ export async function encargoDelTurno(
   const ahora = opts.ahora ?? new Date();
 
   let efemeride: Efemeride | null = null;
-  if (reglas.efemerides && opts.seccionesConCupo.length > 0) {
+  const huecoDeCuriosidades =
+    (opts.franja ?? franjaActiva(ahora))?.genero !== "actualidad" || !opts.hayActualidad;
+  if (reglas.efemerides && huecoDeCuriosidades && opts.seccionesConCupo.length > 0) {
     const lista = await efemeridesDeHoy(ahora, opts.fetchImpl);
     efemeride = lista.find((e) => e.redondo && opts.seccionesConCupo.includes(e.sectionId)) ?? null;
     // Y que no la hayamos contado ya (el robot corre tres veces al día).
@@ -111,7 +136,14 @@ export async function encargoDelTurno(
     }
   }
 
-  const genero = elegirGenero(opts.notasHoy, reglas, Boolean(efemeride), opts.hayActualidad);
+  const franja = opts.franja ?? franjaActiva(ahora);
+  const genero = elegirGenero(
+    franja,
+    opts.notasHoy,
+    reglas,
+    Boolean(efemeride),
+    opts.hayActualidad,
+  );
 
   if (genero === "efemeride" && efemeride) {
     return {

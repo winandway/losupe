@@ -359,7 +359,7 @@ export const en: Dict = {
       of: "of",
       schedule: "Publishing schedule",
       scheduleHint:
-        "US Eastern time: {hora}. One story per slot, each signed by a different writer.",
+        "US Eastern time: {hora}. Four stories a day: two breaking news, two lists, each signed by a different writer.",
       quota: "Robot stories today",
       autoPublish: "Auto-publish",
       autoOn: "Publishes on its own",

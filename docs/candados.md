@@ -858,3 +858,43 @@ diario…`, 23 ago 2026).
   pierde el tiempo de lectura); no cuentes el tiempo con la pestaña oculta; y esto sigue sin Google
   Analytics, sin cookies y sin guardar direcciones IP — es lo que permite no poner cartel de
   cookies.
+
+## 32. Siete notas seguidas de curiosidades y cero de actualidad
+
+- **Cómo se vio (28 ago 2026):** Richard: _«losupe se quedó con el tema de las curiosidades… pero no
+  podemos dejar por fuera la actualidad, política, música, IA. Hubo un par de noticias y luego saltó
+  a curiosidades y se quedó ahí»_. Los datos le daban la razón: **siete notas seguidas** de
+  curiosidades y efemérides, cero de actualidad desde el 24 de agosto.
+- **CAUSA 1, y es aritmética.** `elegirGenero` hacía `notasHoy % 10 < Math.round(ratio * 10)`. Con
+  `ratio = 0.4` el umbral es 4, y con **tres notas al día** el contador vale 0, 1 y 2 — los tres
+  menores que 4. Así que **siempre** salía «propia». El reparto 40/60 se pensó sobre diez notas
+  seguidas, pero el contador **se reinicia cada día en cero** y nunca llegaba al umbral. Un
+  porcentaje calculado sobre un contador que se reinicia es frágil por diseño.
+- **CAUSA 2, que lo agravaba.** `if (reglas.efemerides && hayEfemerideRedonda) return "efemeride"`
+  iba **antes que cualquier otra cosa**. Y hay aniversarios redondos casi a diario, así que se
+  llevaba por delante hasta los huecos que hubieran sido de actualidad.
+- **EL ARREGLO: una escaleta, no un porcentaje.** Una redacción no reparte con porcentajes: reparte
+  con una escaleta, y cada franja tiene su género asignado de antemano.
+
+  | Franja   | Hora (Este) | Género       |
+  | -------- | ----------- | ------------ |
+  | Mañana   | 7:00        | Actualidad   |
+  | Mediodía | 12:00       | Curiosidades |
+  | Tarde    | 17:00       | Actualidad   |
+  | Noche    | 21:00       | Curiosidades |
+
+  Cuatro notas al día: **2 y 2**, exacto, previsible y comprobable de un vistazo.
+
+- **Y la efeméride deja de mandar:** solo puede ocupar un hueco de curiosidades. Un «diez años sin»
+  es una nota estupenda, pero no puede comerse la actualidad del día.
+- **Si toca actualidad y no hay material, se escribe una propia** y queda anotado: nunca se pierde
+  una nota por no tener candidato del género que tocaba.
+- **A mano, fuera de franja**, se alterna por posición del día (par actualidad, impar curiosidades),
+  que da el mismo reparto.
+- **Candado:** en `tests/unit/mesa.test.ts` → «la escaleta manda»: el día completo da
+  `[actualidad, efeméride, actualidad, efeméride]` **incluso con efeméride disponible**, y hay una
+  prueba dedicada a que una efeméride no pueda comerse la actualidad. En `franjas.test.ts`, que son
+  cuatro franjas con dos de cada género.
+- **Qué NO tocar:** no vuelvas a repartir géneros con un porcentaje sobre un contador que se
+  reinicia; no pongas la efeméride antes que la escaleta; y si añades una franja, dale su género —
+  la prueba exige que haya el mismo número de cada uno.

@@ -8,12 +8,13 @@
  *      cambiaba, la cuota se abría y el robot disparaba las tres seguidas.
  *   2. El latido solo miraba «¿pasó una hora desde la última corrida?». Nunca miraba el reloj.
  *
- * Ahora el robot publica en TRES FRANJAS fijas, en hora del Este de Estados Unidos, elegidas con
- * los picos de lectura de los medios:
+ * Ahora el robot publica en CUATRO FRANJAS fijas, en hora del Este de Estados Unidos, elegidas con
+ * los picos de lectura de los medios, y **cada una con su género asignado** (ver `FRANJAS`):
  *
- *   07:00  mañana    · la gente revisa noticias antes de las 8 y otra vez a las 9
- *   12:00  mediodía  · pico del almuerzo
- *   17:00  tarde     · salida del trabajo, justo antes del rato de más tráfico (7–9 PM)
+ *   07:00  mañana    · actualidad. La gente revisa noticias antes de las 8 y otra vez a las 9
+ *   12:00  mediodía  · curiosidades. Pico del almuerzo, se lee con calma
+ *   17:00  tarde     · actualidad. Salida del trabajo: «qué ha pasado hoy»
+ *   21:00  noche     · curiosidades. El rato de más tráfico de internet (7–9 PM)
  *
  * Fuentes de los horarios: Pew Research (66 % consume noticias entre 5 y 9 PM; 56 % antes de las
  * 8 AM), Public Radio Biz Lab (picos a primera hora, 9 AM, mediodía y 5 PM) y Sprout Social 2026
@@ -29,16 +30,34 @@ export const ZONA = "America/New_York";
 
 export type Franja = {
   /** Identificador interno; se guarda en la base para saber qué turno ya salió. */
-  key: "manana" | "mediodia" | "tarde";
+  key: "manana" | "mediodia" | "tarde" | "noche";
   /** Hora local de la zona (0-23). */
   hour: number;
+  /**
+   * QUÉ SE ESCRIBE EN ESTA FRANJA. Esto es la escaleta del diario.
+   *
+   * Antes había un porcentaje («que el 40 % sean piezas propias») y salió mal: el cálculo se hacía
+   * sobre un contador que se reinicia cada día, así que con tres notas nunca llegaba al umbral y
+   * **todas** salían de curiosidades. Siete seguidas, cero de actualidad (25-28 ago 2026).
+   *
+   * Una redacción no trabaja con porcentajes: trabaja con una escaleta. Cada franja tiene su género
+   * asignado de antemano, y así el reparto es exacto y se puede comprobar de un vistazo.
+   */
+  genero: "actualidad" | "propia";
 };
 
-/** Las tres franjas del día, en orden. Una franja = una nota = una firma distinta. */
+/**
+ * LA ESCALETA DEL DÍA: cuatro notas, dos de actualidad y dos de curiosidades.
+ *
+ * La actualidad abre la mañana y vuelve a la salida del trabajo, que es cuando la gente busca «qué
+ * ha pasado». Las piezas propias van al mediodía y a la noche, que es cuando se lee con calma lo
+ * que no caduca. Una franja = una nota = una firma distinta.
+ */
 export const FRANJAS: readonly Franja[] = [
-  { key: "manana", hour: 7 },
-  { key: "mediodia", hour: 12 },
-  { key: "tarde", hour: 17 },
+  { key: "manana", hour: 7, genero: "actualidad" },
+  { key: "mediodia", hour: 12, genero: "propia" },
+  { key: "tarde", hour: 17, genero: "actualidad" },
+  { key: "noche", hour: 21, genero: "propia" },
 ];
 
 /**
@@ -134,4 +153,11 @@ export const NOMBRE_FRANJA: Record<Franja["key"], { es: string; en: string }> = 
   manana: { es: "Mañana (7:00)", en: "Morning (7:00)" },
   mediodia: { es: "Mediodía (12:00)", en: "Midday (12:00)" },
   tarde: { es: "Tarde (17:00)", en: "Afternoon (17:00)" },
+  noche: { es: "Noche (21:00)", en: "Evening (21:00)" },
+};
+
+/** Cómo se le dice a cada género en pantalla. */
+export const NOMBRE_GENERO: Record<Franja["genero"], { es: string; en: string }> = {
+  actualidad: { es: "Actualidad", en: "Breaking news" },
+  propia: { es: "Curiosidades", en: "Lists & trivia" },
 };

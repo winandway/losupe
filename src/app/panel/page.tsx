@@ -149,6 +149,9 @@ export default async function PanelHome({ searchParams }: Props) {
                   >
                     {f.nombre}
                     {hecha ? " ✓" : abierta ? " ●" : ""}
+                    <span className="block text-[10px] font-semibold uppercase tracking-wide opacity-70">
+                      {f.genero}
+                    </span>
                   </li>
                 );
               })}

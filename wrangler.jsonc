@@ -39,7 +39,7 @@
     //   7:00 ET -> 11:00 UTC (verano) / 12:00 UTC (invierno)
     //  12:00 ET -> 16:00 UTC          / 17:00 UTC
     //  17:00 ET -> 21:00 UTC          / 22:00 UTC
-    "crons": ["0 11,12,16,17,21,22 * * *"],
+    "crons": ["0 11,12,16,17,21,22,1,2 * * *"],
   },
   "observability": {
     "enabled": true,

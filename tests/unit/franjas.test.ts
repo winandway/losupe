@@ -60,9 +60,9 @@ describe("franjas horarias del diario", () => {
   });
 
   it("DE MADRUGADA NO SE PUBLICA (el fallo del 24 ago 2026)", () => {
-    for (const t of madrugada) {
-      expect(franjaActiva(t)).toBeNull();
-    }
+    // 11:35 PM ya no es madrugada: entra en la franja de noche, que abre a las 21:00.
+    expect(franjaActiva(madrugada[1]!)).toBeNull(); // 12:49 AM
+    expect(franjaActiva(madrugada[2]!)).toBeNull(); // 1:08 AM
     // Ni a las 3 de la mañana, ni a las 6 (la franja de la mañana abre a las 7)
     expect(franjaActiva(new Date("2026-08-24T07:00:00Z"))).toBeNull(); // 3:00 AM
     expect(franjaActiva(new Date("2026-08-24T10:59:00Z"))).toBeNull(); // 6:59 AM
@@ -79,16 +79,23 @@ describe("franjas horarias del diario", () => {
       ["2026-08-24T19:00:00Z", null], // 3:00 PM
       ["2026-08-24T21:00:00Z", "tarde"], // 5:00 PM
       ["2026-08-24T23:59:00Z", "tarde"], // 7:59 PM
-      ["2026-08-25T00:00:00Z", null], // 8:00 PM, se acabó el día
+      ["2026-08-25T01:00:00Z", "noche"], // 9:00 PM
+      ["2026-08-25T03:59:00Z", "noche"], // 11:59 PM, último minuto
+      ["2026-08-25T04:00:00Z", null], // medianoche: se acabó el día
     ];
     for (const [iso, esperado] of casos) {
       expect(franjaActiva(new Date(iso))?.key ?? null, `en ${iso}`).toBe(esperado);
     }
   });
 
-  it("son tres franjas, separadas y en horas de lectura", () => {
-    expect(FRANJAS.map((f) => f.key)).toEqual(["manana", "mediodia", "tarde"]);
-    expect(FRANJAS.map((f) => f.hour)).toEqual([7, 12, 17]);
+  it("son cuatro franjas, separadas, en horas de lectura y con su género", () => {
+    expect(FRANJAS.map((f) => f.key)).toEqual(["manana", "mediodia", "tarde", "noche"]);
+    expect(FRANJAS.map((f) => f.hour)).toEqual([7, 12, 17, 21]);
+    // LA ESCALETA: dos de actualidad y dos de curiosidades. Es lo que pidió Richard el 28 ago 2026
+    // después de siete notas seguidas de curiosidades y cero de actualidad.
+    expect(FRANJAS.map((f) => f.genero)).toEqual(["actualidad", "propia", "actualidad", "propia"]);
+    expect(FRANJAS.filter((f) => f.genero === "actualidad")).toHaveLength(2);
+    expect(FRANJAS.filter((f) => f.genero === "propia")).toHaveLength(2);
     // Ninguna franja puede pisar a la siguiente: si se solaparan, dos notas saldrían pegadas.
     for (let i = 1; i < FRANJAS.length; i++) {
       const previa = FRANJAS[i - 1]!;
@@ -116,7 +123,8 @@ describe("la configuración de la plataforma va con las franjas", () => {
     };
     const cron = conf.triggers?.crons?.[0] ?? "";
     // Las dos horas UTC posibles de cada franja (verano e invierno)
-    for (const hora of [11, 12, 16, 17, 21, 22]) expect(cron).toContain(String(hora));
+    // Las dos horas UTC de cada una de las CUATRO franjas (verano e invierno).
+    for (const hora of [11, 12, 16, 17, 21, 22, 1, 2]) expect(cron).toContain(String(hora));
     // Y ninguna de madrugada del Este (13, 15, 19 UTC eran del cron viejo de cada 2 horas)
     expect(cron).not.toContain("13,");
     // Escribir una nota necesita más CPU que la del reparto por defecto
