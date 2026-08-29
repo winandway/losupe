@@ -1128,3 +1128,49 @@ diario…`, 23 ago 2026).
   para el desglose de relojes.
 - **Qué NO tocar:** no bajes `MINUTOS_ANTES_DE_DARLA_POR_MUERTA` por debajo de 30, y no vuelvas a
   decidir el reintento por el estado de la corrida. Mira si la nota salió.
+
+## 42. Dos notas para el mismo tema: el archivo del diario
+
+- **Cómo se veía (lo vio Richard el 29 ago 2026):** el diario publicó «Sanciones económicas y el
+  Estrecho de Ormuz» el día 24 y, cinco días después, «Medidas económicas y rutas comerciales». Dos
+  notas distintas contando lo mismo. Sus palabras: _«hay de tantas cosas que hablar en el mundo que
+  pudimos haber hecho sobre otra»_.
+- **La causa real, y era estructural:** la comprobación de «esto ya lo escribimos» **solo existía
+  dentro del banco de ideas propias** (`siguienteIdea` en `ideas.ts`). Una nota de actualidad venida
+  del RSS **no se comparaba con nada**. Podía repetir una guía de la semana pasada y nadie se
+  enteraba. El algoritmo no faltaba: faltaba que alguien lo llamara.
+- **Y un segundo fallo que las hacía parecer gemelas:** la nota de actualidad se tituló «…una guía
+  para entender su impacto global», que es la plantilla de las guías duraderas. Una noticia se
+  titula diciendo qué pasó.
+- **LA EXCEPCIÓN, tan importante como la regla.** Hay temas que se cuentan varios días seguidos y
+  está bien: un terremoto, una crisis, una elección. Ahí cada nota es un capítulo — cuántas víctimas
+  van, qué países mandaron ayuda, qué dijo el gobierno. **Eso no es repetir: es seguir una noticia.**
+  Lo que no vale es contar otra vez lo mismo con otras palabras.
+- **Cómo se distingue una cosa de la otra: por los HECHOS NUEVOS.** Un seguimiento trae cifras,
+  nombres o fechas que la nota anterior no tenía. Una repetición trae sinónimos. Hacen falta dos
+  hechos nuevos para que cuente como capítulo.
+- **Las tres señales de `revisarArchivo()` (`src/lib/robot/archivo.ts`), de la más fuerte a la más fina:**
+  1. **La misma fuente es el mismo hecho.** Si citamos la misma URL que una nota reciente, se
+     descarta sin más. Barato y exacto (se compara sin `www.` ni barra final).
+  2. **Mismo tema** (parecido ≥ 0,6 sobre conceptos): se descarta salvo que traiga hechos nuevos.
+  3. **Misma historia, otro ángulo** (parecido ≥ 0,25 **y** comparten un nombre propio): es el caso
+     del terremoto, donde una nota habla de víctimas y otra de la ayuda. Con hechos nuevos, se
+     escribe como capítulo; sin ellos, se descarta.
+- **Detalles que costaron una vuelta y no hay que deshacer:**
+  - Las palabras de PLANTILLA («guía», «entender», «impacto», «curiosidades») **no cuentan** para el
+    parecido: las ponemos nosotros en el molde y hacían que dos guías de temas distintos parecieran
+    la misma nota.
+  - Los sinónimos llevan a una forma canónica **estable** (siempre el primero del grupo). Si «btc»
+    apuntara a «bitcoin» y «bitcoin» a «btc», dos textos idénticos saldrían distintos.
+  - Los sinónimos de varias palabras («estados unidos» → «eeuu») se cambian **antes** de trocear el
+    texto. Si se trocea primero, se parten en palabras sueltas y dejan de ser el mismo concepto.
+  - Se usa el coeficiente de solapamiento y no Jaccard: un titular corto y una entradilla larga
+    sobre el mismo hecho dan un Jaccard bajísimo aunque hablen exactamente de lo mismo.
+- **Si todos los temas de la cola repiten, no se publica.** Mejor un hueco que la misma nota dos
+  veces. Y cada tema descartado se aparta con **su motivo escrito** en la cola, no en silencio.
+- **Candado:** 18 pruebas en `tests/unit/archivo.test.ts`, con el caso real de Richard como primera
+  prueba. Comprobado en rojo el 29 ago 2026: al desactivar el filtro en `pickCandidate`, la nota
+  repetida vuelve a colarse y dos pruebas fallan.
+- **Qué NO tocar:** no quites la llamada a `revisarArchivo` en `pickCandidate` (ahí estaba el
+  agujero, no en el algoritmo); no metas las palabras de plantilla en el parecido; y no conviertas
+  el seguimiento en repetición — un diario que no puede seguir una noticia no es un diario.

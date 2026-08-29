@@ -1,5 +1,6 @@
 import { decodeEntities, stripHtml } from "@/lib/html";
 import { SECTIONS, type SectionId } from "@/lib/sections";
+import { revisarArchivo, type NotaDelArchivo } from "./archivo";
 import { rangoDelDiaLocal } from "./franjas";
 import { BOT_USER_AGENT, fetchPage } from "./research";
 import { bestTrendArticle, classifyTrend, esTemaVetado, parseTrendsFeed } from "./trends";
@@ -233,6 +234,12 @@ export type Candidate = {
   lang: "es" | "en";
   publishedAt: string | null;
   score: number;
+  /**
+   * Cuando el tema ya se contó pero la noticia sigue viva y trae hechos nuevos. Lleva de qué nota
+   * es capítulo y qué es lo nuevo, para que el redactor lo diga en la primera frase en vez de
+   * repetir el contexto desde cero.
+   */
+  seguimiento?: { de: string; novedades: string[] };
 };
 
 type CandidateRow = {
@@ -296,7 +303,21 @@ export async function limpiarCandidatosFueraDeTema(db: D1Database): Promise<numb
   return fuera.length;
 }
 
-export async function pickCandidate(db: D1Database, now = new Date()): Promise<Candidate | null> {
+/**
+ * Cuántos temas se miran por sección antes de rendirse. Antes se cogía el primero y punto; ahora
+ * hay que poder descartar los que ya contamos y seguir buscando, que es justo lo que faltaba.
+ */
+export const CANDIDATOS_A_MIRAR = 8;
+
+export async function pickCandidate(
+  db: D1Database,
+  now = new Date(),
+  /**
+   * Lo que ya publicamos estos días. Si se pasa, ningún tema repetido llega a escribirse: es la
+   * comprobación que faltaba y que dejó salir dos notas del mismo asunto (29 ago 2026).
+   */
+  archivo: readonly NotaDelArchivo[] = [],
+): Promise<Candidate | null> {
   const [{ results: quotas }, today] = await Promise.all([
     db
       .prepare(`SELECT id, notes_per_day FROM sections WHERE active = 1 ORDER BY sort_order`)
@@ -306,17 +327,39 @@ export async function pickCandidate(db: D1Database, now = new Date()): Promise<C
   const order = [...quotas]
     .map((q) => ({ id: q.id, free: Number(q.notes_per_day) - (today[q.id] ?? 0) }))
     .sort((a, b) => b.free - a.free);
+
+  /** Un tema que ya contamos y no aporta nada: fuera de la cola para siempre, con su motivo. */
+  const descartar = async (id: string, motivo: string) => {
+    await db
+      .prepare(`UPDATE candidates SET status = 'skipped', error = ?2 WHERE id = ?1`)
+      .bind(id, motivo)
+      .run()
+      .catch(() => undefined);
+  };
+
   for (const sec of order) {
     if (sec.free <= 0) continue;
-    const row = await db
+    const { results } = await db
       .prepare(
         `SELECT id, section_id, url, title, summary, lang, published_at, score FROM candidates
          WHERE status = 'new' AND section_id = ?1 AND attempts < ?2
-         ORDER BY score DESC, published_at DESC LIMIT 1`,
+         ORDER BY score DESC, published_at DESC LIMIT ?3`,
       )
-      .bind(sec.id, MAX_INTENTOS_CANDIDATO)
-      .first<CandidateRow>();
-    if (row) {
+      .bind(sec.id, MAX_INTENTOS_CANDIDATO, CANDIDATOS_A_MIRAR)
+      .all<CandidateRow>();
+
+    for (const row of results ?? []) {
+      const veredicto = revisarArchivo(
+        { titulo: row.title, resumen: row.summary, fuentes: [row.url] },
+        archivo,
+        now,
+      );
+      // Ya lo contamos y no trae nada nuevo: se aparta y se prueba con el siguiente tema. Hay
+      // demasiadas cosas de las que hablar en el mundo como para contar dos veces la misma.
+      if (veredicto.repite && !veredicto.seguimiento) {
+        await descartar(row.id, `ya lo contamos: ${veredicto.motivo} («${veredicto.parecidoCon}»)`);
+        continue;
+      }
       // Se apunta el intento ANTES de trabajar. Si la corrida se muere a media escritura, el intento
       // queda contado igual: sin esto, un tema que falla se vuelve a elegir en cada corrida y
       // paraliza el diario entero. Pasó el 24 ago 2026 con un fichaje de la NFL.
@@ -334,6 +377,9 @@ export async function pickCandidate(db: D1Database, now = new Date()): Promise<C
         lang: row.lang === "en" ? "en" : "es",
         publishedAt: row.published_at,
         score: Number(row.score),
+        ...(veredicto.repite && veredicto.seguimiento
+          ? { seguimiento: { de: veredicto.parecidoCon, novedades: veredicto.novedades } }
+          : {}),
       };
     }
   }

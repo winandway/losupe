@@ -273,6 +273,13 @@ export type UniversalBrief = {
   sources: readonly SourceDoc[];
   /** Notas nuestras que el redactor puede enlazar dentro del texto (SEO interno). */
   internalLinks?: readonly InternalLink[];
+  /**
+   * Cuando esta nota es un capítulo más de algo que ya contamos (un terremoto del que ya dimos el
+   * primer balance, una crisis que sigue). Lleva de qué nota es continuación y qué hay de nuevo.
+   */
+  seguimiento?: { de: string; novedades: readonly string[] };
+  /** Titulares publicados estos días: para no titular parecido a algo que ya está en la portada. */
+  yaPublicado?: readonly string[];
 };
 
 /** Bloque de notas nuestras para enlazar (rutas relativas, sin dominio). */
@@ -337,16 +344,52 @@ export function buildUniversalPrompt(b: UniversalBrief): string {
   const kindText =
     b.kind === "evergreen"
       ? "Escribe una GUÍA DURADERA (cómo hacer, qué saber, lista o comparativa) que siga sirviendo dentro de un año, usando la noticia solo como punto de partida."
-      : "Escribe la NOTICIA DEL DÍA: qué pasó, a quién afecta, qué sigue.";
+      : "Escribe la NOTICIA DEL DÍA: qué pasó, a quién afecta, qué sigue. El titular dice QUÉ PASÓ, con el dato más fuerte. No lo titules como una guía («una guía para entender…», «todo lo que hay que saber sobre…»): eso es otro género y confunde a quien lo ve en la portada.";
   return `ENCARGO: nota para la sección "${section?.name.es ?? b.sectionId}".
 TEMA: ${b.topicTitle}
 ${b.topicSummary ? `RESUMEN DEL TEMA: ${b.topicSummary}` : ""}
 TIPO: ${kindText}
-
+${bloqueSeguimiento(b.seguimiento)}${bloqueYaPublicado(b.yaPublicado ?? [])}
 Usa SOLO el material de abajo. Si las fuentes se contradicen, dilo. Cita cada fuente con enlace donde uses su dato.
 
 MATERIAL:
 ${sourcesBlock(b.sources)}${internalLinksBlock(b.internalLinks ?? [])}`;
+}
+
+/**
+ * Cuando la noticia sigue viva y esto es un capítulo más.
+ *
+ * Un diario cuenta un terremoto muchos días seguidos, y está bien: hoy son las víctimas, mañana la
+ * ayuda que llega, pasado lo que dijo el gobierno. Lo que NO vale es volver a contar lo de ayer con
+ * otras palabras. Por eso aquí se le dice al redactor **qué es lo nuevo** y se le exige empezar por
+ * ahí, en vez de repetir el contexto desde el principio como si nadie hubiera leído nada.
+ */
+export function bloqueSeguimiento(s: UniversalBrief["seguimiento"]): string {
+  if (!s) return "";
+  const nuevo = s.novedades.slice(0, 8).join(", ");
+  return `
+ESTO ES UN CAPÍTULO MÁS, NO UNA NOTA NUEVA.
+Ya publicamos: «${s.de}».
+Lo que ha cambiado desde entonces: ${nuevo || "hay datos nuevos en el material"}.
+- **Empieza por lo nuevo**, en la primera frase. Quien nos lee a diario ya sabe lo de ayer.
+- El contexto de lo anterior va DESPUÉS y en dos frases como mucho, para quien llega ahora.
+- El titular tiene que dejar claro qué avanzó (la cifra nueva, la decisión nueva), no repetir el de la nota anterior.
+`;
+}
+
+/**
+ * Los titulares que ya están en la portada. No es para prohibir temas —de eso se encarga el archivo
+ * antes de llegar aquí—, sino para que dos notas seguidas no se titulen igual.
+ */
+export function bloqueYaPublicado(titulares: readonly string[]): string {
+  if (titulares.length === 0) return "";
+  return `
+YA ESTÁ EN LA PORTADA (no repitas su titular ni su enfoque):
+${titulares
+  .slice(0, 12)
+  .map((t) => `- ${t}`)
+  .join("\n")}
+`;
 }
 
 export class DraftRejectedError extends Error {

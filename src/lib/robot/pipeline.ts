@@ -14,6 +14,7 @@ import { mailConfigured, parseRecipients } from "@/lib/mail";
 import { pickWriter } from "./authors";
 import { notifyPublished } from "./notify";
 import { publicarEnRedes, type ResultadoRedes } from "@/lib/redes";
+import { DIAS_DE_MEMORIA, type NotaDelArchivo } from "./archivo";
 import { recordarConfirmacion } from "@/lib/subscribers";
 import { limpiarVisitasViejas } from "@/lib/lectores";
 import { enviarBoletin, estadoBoletin } from "@/lib/boletin";
@@ -123,6 +124,8 @@ export type NoteResult = {
   socialSent?: number;
   /** Qué red falló y por qué. Se ve en el panel: un fallo mudo es un fallo que dura meses. */
   socialError?: string;
+  /** Si esta nota es un capítulo más de otra, de cuál. Para que se vea en el panel. */
+  seguimientoDe?: string;
 };
 
 export type RunSummary = {
@@ -449,6 +452,54 @@ async function contarSuscriptores(
   return out;
 }
 
+/**
+ * EL ARCHIVO DEL DIARIO: lo que ya contamos estos días, con su entradilla y sus fuentes.
+ *
+ * Antes solo se leían los titulares, y solo los usaba el banco de ideas propias. Una nota de
+ * actualidad no se comparaba con nada, y así salieron dos notas del mismo asunto con cinco días de
+ * diferencia (29 ago 2026). Ahora esto lo ve todo el mundo: la actualidad también.
+ */
+async function archivoDelDiario(db: D1Database, dias = DIAS_DE_MEMORIA): Promise<NotaDelArchivo[]> {
+  try {
+    const desde = new Date(Date.now() - dias * 86_400_000).toISOString();
+    const { results } = await db
+      .prepare(
+        `SELECT i.title, i.excerpt, a.sources_json, a.created_at
+           FROM article_i18n i JOIN articles a ON a.id = i.article_id
+          WHERE i.lang = 'es' AND a.created_at >= ?1
+          ORDER BY a.created_at DESC LIMIT 80`,
+      )
+      .bind(desde)
+      .all<{
+        title: string;
+        excerpt: string | null;
+        sources_json: string | null;
+        created_at: string;
+      }>();
+    return (results ?? []).map((r) => ({
+      titulo: r.title,
+      entradilla: r.excerpt,
+      publicadaEn: r.created_at,
+      fuentes: leerFuentes(r.sources_json),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function leerFuentes(json: string | null): string[] {
+  if (!json) return [];
+  try {
+    const v = JSON.parse(json) as unknown;
+    if (!Array.isArray(v)) return [];
+    return v
+      .map((s) => (typeof s === "string" ? s : ((s as { url?: string })?.url ?? "")))
+      .filter((u): u is string => typeof u === "string" && u.length > 0);
+  } catch {
+    return [];
+  }
+}
+
 /** Titulares publicados en los últimos meses: la mesa los usa para no repetir tema. */
 async function titularesRecientes(db: D1Database, limite = 120): Promise<string[]> {
   try {
@@ -636,9 +687,10 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   // 5) Notas, alternando
   for (let i = 0; i < maxNotes; i++) {
     const itemId = crypto.randomUUID();
+    const archivo = await archivoDelDiario(db);
     const [nextSponsored, nextCandidate] = await Promise.all([
       nextQueuedAssignment(db, now),
-      pickCandidate(db, now),
+      pickCandidate(db, now, archivo),
     ]);
     const kind = await decideNextKind(db, {
       sponsoredAvailable: Boolean(nextSponsored),
@@ -879,7 +931,12 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
             kind: noteKind,
             sources: docs,
             internalLinks: await internalLinksFor(db, seccion),
+            // Si el tema ya se contó y sigue vivo, el redactor tiene que empezar por lo nuevo.
+            seguimiento: c.seguimiento,
+            // Y aunque el tema sea otro, que no titule igual que algo que ya está en la portada.
+            yaPublicado: archivo.slice(0, 12).map((n) => n.titulo),
           });
+          if (c.seguimiento) result.seguimientoDe = c.seguimiento.de;
         } else {
           const propio =
             encargo.genero === "propia"
