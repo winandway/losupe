@@ -346,3 +346,89 @@ describe("orden de dependencias del schema.sql", () => {
     expect(updateAutores).toBeGreaterThan(insertAutoresBase);
   });
 });
+
+describe("UNA BASE VACÍA TIENE QUE PODER CREARSE (fallo del 29 ago 2026)", () => {
+  /**
+   * El fallo que no se veía: `applySchema` ejecutaba los `ALTER TABLE` ANTES de los `CREATE TABLE`.
+   * En una base con datos daba igual —las tablas ya estaban—, pero en una base vacía el primer
+   * `ALTER TABLE authors …` fallaba con «no such table» y **no se creaba ni una sola tabla**.
+   * Producción no lo notaba; una restauración, una copia o un entorno nuevo no arrancaban.
+   *
+   * Esta prueba usa SQLite de verdad, porque una D1 falsa nunca ejecuta el SQL y por eso no lo vio.
+   */
+  it("el esquema completo se aplica de cero, con sus ALTER y sus datos base", async () => {
+    const { SqliteD1 } = await import("./sqlite-d1");
+    const { applySchema } = await import("@/lib/schema-guard");
+    const { SCHEMA_SQL } = await import("@/lib/schema-sql");
+    const db = new SqliteD1();
+    await expect(applySchema(db.asD1(), SCHEMA_SQL)).resolves.toBeGreaterThan(0);
+
+    // Las tablas de las que cuelga todo lo demás
+    const tablas = db.raw
+      .prepare(`SELECT name FROM sqlite_master WHERE type = 'table'`)
+      .all()
+      .map((r) => String((r as { name: string }).name));
+    for (const t of [
+      "sections",
+      "authors",
+      "articles",
+      "article_i18n",
+      "settings",
+      "subscribers",
+      "sponsors",
+      "assignments",
+      "candidates",
+      "orders",
+      "visitas",
+      "social_posts",
+    ]) {
+      expect(tablas, `falta la tabla ${t}`).toContain(t);
+    }
+
+    // Las columnas que añaden los ALTER tienen que estar de verdad, no solo «no fallar»
+    const columnas = (tabla: string) =>
+      db.raw
+        .prepare(`PRAGMA table_info(${tabla})`)
+        .all()
+        .map((r) => String((r as { name: string }).name));
+    expect(columnas("authors")).toEqual(expect.arrayContaining(["sections_json", "linkedin_url"]));
+    expect(columnas("candidates")).toContain("attempts");
+    expect(columnas("subscribers")).toContain("mail_error");
+
+    // Y los datos base, que van los últimos y necesitan esas columnas
+    const secciones = db.raw.prepare(`SELECT COUNT(*) AS n FROM sections`).get() as { n: number };
+    const autores = db.raw.prepare(`SELECT COUNT(*) AS n FROM authors`).get() as { n: number };
+    expect(secciones.n).toBeGreaterThan(0);
+    expect(autores.n).toBeGreaterThan(0);
+  });
+
+  it("aplicarlo DOS VECES no rompe nada: es idempotente", async () => {
+    const { SqliteD1 } = await import("./sqlite-d1");
+    const { applySchema } = await import("@/lib/schema-guard");
+    const { SCHEMA_SQL } = await import("@/lib/schema-sql");
+    const db = new SqliteD1();
+    await applySchema(db.asD1(), SCHEMA_SQL);
+    // La segunda pasada es la que ocurre en producción cada vez que cambia el esquema. Aquí los
+    // ALTER dan «duplicate column name», que es el único error que se tolera a propósito.
+    await expect(applySchema(db.asD1(), SCHEMA_SQL)).resolves.toBeGreaterThan(0);
+  });
+
+  it("el orden es CREATE → ALTER → datos, y no otro", async () => {
+    const { applySchema } = await import("@/lib/schema-guard");
+    const orden: string[] = [];
+    const db = {
+      batch: async (stmts: { __sql: string }[]) => {
+        orden.push(stmts[0]?.__sql.slice(0, 6).toUpperCase() ?? "?");
+        return [];
+      },
+      prepare: (sql: string) => ({ __sql: sql, run: async () => ({ meta: {} }) }),
+    } as unknown as D1Database;
+    await applySchema(
+      db,
+      `CREATE TABLE a (x TEXT);\nALTER TABLE a ADD COLUMN y TEXT;\nINSERT INTO a (x) VALUES ('1');\n`,
+    );
+    // Los ALTER van en medio: después de crear (o fallan en una base vacía) y antes de insertar
+    // (o los INSERT no encuentran la columna nueva).
+    expect(orden).toEqual(["CREATE", "INSERT"]);
+  });
+});

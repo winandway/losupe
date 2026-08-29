@@ -529,14 +529,23 @@ test("portada: noticias heredadas, selector de idioma y artículo abre", async (
   await expect(page.locator('script[type="application/ld+json"]').first()).toHaveCount(1);
 });
 
-test("la nota de Mercatren es la principal, firmada por el equipo y con aviso de IA", async ({
+test("la nota de Mercatren sale en portada, firmada por el equipo y con aviso de IA", async ({
   page,
 }) => {
   await page.goto("/es");
-  const hero = page.locator("article").first();
-  await expect(hero.locator("h2 a")).toHaveText(/un venezolano lanza Mercatren/);
-  await expect(hero.locator("h2 a")).not.toHaveText(/Amazon|Pedro/);
-  await expect(hero.getByRole("link", { name: "Merry Melina" })).toHaveAttribute(
+  // Se busca POR SU TITULAR, no por ser la primera. Estaba atada a la posición y se puso roja el
+  // 29 ago 2026 sencillamente porque se publicó una nota más nueva. Una prueba que se rompe cada
+  // vez que el diario hace su trabajo no protege nada: enseña a ignorar el rojo.
+  const tarjeta = page
+    .locator("article")
+    .filter({ hasText: /un venezolano lanza Mercatren/ })
+    .first();
+  await expect(tarjeta).toBeVisible();
+  // El titular, sin atarse al nivel del encabezado: la nota principal usa h2 y las demás h3, y eso
+  // cambia solo con lo que se publique ese día.
+  const titular = tarjeta.getByRole("link", { name: /un venezolano lanza Mercatren/ }).first();
+  await expect(titular).not.toHaveText(/Amazon|Pedro/);
+  await expect(tarjeta.getByRole("link", { name: "Merry Melina" })).toHaveAttribute(
     "href",
     "/es/autor/merry-melina",
   );

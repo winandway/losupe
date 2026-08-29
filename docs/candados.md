@@ -1194,3 +1194,38 @@ Por eso, después del filtro barato, se le pregunta al modelo si el tema ya est�
 - **Qué NO tocar:** no quites la llamada a `revisarArchivo` en `pickCandidate` (ahí estaba el
   agujero, no en el algoritmo); no metas las palabras de plantilla en el parecido; y no conviertas
   el seguimiento en repetición — un diario que no puede seguir una noticia no es un diario.
+
+## 43. Una base vacía no se podía crear (y la prueba que lo tapaba)
+
+- **Cómo apareció:** al borrar la base local para probar una nota nueva, el sitio entero devolvió
+  **500** y `/__health` dijo `no such table: authors`. En producción no se veía nada raro, porque
+  allí las tablas ya existen desde el primer día.
+- **La causa:** `applySchema` ejecutaba **primero todos los `ALTER TABLE` y después los
+  `CREATE TABLE`**. El razonamiento escrito era «primero las columnas nuevas, lo que venga después
+  puede necesitarlas» — cierto para los `INSERT` del final, pero en una base vacía el primer
+  `ALTER TABLE authors …` falla con «no such table», el error se propaga y **no se crea ni una sola
+  tabla**. Una restauración, una copia o un entorno nuevo sencillamente no arrancaban.
+- **El arreglo: TRES fases, y el orden es el candado.**
+  1. `CREATE` → las tablas existen, con sus columnas de origen.
+  2. `ALTER` → añade lo que falte. En una base recién creada dan «duplicate column name», que es
+     justo el único error que se tolera.
+  3. El resto (`INSERT`/`UPDATE`) → ya encuentran todas las columnas.
+- **LO QUE MÁS IMPORTA DE ESTA ENTRADA: por qué ninguna prueba lo cazó.** Existía
+  `tests/unit/sqlite-d1.ts`, presentado como «SQLite de verdad» frente a la D1 falsa. Pero su método
+  `batch()` **devolvía éxito sin ejecutar nada**. Todo lo que pasara por `batch` —el esquema entero,
+  por ejemplo— salía en verde sin haber creado una sola tabla. Era una D1 falsa disfrazada de SQLite
+  real, que es peor que una D1 falsa: da confianza que no se ha ganado. Ahora `batch()` ejecuta de
+  verdad, dentro de una transacción, como hace D1.
+- **Candado:** tres pruebas en `tests/unit/schema-guard.test.ts` que crean el esquema **completo**
+  en una base vacía de verdad y comprueban las tablas, las columnas que añaden los `ALTER` y los
+  datos base; más una que fija el orden de las fases. Comprobado en rojo el 29 ago 2026: al devolver
+  los `ALTER` al principio, dos pruebas fallan.
+- **Qué NO tocar:** no muevas los `ALTER` delante de los `CREATE`; y no vuelvas a dejar un ayudante
+  de pruebas que finja ejecutar SQL. Si dice que es SQLite real, tiene que ejecutar.
+
+### De paso: una prueba atada a la posición
+
+La prueba «la nota de Mercatren es la principal» se puso roja **solo porque se publicó una nota más
+nueva**. Buscaba `article` y daba por hecho que era la primera. Ahora busca la nota **por su
+titular**. Una prueba que se rompe cada vez que el diario hace su trabajo no protege nada: enseña a
+ignorar el rojo, que es exactamente como se cuela un fallo de verdad.

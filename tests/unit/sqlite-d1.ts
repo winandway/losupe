@@ -46,7 +46,31 @@ export class SqliteD1 {
     return stmt;
   }
 
+  /**
+   * EJECUTA DE VERDAD. Antes solo devolvía «éxito» sin tocar la base, y eso convertía a esta clase
+   * en una D1 falsa disfrazada de SQLite real: cualquier prueba de algo que usara `batch` —el
+   * esquema entero, por ejemplo— pasaba en verde sin haber creado una sola tabla. Escondió el fallo
+   * del orden de los `ALTER` hasta el 29 ago 2026.
+   *
+   * D1 corre el lote como una transacción: si una sentencia falla, no queda nada a medias.
+   */
   async batch(stmts: unknown[]) {
+    const ejecutar = () =>
+      (stmts as { run: () => Promise<{ meta?: { changes?: number } }> }[]).reduce(
+        async (antes, s) => {
+          await antes;
+          await s.run();
+        },
+        Promise.resolve() as Promise<void>,
+      );
+    this.raw.exec("BEGIN");
+    try {
+      await ejecutar();
+      this.raw.exec("COMMIT");
+    } catch (error) {
+      this.raw.exec("ROLLBACK");
+      throw error;
+    }
     return stmts.map(() => ({ success: true, meta: {} }));
   }
 

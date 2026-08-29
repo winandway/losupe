@@ -146,13 +146,30 @@ async function applyAlters(db: D1Database, alters: readonly string[]): Promise<v
   }
 }
 
+/**
+ * Aplica el esquema en TRES FASES, y el orden importa más de lo que parece.
+ *
+ * Antes eran dos y estaban al revés: primero los `ALTER TABLE` y después todo lo demás, con el
+ * razonamiento de que «lo que venga después puede necesitar las columnas nuevas». Es cierto para los
+ * `INSERT` del final, pero rompía el caso que nadie probaba: **una base vacía**. Ahí el primer
+ * `ALTER TABLE authors …` falla con «no such table», el error se propaga y **no se crea ni una sola
+ * tabla**. Producción no lo notaba porque sus tablas ya existían; una base nueva —una restauración,
+ * una copia, un entorno de pruebas— sencillamente no arrancaba (visto el 29 ago 2026).
+ *
+ * Con tres fases funciona en los dos mundos:
+ *   1. `CREATE`  → las tablas existen, con sus columnas de origen.
+ *   2. `ALTER`   → añade las columnas que falten. En una base recién creada dan «duplicate column
+ *                  name», que es justo el único error que se tolera.
+ *   3. El resto  → los `INSERT`/`UPDATE` de datos base, que ya encuentran todas las columnas.
+ */
 export async function applySchema(db: D1Database, schemaSql: string): Promise<number> {
   const all = splitSql(schemaSql);
+  const creates = all.filter((s) => /^CREATE\s/i.test(s));
   const alters = all.filter((s) => /^ALTER\s+TABLE/i.test(s));
-  const rest = all.filter((s) => !/^ALTER\s+TABLE/i.test(s));
-  // Primero las columnas nuevas: lo que venga después puede necesitarlas.
+  const datos = all.filter((s) => !/^CREATE\s/i.test(s) && !/^ALTER\s+TABLE/i.test(s));
+  if (creates.length > 0) await db.batch(creates.map((s) => db.prepare(s)));
   await applyAlters(db, alters);
-  await db.batch(rest.map((s) => db.prepare(s)));
+  if (datos.length > 0) await db.batch(datos.map((s) => db.prepare(s)));
   return all.length;
 }
 
