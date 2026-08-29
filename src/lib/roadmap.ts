@@ -81,9 +81,16 @@ export const ROADMAP: BloqueRoadmap[] = [
         quien: "nosotros",
       },
       {
-        titulo: "Comprobar que el robot publica solo, un día entero",
+        titulo: "La escaleta del día: 2 de actualidad + 2 de curiosidades",
         detalle:
-          "El 24 de agosto se arreglaron seis fallos encadenados. Falta ver una jornada completa con sus tres notas saliendo sin que nadie toque nada.",
+          "Cuatro franjas con su género asignado: actualidad a las 7 y a las 17, curiosidades al mediodía y rankings a las 21. Se acabó el reparto por porcentajes, que fallaba.",
+        estado: "hecho",
+        quien: "nosotros",
+      },
+      {
+        titulo: "Un día entero publicando solo, sin que nadie toque nada",
+        detalle:
+          "Es la prueba que falta. Hoy salen notas, pero algún turno se pierde porque el reloj de GitHub se retrasa. Con el disparo cada hora debería quedar cerrado.",
         estado: "falta",
         quien: "nosotros",
       },
@@ -156,6 +163,13 @@ export const ROADMAP: BloqueRoadmap[] = [
         quien: "richard",
       },
       {
+        titulo: "Imágenes indexables",
+        detalle:
+          "Las fotos van en el mapa del sitio (antes no había ninguna), los nombres de archivo respetan las tildes y cada imagen lleva su pie. Falta la llave para generarlas propias.",
+        estado: "hecho",
+        quien: "nosotros",
+      },
+      {
         titulo: "Velocidad de carga medida y ajustada",
         detalle:
           "Medir Core Web Vitals con datos reales y corregir lo que salga. Google lo usa para decidir posiciones.",
@@ -187,6 +201,20 @@ export const ROADMAP: BloqueRoadmap[] = [
         detalle:
           "Hoy sale un aviso por nota. Falta el boletín de verdad: un resumen con las mejores de la semana, que es lo que la gente abre y reenvía.",
         estado: "falta",
+        quien: "nosotros",
+      },
+      {
+        titulo: "Contador de lectores y sección de tráfico",
+        detalle:
+          "Cuenta solo personas, nunca robots, sin cookies ni guardar direcciones IP. Con historial por periodos, de qué país llegan, qué leyeron, por dónde vinieron y cuánto tiempo estuvieron.",
+        estado: "hecho",
+        quien: "nosotros",
+      },
+      {
+        titulo: "Formularios blindados contra robots",
+        detalle:
+          "Cuatro capas: pase firmado, tiempo mínimo de rellenado, límite por hora y Turnstile listo para encenderse. Ya frenó el spam que entraba por contacto.",
+        estado: "hecho",
         quien: "nosotros",
       },
       {

@@ -10,14 +10,15 @@ name: robot
 
 on:
   schedule:
-    # Las tres franjas, en UTC. Se disparan las dos horas posibles de cada una porque el horario de
-    # verano mueve el reloj y el cron no lo entiende; el turno se apunta por franja y día local, así
-    # que el segundo disparo no repite nota.
-    #   7:00 ET -> 11:00 UTC (verano) / 12:00 UTC (invierno)
-    #  12:00 ET -> 16:00 / 17:00
-    #  17:00 ET -> 21:00 / 22:00
-    #  21:00 ET -> 01:00 UTC (verano) / 02:00 UTC (invierno) — del día siguiente
-    - cron: "5 11,12,16,17,21,22,1,2 * * *"
+    # CADA HORA, y no en las horas exactas de las franjas. Motivo medido el 29 ago 2026: los cron de
+    # GitHub se retrasan mucho y de forma irregular — de ocho disparos diarios programados llegaban
+    # uno o dos, con horas de desfase. Disparando cada hora, cada ventana de tres horas recibe varios
+    # intentos y basta con que llegue uno.
+    #
+    # No hay riesgo de nota doble: el turno se apunta por franja y día local, así que los disparos
+    # de más encuentran el turno hecho y se van en milisegundos. Y fuera de franja no se publica.
+    # El repositorio es público, así que estas ejecuciones no cuestan nada.
+    - cron: "7 * * * *"
   workflow_dispatch: # y a mano desde la pestaña Actions, cuando haga falta
 
 # Si una corrida anterior sigue viva, no se lanza otra encima.

@@ -920,3 +920,27 @@ diario…`, 23 ago 2026).
   sin rodeos.
 - **Qué NO tocar:** no metas titulares de suspense vacío «para que enganche más» — el precio es que
   dejen de creerte; y si añades una franja propia, dale su subgénero, que la prueba lo exige.
+
+## 34. El reloj de GitHub se retrasa: se compensa con frecuencia
+
+- **Cómo se vio (29 ago 2026), en un sondeo del sistema:** la nota de rankings de las 21:00 no salió
+  y el turno marcaba `noche#5` — los cinco intentos gastados. Al mirar el historial del workflow
+  apareció el motivo real, y no era del código.
+- **El dato:** el reloj estaba programado a ocho horas exactas al día (11:05, 12:05, 16:05, 17:05,
+  21:05, 22:05, 01:05, 02:05 UTC). Los disparos que **de verdad llegaron**: 00:27, 05:10, 20:56,
+  00:36, 19:09, 16:51, 13:04, 11:35… Ni uno a su hora. **De ocho disparos diarios llegaban uno o
+  dos**, con horas de desfase. Los cron de GitHub Actions no garantizan puntualidad y se retrasan
+  mucho en horas de carga.
+- **Por qué importaba:** cuando el reloj fiable no llegaba, la nota dependía del «latido» (las
+  visitas al sitio), que hace el trabajo en un `waitUntil` y se corta a media escritura. Es decir:
+  el camino bueno faltaba y quedaba el frágil.
+- **El arreglo, y es de sentido común:** si la herramienta no es puntual, **se compensa con
+  frecuencia**. El reloj dispara ahora **cada hora** (`7 * * * *`). Cada ventana de tres horas recibe
+  varios intentos y basta con que llegue uno.
+- **No hay riesgo de nota doble:** fuera de franja no se publica, y el turno se apunta por franja y
+  día local, así que los disparos de más encuentran el turno hecho y se van en milisegundos. El
+  repositorio es público, así que estas ejecuciones no cuestan nada.
+- **Candado:** en `tests/unit/franjas.test.ts` se lee el workflow y se exige `cron: "7 * * * *"`.
+- **Qué NO tocar:** no vuelvas a poner el reloj «solo en las horas de las franjas» — es lo que
+  parecía correcto y no funciona; y no confíes la publicación al latido, que es un respaldo, no el
+  camino principal.

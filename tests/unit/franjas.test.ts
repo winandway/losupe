@@ -127,6 +127,11 @@ describe("la configuración de la plataforma va con las franjas", () => {
     for (const hora of [11, 12, 16, 17, 21, 22, 1, 2]) expect(cron).toContain(String(hora));
     // Y ninguna de madrugada del Este (13, 15, 19 UTC eran del cron viejo de cada 2 horas)
     expect(cron).not.toContain("13,");
+    // El reloj de GitHub, que es el que de verdad manda, dispara CADA HORA. Motivo medido el 29 ago
+    // 2026: los cron de GitHub se retrasan mucho y de ocho disparos diarios llegaban uno o dos.
+    // Fuera de franja no publica, y el turno del día impide que dos disparos escriban dos notas.
+    const wf = readFileSync(".github/workflows/robot.yml", "utf8");
+    expect(wf).toContain('cron: "7 * * * *"');
     // Escribir una nota necesita más CPU que la del reparto por defecto
     expect(conf.limits?.cpu_ms ?? 0).toBeGreaterThanOrEqual(60_000);
   });
