@@ -32,6 +32,46 @@ export type IllustrateOpts = {
 
 export const FAL_SEEDREAM_MODEL = "fal-ai/bytedance/seedream/v4/text-to-image";
 export const FAL_ENDPOINT = `https://fal.run/${FAL_SEEDREAM_MODEL}`;
+/**
+ * PESO DE LAS IMÁGENES.
+ *
+ * El 29 ago 2026, midiendo la portada: se descargaba una foto de **1880×1253 y 427 KB** para
+ * mostrarla a **142×80 píxeles** en una tarjeta. Trece veces más grande de lo necesario, en cada
+ * visita y en cada tarjeta. Es lo que más pesaba de toda la página, por delante del video.
+ *
+ * Pexels sirve la imagen al tamaño que se le pida por la propia dirección, así que no hace falta
+ * ninguna librería: se piden dos tallas y se guardan las dos. La grande abre la nota; la pequeña va
+ * en las tarjetas de portada y de sección.
+ */
+export const ANCHO_GRANDE = 1600;
+export const ANCHO_TARJETA = 640;
+
+/** Añade a una dirección de Pexels el ancho y la compresión. Si no es de Pexels, la deja igual. */
+export function aMedida(url: string, ancho: number): string {
+  if (!/images\.pexels\.com/i.test(url)) return url;
+  const base = url.split("?")[0];
+  return `${base}?auto=compress&cs=tinysrgb&fit=crop&w=${ancho}`;
+}
+
+/** El nombre de la versión pequeña de una imagen guardada. */
+export function rutaMiniatura(url: string): string {
+  return url.replace(/\.(jpg|jpeg|png|webp)$/i, "-sm.$1");
+}
+
+async function guardarMiniatura(
+  bucket: R2Bucket | undefined,
+  slug: string,
+  url: string,
+  fetchImpl: typeof fetch,
+): Promise<void> {
+  try {
+    const { bytes, type } = await download(url, fetchImpl);
+    await storeImage(bucket, `notas/${slug}-sm.jpg`, bytes, type);
+  } catch {
+    // Sin miniatura la nota se ve igual, solo pesa más: nunca se cae por esto.
+  }
+}
+
 export const PEXELS_ENDPOINT = "https://api.pexels.com/v1/search";
 
 /** Ruta pública de un objeto guardado en R2 (la sirve el worker en /media/...). */
@@ -119,8 +159,12 @@ export async function illustrateWithPexels(opts: IllustrateOpts): Promise<Illust
   const photo = body.photos?.[0];
   const src = photo?.src?.large2x ?? photo?.src?.large;
   if (!photo || !src) return null;
-  const { bytes, type } = await download(src, fetchImpl);
+  // Se guardan DOS tallas: la grande para la nota y una pequeña para las tarjetas. Ver `aMedida()`.
+  const { bytes, type } = await download(aMedida(src, ANCHO_GRANDE), fetchImpl);
   const stored = await storeImage(opts.env.BUCKET, `notas/${opts.slug}.jpg`, bytes, type);
+  if (stored) {
+    await guardarMiniatura(opts.env.BUCKET, opts.slug, aMedida(src, ANCHO_TARJETA), fetchImpl);
+  }
   return stored
     ? {
         url: stored,

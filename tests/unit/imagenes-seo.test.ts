@@ -40,3 +40,28 @@ describe("las imágenes tienen que poder encontrarse", () => {
     ).toBe(true);
   });
 });
+
+describe("peso de las imágenes", () => {
+  it("a Pexels se le pide el tamaño que hace falta, no el máximo", async () => {
+    const { aMedida, ANCHO_GRANDE, ANCHO_TARJETA } = await import("@/lib/robot/images");
+    const original = "https://images.pexels.com/photos/123/foto.jpeg?auto=compress&w=99999";
+    // El 29 ago 2026 se descargaba una foto de 1880 px y 427 KB para pintarla a 142 px.
+    expect(aMedida(original, ANCHO_GRANDE)).toBe(
+      "https://images.pexels.com/photos/123/foto.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1600",
+    );
+    expect(aMedida(original, ANCHO_TARJETA)).toContain("w=640");
+    expect(ANCHO_TARJETA).toBeLessThan(ANCHO_GRANDE);
+    // Lo que no es de Pexels se deja tal cual: no se inventan parámetros ajenos.
+    expect(aMedida("https://otro.com/foto.jpg", 640)).toBe("https://otro.com/foto.jpg");
+  });
+
+  it("la miniatura tiene su nombre propio, previsible", async () => {
+    const { rutaMiniatura } = await import("@/lib/robot/images");
+    expect(rutaMiniatura("/media/notas/2026-08-29-una-nota.jpg")).toBe(
+      "/media/notas/2026-08-29-una-nota-sm.jpg",
+    );
+    expect(rutaMiniatura("/media/notas/x.png")).toBe("/media/notas/x-sm.png");
+    // Sin extensión conocida no se toca (mejor servir la grande que una ruta rota).
+    expect(rutaMiniatura("/media/notas/raro")).toBe("/media/notas/raro");
+  });
+});

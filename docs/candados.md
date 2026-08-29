@@ -944,3 +944,23 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no vuelvas a poner el reloj «solo en las horas de las franjas» — es lo que
   parecía correcto y no funciona; y no confíes la publicación al latido, que es un respaldo, no el
   camino principal.
+
+## 35. Una foto de 427 KB para pintarla a 142 píxeles
+
+- **Cómo se vio (29 ago 2026), midiendo la portada en el navegador:** el recurso más pesado de toda
+  la página no era el video del encabezado (431 KB) sino **una foto de nota: 1880×1253 y 427 KB**.
+  Y se mostraba a **142×80 píxeles** en una tarjeta. Trece veces más grande de lo necesario, en cada
+  visita y en cada tarjeta. La portada pesaba 1,2 MB.
+- **La causa:** a Pexels se le pedía siempre `large2x`, que es la versión más grande que tiene, y se
+  guardaba tal cual. Nadie miró nunca a qué tamaño se iba a mostrar.
+- **Qué se hizo, sin añadir ninguna librería:** Pexels sirve la imagen al tamaño que se le pida por
+  la propia dirección (`?auto=compress&cs=tinysrgb&w=…`), así que el robot pide y guarda **dos
+  tallas**: 1600 px para abrir la nota y 640 px para las tarjetas. Las tarjetas usan la pequeña; el
+  encabezado usa `srcset` para que cada pantalla pida lo que necesita.
+- **Y las notas viejas no se rompen:** si se pide una miniatura que no existe, el servidor devuelve
+  la grande. Sin eso, todo lo publicado antes de este cambio se habría visto roto.
+- **Candado:** en `tests/unit/imagenes-seo.test.ts` → «peso de las imágenes»: que a Pexels se le pida
+  el ancho concreto, que la talla de tarjeta sea menor que la grande, que a un proveedor ajeno no se
+  le inventen parámetros, y que el nombre de la miniatura sea previsible.
+- **Qué NO tocar:** no vuelvas a pedir `large2x` a secas; no quites el respaldo del servidor (rompe
+  el archivo entero); y antes de guardar una imagen, pregúntate a qué tamaño se va a ver.

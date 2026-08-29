@@ -110,7 +110,12 @@ export default {
     // Imágenes de las notas (R2). Clave = ruta sin el prefijo /media/.
     if (pathname.startsWith("/media/") && request.method === "GET" && env.BUCKET) {
       const key = decodeURIComponent(pathname.slice("/media/".length));
-      const object = key ? await env.BUCKET.get(key) : null;
+      let object = key ? await env.BUCKET.get(key) : null;
+      // Si se pide la versión pequeña de una imagen y no existe, se sirve la grande. Las notas
+      // publicadas antes del 29 ago 2026 no tienen miniatura, y sin esto se verían rotas.
+      if (!object && /-sm\.(jpg|jpeg|png|webp)$/i.test(key)) {
+        object = await env.BUCKET.get(key.replace(/-sm(\.[a-z]+)$/i, "$1"));
+      }
       if (!object) return new Response("Not found", { status: 404 });
       const headers = new Headers();
       object.writeHttpMetadata(headers);

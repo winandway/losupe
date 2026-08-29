@@ -1,39 +1,19 @@
-# Plan: la parrilla del día (2 actualidad + 2 curiosidades)
+# Plan: todo lo que está de mi lado
 
-## Qué pasó, con los datos delante
+Autorizado por Richard el 29 ago 2026: _«haz lo que tengas que hacer y deja todo lo que sea del
+lado mío»_. Al terminar, la lista de lo suyo.
 
-Siete notas seguidas de curiosidades y efemérides, cero de actualidad desde el 24 de agosto. Dos
-causas, las dos demostradas:
-
-1. **Fallo aritmético en el reparto.** `elegirGenero` hacía `notasHoy % 10 < 4`. Con tres notas al
-   día el contador vale 0, 1 y 2 — y los tres son menores que 4, así que **siempre** salía «propia».
-   El reparto 40/60 se pensó sobre diez notas seguidas, pero se reinicia cada día en cero y nunca
-   llegaba al umbral.
-2. **La efeméride mandaba sobre todo.** `if (hayEfemerideRedonda) return "efemeride"` iba antes que
-   cualquier otra cosa, y hay aniversarios redondos casi a diario.
-
-## El arreglo: una escaleta, no un porcentaje
-
-Un porcentaje que se calcula sobre un contador que se reinicia es frágil por diseño. Una redacción
-no trabaja así: trabaja con una **escaleta** — cada franja tiene su género asignado de antemano.
-
-| Franja   | Hora (Este) | Género                      |
-| -------- | ----------- | --------------------------- |
-| Mañana   | 7:00        | Actualidad                  |
-| Mediodía | 12:00       | Curiosidades / pieza propia |
-| Tarde    | 17:00       | Actualidad                  |
-| Noche    | 21:00       | Curiosidades / pieza propia |
-
-Cuatro notas: **2 de actualidad y 2 de curiosidades**, exacto y previsible.
-
-- [x] 1. Cuarta franja (21:00) y **género asignado a cada franja** en `franjas.ts`.
-- [x] 2. `elegirGenero` obedece a la escaleta; fuera el cálculo por porcentaje.
-- [x] 3. **La efeméride deja de mandar**: solo puede ocupar un hueco de curiosidades, y máximo una
-      al día. Una efeméride no puede comerse la actualidad.
-- [x] 4. **Si el género asignado no tiene material, se cae al otro** y queda anotado. Nunca se
-      pierde una nota por no tener candidato del género que tocaba.
-- [x] 5. Cuota diaria a 4 y cron con la hora nueva (en `yadominios.json`, que es el que manda).
-- [x] 6. El panel muestra la escaleta: qué género toca en cada franja y cuál ya salió.
-- [x] 7. Candados: que con la escaleta salgan 2 y 2, que la efeméride no desplace la actualidad, y
-      que el fallo aritmético no pueda volver.
-- [x] 8. Verificación completa, documentación y publicación.
+- [ ] 1. **Velocidad de carga medida y corregida.** Medir la portada y una nota con datos reales,
+      arreglar lo que salga. Google usa esto para decidir posiciones.
+- [ ] 2. **Boletín de resumen.** Hoy sale un aviso por cada nota; falta el resumen periódico con lo
+      mejor, que es lo que la gente abre y reenvía. Con su plantilla, su baja y su control en el panel.
+- [ ] 3. **Widget de noticias para otros sitios** (idea de Richard, nº 5 de monetización). Un trozo
+      de código que cualquier web puede pegar para mostrar nuestras últimas notas. Nos trae visitas,
+      enlaces y marca.
+- [ ] 4. **Patrocinio de sección** (nº 3 de monetización): una marca patrocina una sección entera,
+      con su logo y su mención, y se ve en la portada de esa sección.
+- [ ] 5. **Publicación en redes, todo listo menos la llave.** Dejar el código completo y probado
+      para que cuando lleguen las cuentas solo haya que pegar los datos.
+- [ ] 6. **Repasar la deuda:** subir cobertura donde toca dinero o datos, y cerrar lo que quede
+      suelto.
+- [ ] 7. **Verificación completa, documentación, roadmap al día y publicación.**

@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import type { ArticleCard as ArticleCardData } from "@/lib/queries";
+import { rutaMiniatura } from "@/lib/robot/images";
 import { articlePath } from "@/lib/urls";
 import { Byline } from "./Byline";
 import { SectionBadge } from "./SectionBadge";
@@ -22,9 +23,18 @@ export function ArticleCard({
   priority?: boolean;
 }) {
   const href = articlePath(lang, article.sectionId, article.slug);
+  // Cada pantalla pide el tamaño que de verdad necesita. Antes la portada se descargaba una foto de
+  // 1880 px y 427 KB para pintarla a 142 px de ancho, trece veces más grande de lo necesario y en
+  // cada tarjeta (medido el 29 ago 2026). La versión pequeña la guarda el robot al ilustrar.
   const image = article.imageUrl ? (
     <img
-      src={article.imageUrl}
+      src={variant === "hero" ? article.imageUrl : rutaMiniatura(article.imageUrl)}
+      srcSet={
+        variant === "hero"
+          ? `${rutaMiniatura(article.imageUrl)} 640w, ${article.imageUrl} 1600w`
+          : undefined
+      }
+      sizes={variant === "hero" ? "(max-width: 768px) 100vw, 800px" : undefined}
       alt={article.imageAlt}
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
