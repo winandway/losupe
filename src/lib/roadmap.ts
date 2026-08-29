@@ -172,8 +172,8 @@ export const ROADMAP: BloqueRoadmap[] = [
       {
         titulo: "Velocidad de carga medida y ajustada",
         detalle:
-          "Medir Core Web Vitals con datos reales y corregir lo que salga. Google lo usa para decidir posiciones.",
-        estado: "falta",
+          "Medida con datos reales y corregida: las fotos se sirven al tamaño en que se ven, no a tamaño completo. Google usa esto para decidir posiciones.",
+        estado: "hecho",
         quien: "nosotros",
       },
     ],
@@ -197,10 +197,10 @@ export const ROADMAP: BloqueRoadmap[] = [
         quien: "nosotros",
       },
       {
-        titulo: "Boletín de resumen cada pocos días",
+        titulo: "Boletín de resumen cada cuatro días",
         detalle:
-          "Hoy sale un aviso por nota. Falta el boletín de verdad: un resumen con las mejores de la semana, que es lo que la gente abre y reenvía.",
-        estado: "falta",
+          "Además del aviso por nota, sale un resumen con las seis más leídas de verdad (por lectores reales, no por corazonada), con su baja en un toque y su control en el panel.",
+        estado: "hecho",
         quien: "nosotros",
       },
       {
@@ -220,14 +220,14 @@ export const ROADMAP: BloqueRoadmap[] = [
       {
         titulo: "Publicación automática en redes",
         detalle:
-          "Que cada nota salga sola en las redes con su imagen y su enlace. Analizado y elegido; falta conectarlo.",
-        estado: "falta",
+          "Cada nota se anuncia sola en Telegram, Bluesky, Mastodon y Facebook. Escrito, probado y enchufado: la red se enciende pegando su llave, sin volver a publicar el sitio.",
+        estado: "hecho",
         quien: "nosotros",
       },
       {
-        titulo: "Cuentas de las redes y sus permisos",
+        titulo: "Cuentas de las redes y sus llaves",
         detalle:
-          "Para publicar solo hacen falta las cuentas del medio y sus permisos de aplicación. Sin eso no se puede conectar nada.",
+          "Lo único que falta para que empiece a publicar. Telegram, Bluesky y Mastodon se encienden hoy mismo, gratis y sin pedirle permiso a nadie; Facebook espera la revisión de Meta. Paso a paso en docs/redes-sociales.md.",
         estado: "espera",
         quien: "richard",
       },
@@ -254,9 +254,10 @@ export const ROADMAP: BloqueRoadmap[] = [
         quien: "richard",
       },
       {
-        titulo: "Patrocinio de sección y de boletín",
-        detalle: "Una marca patrocina una sección entera o el boletín, con su logo y su mención.",
-        estado: "falta",
+        titulo: "Patrocinio de sección",
+        detalle:
+          "Una marca acompaña una sección entera durante un tiempo, con su logo y su frase en la portada de esa sección. Marcado como publicidad a la vista, y sin tocar una coma de lo que escribimos.",
+        estado: "hecho",
         quien: "nosotros",
       },
       {
@@ -269,8 +270,8 @@ export const ROADMAP: BloqueRoadmap[] = [
       {
         titulo: "Widget de noticias para sitios ajenos",
         detalle:
-          "Otros sitios muestran nuestras notas en una cajita. Nos trae visitas y marca. Idea de Richard.",
-        estado: "falta",
+          "Otros sitios pegan una línea de código y muestran nuestras últimas notas. Nos trae visitas, enlaces y marca. Idea de Richard, ya funcionando con su vista previa en el panel.",
+        estado: "hecho",
         quien: "nosotros",
       },
       {

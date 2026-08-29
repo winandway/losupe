@@ -387,7 +387,7 @@ describe("el detalle viejo se borra solo: no se guarda lo que no hace falta", ()
   it("borra lo que pasó de los 120 días y devuelve cuántas filas se fueron", async () => {
     const { DIAS_DE_HISTORIAL, limpiarVisitasViejas } = await import("@/lib/lectores");
     class Borradora extends FakeD1 {
-      prepare(sql: string) {
+      override prepare(sql: string) {
         const st = super.prepare(sql);
         const run = st.run;
         st.run = async () => {

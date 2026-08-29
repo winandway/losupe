@@ -20,7 +20,7 @@ class Cambia extends FakeD1 {
   ) {
     super(responder);
   }
-  prepare(sql: string) {
+  override prepare(sql: string) {
     const st = super.prepare(sql);
     const run = st.run;
     st.run = async () => {

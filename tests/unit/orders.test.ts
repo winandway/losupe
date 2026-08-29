@@ -145,7 +145,9 @@ describe("EL DINERO NO VIENE DEL FORMULARIO (deuda cerrada el 29 ago 2026)", () 
     expect(conTrampa.success && "priceUsd" in conTrampa.data).toBe(false);
 
     const db = new Db();
-    await createOrder(db.asD1(), conTrampa.success ? conTrampa.data : valid);
+    expect(conTrampa.success).toBe(true);
+    if (!conTrampa.success) return;
+    await createOrder(db.asD1(), conTrampa.data);
     const insert = db.calls.find((c) => c.sql.startsWith("INSERT INTO orders"))!;
     expect(insert.params).toContain(PLANS.anual.priceUsd);
     expect(insert.params).toContain(PLANS.anual.notes);
