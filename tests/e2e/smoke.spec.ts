@@ -996,3 +996,16 @@ test("el widget se puede pegar en cualquier web y trae enlaces de verdad", async
   await expect(page.getByRole("heading", { level: 1 })).toContainText("noticias en tu web");
   await expect(page.locator("pre code").first()).toContainText("/datos/widget");
 });
+
+test("un patrocinio de sección se ve claramente como publicidad", async ({ page }) => {
+  // Se comprueba en la ficha del panel: los campos existen y se pueden guardar. La franja solo
+  // aparece si hay una marca contratada, así que aquí se vigila lo que SIEMPRE tiene que estar.
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/panel/entrar");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.goto("/panel/encargos");
+  await expect(page.getByLabel("Sección patrocinada")).toBeVisible();
+  await expect(page.getByLabel("Hasta (fecha)")).toBeVisible();
+  await expect(page.getByLabel("Frase que acompaña al nombre")).toBeVisible();
+});

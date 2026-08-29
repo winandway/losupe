@@ -30,6 +30,10 @@ const schema = z.object({
   brief: optional(4000),
   sectionId: z.enum(sectionIds),
   notesTotal: z.coerce.number().int().min(1).max(365),
+  sectionSponsored: z.string().max(40).optional(),
+  sectionUntil: z.string().max(30).optional(),
+  claimEs: z.string().max(120).optional(),
+  logoUrl: z.string().max(300).optional(),
   periodStart: optional(10),
   periodEnd: optional(10),
   status: z.enum(["active", "paused", "finished", "canceled"]),
@@ -71,6 +75,10 @@ export async function POST(request: Request) {
     periodEnd: d.periodEnd,
     status: d.status,
     internalNotes: d.internalNotes,
+    sectionSponsored: d.sectionSponsored || null,
+    sectionUntil: d.sectionUntil || null,
+    claimEs: d.claimEs || null,
+    logoUrl: d.logoUrl || null,
   };
   if (d.op === "update" && d.id) {
     await updateSponsor(env.DB, d.id, input);

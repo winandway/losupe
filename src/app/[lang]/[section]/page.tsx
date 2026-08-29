@@ -4,7 +4,9 @@ import type { Metadata } from "next";
 import { notFound, permanentRedirect } from "next/navigation";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Pagination } from "@/components/Pagination";
+import { PatrocinioSeccion } from "@/components/PatrocinioSeccion";
 import { SectionHeading } from "@/components/SectionHeading";
+import { patrocinadorDeSeccion } from "@/lib/patrocinio";
 import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
@@ -56,6 +58,8 @@ export default async function SectionPage({ params, searchParams }: Props) {
 
   const page = parsePage((await searchParams).page);
   const db = await getDb();
+  // Quién acompaña esta sección, si es que hay alguien. Nunca influye en lo que se publica.
+  const patrocinio = await patrocinadorDeSeccion(db, section.id, lang);
   const result = await listPaged(db, lang, page, { sectionId: section.id });
   if (page > 1 && result.items.length === 0) notFound();
 
@@ -84,6 +88,7 @@ export default async function SectionPage({ params, searchParams }: Props) {
       ) : null}
       <header className="mb-8">
         <SectionHeading as="h1" title={section.name[lang]} color={section.color} />
+        {patrocinio ? <PatrocinioSeccion datos={patrocinio} lang={lang} dict={dict} /> : null}
         <p className="max-w-2xl text-muted">{section.description[lang]}</p>
         <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted">
           {dict.section.count(result.total)}

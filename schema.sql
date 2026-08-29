@@ -322,6 +322,13 @@ ALTER TABLE articles ADD COLUMN image_caption_en TEXT;
 -- Cuando se le mando el recordatorio de confirmar. Sin esta marca se le mandaria uno cada dia, que
 -- es la forma mas rapida de acabar en la carpeta de spam.
 ALTER TABLE subscribers ADD COLUMN reminded_at TEXT;
+-- Patrocinio de seccion (idea 3 del plan de ingresos): una marca patrocina una seccion entera y
+-- aparece en su portada. Es distinto de una nota patrocinada: aqui no se escribe nada, se acompaña.
+ALTER TABLE sponsors ADD COLUMN section_sponsored TEXT;
+ALTER TABLE sponsors ADD COLUMN section_until TEXT;
+ALTER TABLE sponsors ADD COLUMN logo_url TEXT;
+ALTER TABLE sponsors ADD COLUMN claim_es TEXT;
+ALTER TABLE sponsors ADD COLUMN claim_en TEXT;
 -- Cuanto tiempo lleva leyendo esa persona esa nota, en segundos, y de donde llego.
 ALTER TABLE visitas ADD COLUMN segundos INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE visitas ADD COLUMN origen TEXT;

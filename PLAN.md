@@ -10,7 +10,7 @@ lado mío»_. Al terminar, la lista de lo suyo.
 - [x] 3. **Widget de noticias para otros sitios** (idea de Richard, nº 5 de monetización). Un trozo
       de código que cualquier web puede pegar para mostrar nuestras últimas notas. Nos trae visitas,
       enlaces y marca.
-- [ ] 4. **Patrocinio de sección** (nº 3 de monetización): una marca patrocina una sección entera,
+- [x] 4. **Patrocinio de sección** (nº 3 de monetización): una marca patrocina una sección entera,
       con su logo y su mención, y se ve en la portada de esa sección.
 - [ ] 5. **Publicación en redes, todo listo menos la llave.** Dejar el código completo y probado
       para que cuando lleguen las cuentas solo haya que pegar los datos.

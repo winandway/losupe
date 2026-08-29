@@ -89,6 +89,18 @@ export const es = {
     articlesBy: "Notas de",
     newsroom: "Redacción",
   },
+  sponsorship: {
+    label: "Patrocinado",
+    note: "El patrocinio no influye en lo que publicamos.",
+    panelTitle: "Patrocinio de sección",
+    panelIntro:
+      "Una marca acompaña una sección entera durante un tiempo: su nombre sale en la portada de esa sección. No se escribe ninguna nota — eso son los encargos.",
+    section: "Sección patrocinada",
+    until: "Hasta (fecha)",
+    logo: "Logo (dirección de la imagen)",
+    claim: "Frase que acompaña al nombre",
+    none: "Ninguna",
+  },
   widget: {
     title: "Pon nuestras noticias en tu web",
     intro:

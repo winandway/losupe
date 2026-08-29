@@ -94,6 +94,50 @@ export function SponsorForm({
           className={input}
         />
       </label>
+      {/* PATROCINIO DE SECCIÓN: acompañar una sección entera, sin escribir ninguna nota. */}
+      <label className="block text-sm font-semibold">
+        {dict.sponsorship.section}
+        <select
+          name="sectionSponsored"
+          defaultValue={sponsor?.sectionSponsored ?? ""}
+          className={input}
+        >
+          <option value="">{dict.sponsorship.none}</option>
+          {SECTIONS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.name.es}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-sm font-semibold">
+        {dict.sponsorship.until}
+        <input
+          name="sectionUntil"
+          type="date"
+          defaultValue={sponsor?.sectionUntil?.slice(0, 10) ?? ""}
+          className={input}
+        />
+      </label>
+      <label className="block text-sm font-semibold sm:col-span-2">
+        {dict.sponsorship.claim}
+        <input
+          name="claimEs"
+          maxLength={120}
+          defaultValue={sponsor?.claimEs ?? ""}
+          className={input}
+        />
+      </label>
+      <label className="block text-sm font-semibold sm:col-span-2">
+        {dict.sponsorship.logo}
+        <input
+          name="logoUrl"
+          type="url"
+          maxLength={300}
+          defaultValue={sponsor?.logoUrl ?? ""}
+          className={input}
+        />
+      </label>
       <label className="block text-sm font-semibold">
         {p.periodStart}
         <input

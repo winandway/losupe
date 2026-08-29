@@ -1014,3 +1014,28 @@ diario…`, 23 ago 2026).
 - **Qué NO tocar:** no lo conviertas en un marco (pierde todo el valor de posicionamiento); no
   quites el respaldo de pintar al final de la página; y nunca metas cookies ni rastreo en código que
   corre en el sitio de otro.
+
+## 38. Patrocinio de sección: se vende sin quemar el medio
+
+- **Qué es (idea nº 3 del plan de ingresos):** una marca acompaña una sección entera durante un
+  tiempo. Su nombre, su logo y su frase salen en la portada de esa sección. **No se escribe ninguna
+  nota** — eso son los encargos, que van aparte y salen marcados como contenido patrocinado.
+- **DOS REGLAS QUE NO SE NEGOCIAN,** y son las que permiten vender esto sin perder el medio:
+  1. **Se dice que es publicidad, a la vista.** Etiqueta delante, fondo distinto del contenido y el
+     enlace marcado con `rel="sponsored"`, que es lo que Google espera encontrar. Un patrocinio
+     disimulado es exactamente lo que hace que Google Noticias eche a un medio — y que un lector deje
+     de creerte, que es peor.
+  2. **No toca el contenido.** El robot **no sabe** quién patrocina una sección y no escribe distinto
+     por ello. La franja lo dice con todas las letras: «el patrocinio no influye en lo que
+     publicamos».
+- **Y si algo falla, la sección se ve igual:** si la base no responde, `patrocinadorDeSeccion`
+  devuelve `null` en vez de lanzar. Un anuncio jamás puede tumbar una página de contenido.
+- **Un fallo que dejó rastro:** al añadir las cuatro columnas nuevas, el `UPDATE` quedó pidiendo 16
+  parámetros y pasando 12, y guardar un patrocinador empezó a fallar en silencio (la ruta se caía y
+  no redirigía). Lo cazó el e2e del panel. **Al añadir una columna hay que tocar los DOS sitios**:
+  el `INSERT` y el `UPDATE`.
+- **Candado:** `tests/unit/patrocinio.test.ts` — que la consulta exija patrocinador activo y fecha
+  vigente, que la frase salga en el idioma que toca, y que sin base no explote. En el e2e, que los
+  campos estén en la ficha del panel.
+- **Qué NO tocar:** no quites la etiqueta de «Patrocinado» ni el `rel="sponsored"`; no le pases al
+  robot quién patrocina una sección; y no dejes que un fallo del anuncio pueda romper la página.

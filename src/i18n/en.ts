@@ -91,6 +91,18 @@ export const en: Dict = {
     articlesBy: "Stories by",
     newsroom: "Newsroom",
   },
+  sponsorship: {
+    label: "Sponsored",
+    note: "Sponsorship does not influence what we publish.",
+    panelTitle: "Section sponsorship",
+    panelIntro:
+      "A brand backs a whole section for a while: their name shows on that section's front page. No story is written — those are the commissions.",
+    section: "Sponsored section",
+    until: "Until (date)",
+    logo: "Logo (image address)",
+    claim: "Line next to the name",
+    none: "None",
+  },
   widget: {
     title: "Put our news on your site",
     intro:

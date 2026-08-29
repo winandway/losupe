@@ -23,6 +23,11 @@ export type Sponsor = {
   periodEnd: string | null;
   status: SponsorStatus;
   internalNotes: string | null;
+  /** Patrocinio de sección: qué sección acompaña, hasta cuándo, con qué logo y qué frase. */
+  sectionSponsored: string | null;
+  sectionUntil: string | null;
+  claimEs: string | null;
+  logoUrl: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -70,6 +75,10 @@ type SponsorRow = {
   queued?: number;
   published?: number;
   in_review?: number;
+  section_sponsored?: string | null;
+  section_until?: string | null;
+  claim_es?: string | null;
+  logo_url?: string | null;
 };
 
 type AssignmentRow = {
@@ -105,6 +114,10 @@ function mapSponsor(r: SponsorRow): SponsorWithCounts {
     periodEnd: r.period_end,
     status: r.status as SponsorStatus,
     internalNotes: r.internal_notes,
+    sectionSponsored: r.section_sponsored ?? null,
+    sectionUntil: r.section_until ?? null,
+    claimEs: r.claim_es ?? null,
+    logoUrl: r.logo_url ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     queued: Number(r.queued ?? 0),
@@ -173,14 +186,19 @@ export type SponsorInput = {
   periodEnd?: string | null;
   status?: SponsorStatus;
   internalNotes?: string | null;
+  /** Patrocinio de sección: acompañar una sección entera, sin escribir ninguna nota. */
+  sectionSponsored?: string | null;
+  sectionUntil?: string | null;
+  claimEs?: string | null;
+  logoUrl?: string | null;
 };
 
 export async function createSponsor(db: D1Database, input: SponsorInput): Promise<string> {
   const id = crypto.randomUUID();
   await db
     .prepare(
-      `INSERT INTO sponsors (id, name, website, contact_name, contact_email, brief, section_id, notes_total, period_start, period_end, status, internal_notes)
-       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`,
+      `INSERT INTO sponsors (id, name, website, contact_name, contact_email, brief, section_id, notes_total, period_start, period_end, status, internal_notes, section_sponsored, section_until, claim_es, logo_url)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14, ?15, ?16)`,
     )
     .bind(
       id,
@@ -195,6 +213,10 @@ export async function createSponsor(db: D1Database, input: SponsorInput): Promis
       input.periodEnd ?? null,
       input.status ?? "active",
       input.internalNotes ?? null,
+      input.sectionSponsored || null,
+      input.sectionUntil || null,
+      input.claimEs || null,
+      input.logoUrl || null,
     )
     .run();
   return id;
@@ -207,7 +229,7 @@ export async function updateSponsor(
 ): Promise<void> {
   await db
     .prepare(
-      `UPDATE sponsors SET name = ?2, website = ?3, contact_name = ?4, contact_email = ?5, brief = ?6, section_id = ?7, notes_total = ?8, period_start = ?9, period_end = ?10, status = ?11, internal_notes = ?12, updated_at = ${SQL_NOW} WHERE id = ?1`,
+      `UPDATE sponsors SET name = ?2, website = ?3, contact_name = ?4, contact_email = ?5, brief = ?6, section_id = ?7, notes_total = ?8, period_start = ?9, period_end = ?10, status = ?11, internal_notes = ?12, section_sponsored = ?13, section_until = ?14, claim_es = ?15, logo_url = ?16, updated_at = ${SQL_NOW} WHERE id = ?1`,
     )
     .bind(
       id,
@@ -222,6 +244,10 @@ export async function updateSponsor(
       input.periodEnd ?? null,
       input.status ?? "active",
       input.internalNotes ?? null,
+      input.sectionSponsored || null,
+      input.sectionUntil || null,
+      input.claimEs || null,
+      input.logoUrl || null,
     )
     .run();
 }
