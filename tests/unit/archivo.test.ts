@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import {
   conceptos,
   DIAS_DE_MEMORIA,
@@ -290,5 +290,93 @@ describe("lo que se le dice al redactor", () => {
       sources: [{ title: "El País", url: "https://elpais.com/x", text: "texto" }],
     });
     expect(g).toContain("GUÍA DURADERA");
+  });
+});
+
+describe("EL JEFE DE REDACCIÓN: el criterio que las palabras no dan", () => {
+  /**
+   * Los cuatro titulares REALES del caso. Para cualquier lector son la misma nota cuatro veces; el
+   * parecido léxico entre pares baja a 0,25. Por eso hace falta este segundo paso.
+   */
+  const REALES = [
+    "Sanciones económicas y el Estrecho de Ormuz: una guía para entender su impacto global",
+    "Sanciones económicas: una guía para entender cómo afectan a un país",
+    "Cómo Estados Unidos redefine sus objetivos en conflictos internacionales",
+  ];
+
+  it("le pasa nuestros titulares y le explica la excepción del seguimiento", async () => {
+    const { promptDecision, SISTEMA_MESA } = await import("@/lib/robot/archivo");
+    const p = promptDecision({ titulo: "Medidas económicas y rutas comerciales" }, REALES);
+    for (const t of REALES) expect(p).toContain(t);
+    // Lo que hace que la respuesta sea buena está en las instrucciones, no en el algoritmo:
+    expect(SISTEMA_MESA).toContain("HECHOS NUEVOS");
+    expect(SISTEMA_MESA).toContain("terremoto");
+    // Y ante la duda, publicar: perder una nota buena es peor que publicar una parecida.
+    expect(SISTEMA_MESA).toContain("Ante la duda");
+  });
+
+  it("usa el modelo MÁS BARATO: es una decisión de dos líneas, no una redacción", async () => {
+    const { preguntarALaMesa } = await import("@/lib/robot/archivo");
+    let cuerpo = "";
+    let url = "";
+    const espia = vi.fn(async (u: RequestInfo | URL, init?: RequestInit) => {
+      url = String(u);
+      cuerpo = String(init?.body ?? "");
+      return new Response(
+        JSON.stringify({
+          candidates: [
+            {
+              content: {
+                parts: [
+                  {
+                    text: JSON.stringify({
+                      repetido: true,
+                      seguimiento: false,
+                      choca_con: REALES[0],
+                      motivo: "es la misma nota con otras palabras",
+                    }),
+                  },
+                ],
+              },
+            },
+          ],
+          usageMetadata: { promptTokenCount: 380, candidatesTokenCount: 60 },
+        }),
+        { status: 200 },
+      );
+    });
+    const r = await preguntarALaMesa({
+      apiKey: "k",
+      candidato: { titulo: "Medidas económicas y rutas comerciales" },
+      yaPublicado: REALES,
+      fetchImpl: espia as unknown as typeof fetch,
+    });
+    expect(url).toContain("gemini-2.5-flash-lite");
+    expect(r?.decision.repetido).toBe(true);
+    expect(r?.decision.seguimiento).toBe(false);
+    // Que cueste una nadería es lo que permite hacerlo en cada corrida sin pensarlo.
+    expect(r!.costUsd).toBeLessThan(0.001);
+    // Temperatura cero: esto es una decisión, no una redacción.
+    expect(JSON.parse(cuerpo).generationConfig.temperature).toBe(0);
+  });
+
+  it("NUNCA frena el diario: sin llave, o si el modelo falla, se publica igual", async () => {
+    const { preguntarALaMesa } = await import("@/lib/robot/archivo");
+    // Sin llave
+    expect(await preguntarALaMesa({ candidato: { titulo: "x" }, yaPublicado: REALES })).toBeNull();
+    // Sin nada publicado todavía, no hay con qué comparar
+    expect(
+      await preguntarALaMesa({ apiKey: "k", candidato: { titulo: "x" }, yaPublicado: [] }),
+    ).toBeNull();
+    // Y si el modelo se cae, se sigue: un guardia de calidad que tumba la publicación es peor.
+    const caido = vi.fn(async () => new Response("no", { status: 500 }));
+    expect(
+      await preguntarALaMesa({
+        apiKey: "k",
+        candidato: { titulo: "x" },
+        yaPublicado: REALES,
+        fetchImpl: caido as unknown as typeof fetch,
+      }),
+    ).toBeNull();
   });
 });

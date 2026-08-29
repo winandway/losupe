@@ -1,4 +1,5 @@
 import { normalizeTerm, SYNONYM_GROUPS } from "@/lib/search-synonyms";
+import { generateJson } from "./gemini";
 
 /**
  * EL ARCHIVO DEL DIARIO: lo que ya contamos.
@@ -413,5 +414,107 @@ function limpiarUrl(u: string): string {
     return `${url.hostname.replace(/^www\./, "")}${url.pathname.replace(/\/+$/, "")}`.toLowerCase();
   } catch {
     return u.trim().toLowerCase();
+  }
+}
+
+/* ─────────────────────────────── El jefe de redacción decide ─────────────────────────────── */
+
+/**
+ * EL FILTRO DE ARRIBA ES BARATO PERO CORTO DE VISTA, y conviene decirlo claro.
+ *
+ * Compara palabras. Y con los cuatro titulares reales del caso —«Sanciones económicas y el Estrecho
+ * de Ormuz», «Sanciones económicas: cómo afectan a un país», «Cómo Estados Unidos redefine sus
+ * objetivos en conflictos internacionales» y «Medidas económicas y rutas comerciales»— el parecido
+ * léxico entre pares baja hasta 0,25. Para cualquier lector son la misma nota cuatro veces. Para un
+ * algoritmo que cuenta palabras compartidas, no.
+ *
+ * Así que después del filtro barato hay un segundo paso con criterio de verdad: se le pregunta al
+ * modelo, en una consulta corta, si el tema propuesto ya está contado. Cuesta unas milésimas de
+ * centavo (modelo `flash-lite`, ~400 palabras de entrada y una respuesta de dos líneas) y se hace
+ * **una vez por corrida**, no por candidato.
+ *
+ * Sigue mandando la misma excepción: una noticia que sigue viva se cuenta varios días. Al modelo se
+ * le explica esa diferencia con las mismas palabras que usó Richard.
+ */
+
+export type DecisionMesa = {
+  /** ¿Está contado ya? */
+  repetido: boolean;
+  /** Si lo está: ¿es un capítulo nuevo con hechos nuevos, o volver a contar lo mismo? */
+  seguimiento: boolean;
+  /** El titular nuestro con el que choca, tal cual se le pasó. */
+  choca_con: string;
+  /** En una frase, para que quede escrito en el panel. */
+  motivo: string;
+};
+
+export const ESQUEMA_DECISION = {
+  type: "object",
+  properties: {
+    repetido: { type: "boolean" },
+    seguimiento: { type: "boolean" },
+    choca_con: { type: "string" },
+    motivo: { type: "string" },
+  },
+  required: ["repetido", "seguimiento", "choca_con", "motivo"],
+} as const;
+
+export const SISTEMA_MESA = `Eres el jefe de redacción de un diario. Tu única tarea ahora es decidir si un tema propuesto YA LO CONTAMOS.
+
+Piensa como un lector, no como un buscador de palabras: dos titulares con palabras distintas pueden ser exactamente la misma nota. «Sanciones económicas y el Estrecho de Ormuz» y «Medidas económicas y rutas comerciales» son LA MISMA NOTA, aunque no compartan casi ninguna palabra.
+
+Hay una excepción que importa tanto como la regla: una noticia que sigue viva se cuenta varios días seguidos, y eso está bien. De un terremoto se publica el primer balance, luego cuántas víctimas van, luego qué países mandaron ayuda, luego qué decidió el gobierno. Cada una es un capítulo distinto y todas se publican.
+
+La diferencia entre un capítulo y una repetición son los HECHOS NUEVOS: cifras, nombres, decisiones o fechas que la nota anterior no tenía. Si el tema propuesto solo trae las mismas ideas con otras palabras, es una repetición.
+
+Responde:
+- repetido: true si el tema ya está contado en alguno de nuestros titulares.
+- seguimiento: true SOLO si es repetido y además aporta hechos nuevos que la nota anterior no tenía.
+- choca_con: el titular nuestro con el que choca, copiado tal cual. Cadena vacía si no choca con ninguno.
+- motivo: una frase corta y en palabras normales.
+
+Ante la duda, di que NO es repetido: perder una nota buena es peor que publicar una parecida.`;
+
+export function promptDecision(
+  candidato: { titulo: string; resumen?: string | null },
+  yaPublicado: readonly string[],
+): string {
+  return `TEMA PROPUESTO: ${candidato.titulo}
+${candidato.resumen ? `RESUMEN: ${candidato.resumen}` : ""}
+
+LO QUE YA PUBLICAMOS ESTOS DÍAS:
+${yaPublicado.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
+}
+
+/**
+ * Le pregunta al jefe de redacción si el tema ya está contado.
+ *
+ * **Nunca frena el diario.** Si no hay llave, si el modelo falla o si tarda, devuelve `null` y se
+ * publica igual: el filtro barato ya quitó lo evidente. Un guardia de calidad que tumba la
+ * publicación es peor que una nota parecida.
+ */
+export async function preguntarALaMesa(opts: {
+  apiKey?: string;
+  candidato: { titulo: string; resumen?: string | null };
+  yaPublicado: readonly string[];
+  fetchImpl?: typeof fetch;
+}): Promise<{ decision: DecisionMesa; costUsd: number } | null> {
+  if (!opts.apiKey || opts.yaPublicado.length === 0) return null;
+  try {
+    const r = await generateJson<DecisionMesa>({
+      apiKey: opts.apiKey,
+      // El modelo más barato del catálogo: esto es una decisión de dos líneas, no una redacción.
+      model: "gemini-2.5-flash-lite",
+      system: SISTEMA_MESA,
+      prompt: promptDecision(opts.candidato, opts.yaPublicado.slice(0, 25)),
+      responseSchema: ESQUEMA_DECISION,
+      temperature: 0,
+      maxOutputTokens: 300,
+      timeoutMs: 20_000,
+      fetchImpl: opts.fetchImpl,
+    });
+    return { decision: r.data, costUsd: r.costUsd };
+  } catch {
+    return null;
   }
 }

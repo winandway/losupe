@@ -14,7 +14,7 @@ import { mailConfigured, parseRecipients } from "@/lib/mail";
 import { pickWriter } from "./authors";
 import { notifyPublished } from "./notify";
 import { publicarEnRedes, type ResultadoRedes } from "@/lib/redes";
-import { DIAS_DE_MEMORIA, type NotaDelArchivo } from "./archivo";
+import { DIAS_DE_MEMORIA, hechosNuevos, preguntarALaMesa, type NotaDelArchivo } from "./archivo";
 import { recordarConfirmacion } from "@/lib/subscribers";
 import { limpiarVisitasViejas } from "@/lib/lectores";
 import { enviarBoletin, estadoBoletin } from "@/lib/boletin";
@@ -917,6 +917,38 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
             section: seccion,
             topic: tema,
           });
+          // EL JEFE DE REDACCIÓN, antes de gastar en escribir. El filtro de palabras ya quitó lo
+          // evidente, pero es corto de vista: con los titulares reales del 29 ago 2026 («Sanciones
+          // económicas y el Estrecho de Ormuz» contra «Medidas económicas y rutas comerciales») el
+          // parecido léxico bajaba a 0,25 y para cualquier lector eran la misma nota. Esta consulta
+          // cuesta milésimas de centavo y se hace una vez por corrida.
+          const mesa = await preguntarALaMesa({
+            apiKey: env.GEMINI_API_KEY,
+            candidato: { titulo: c.title, resumen: c.summary },
+            yaPublicado: archivo.map((n) => n.titulo),
+            fetchImpl,
+          });
+          if (mesa) {
+            result.costUsd = Number(((result.costUsd ?? 0) + mesa.costUsd).toFixed(6));
+            if (mesa.decision.repetido && !mesa.decision.seguimiento) {
+              // Ya lo contamos y no aporta nada. Se aparta con su motivo y la corrida se rehace con
+              // otro tema: hay demasiado de lo que hablar como para repetirse.
+              await db
+                .prepare(`UPDATE candidates SET status = 'skipped', error = ?2 WHERE id = ?1`)
+                .bind(c.id, `la mesa lo descartó: ${mesa.decision.motivo}`)
+                .run()
+                .catch(() => undefined);
+              throw new Error(
+                `Ya lo contamos: ${mesa.decision.motivo} («${mesa.decision.choca_con}»)`,
+              );
+            }
+            if (mesa.decision.repetido && mesa.decision.seguimiento && !c.seguimiento) {
+              c.seguimiento = {
+                de: mesa.decision.choca_con,
+                novedades: hechosNuevos(`${c.title} ${c.summary ?? ""}`, mesa.decision.choca_con),
+              };
+            }
+          }
           docs = await gatherSources(db, c, fetchImpl);
           if (docs.length === 0) {
             await markCandidate(db, c.id, "skipped");

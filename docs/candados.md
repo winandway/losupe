@@ -1168,7 +1168,27 @@ diario…`, 23 ago 2026).
     sobre el mismo hecho dan un Jaccard bajísimo aunque hablen exactamente de lo mismo.
 - **Si todos los temas de la cola repiten, no se publica.** Mejor un hueco que la misma nota dos
   veces. Y cada tema descartado se aparta con **su motivo escrito** en la cola, no en silencio.
-- **Candado:** 18 pruebas en `tests/unit/archivo.test.ts`, con el caso real de Richard como primera
+
+### El segundo paso: el jefe de redacción
+
+**El filtro de arriba es barato pero corto de vista, y hay que decirlo claro.** Compara palabras.
+Con los **cuatro** titulares reales del caso —resultó que no eran dos notas repetidas, sino cuatro—
+el parecido léxico entre pares baja hasta **0,25**. Para cualquier lector son la misma nota cuatro
+veces; para un algoritmo que cuenta palabras compartidas, no.
+
+Por eso, después del filtro barato, se le pregunta al modelo si el tema ya está contado
+(`preguntarALaMesa`). Detalles que importan:
+
+- Usa **`gemini-2.5-flash-lite`**, el más barato del catálogo: es una decisión de dos líneas, no una
+  redacción. Cuesta milésimas de centavo y se hace **una vez por corrida**, antes de gastar en
+  escribir.
+- **Temperatura 0** y `responseSchema`: una decisión, no una redacción.
+- Al modelo se le explica la excepción del seguimiento **con el ejemplo del terremoto**, y se le
+  dice que **ante la duda publique**: perder una nota buena es peor que publicar una parecida.
+- **NUNCA frena el diario.** Sin llave, si el modelo falla o si tarda, devuelve `null` y se publica
+  igual. Un guardia de calidad que tumba la publicación es peor que una nota parecida.
+
+- **Candado:** 21 pruebas en `tests/unit/archivo.test.ts`, con el caso real de Richard como primera
   prueba. Comprobado en rojo el 29 ago 2026: al desactivar el filtro en `pickCandidate`, la nota
   repetida vuelve a colarse y dos pruebas fallan.
 - **Qué NO tocar:** no quites la llamada a `revisarArchivo` en `pickCandidate` (ahí estaba el
