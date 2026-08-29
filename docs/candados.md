@@ -1069,3 +1069,32 @@ diario…`, 23 ago 2026).
 - **Candados:** `tests/unit/redes.test.ts` (22 pruebas) y dos en `tests/e2e/smoke.spec.ts`.
 - **Qué NO tocar:** el conteo en bytes de los facets; el orden de sacrificio del texto; el `UNIQUE`
   dentro del `CREATE TABLE`; y que el estado de las redes no devuelva nunca un valor de variable.
+
+## 40. La regla del 90 % ya no es un papel: es un semáforo
+
+- **El problema:** la regla de la casa dice que todo lo que toca **dinero, datos personales, sesiones
+  o permisos** va con 90 % de cobertura. Estaba escrita en un documento, y un documento no detiene a
+  nadie. El umbral real del proyecto era 60 % global y punto: se podía tocar el precio de un paquete
+  sin una sola prueba y el build salía verde.
+- **Qué se hizo (29 ago 2026):** umbrales **por archivo** en `vitest.config.mts`. Ocho archivos
+  clavados al 90 % de líneas y sentencias: `orders.ts` (el dinero), `subscribers.ts` (los correos de
+  la gente), `lectores.ts` y `trafico.ts` (datos de quien nos lee), `anti-bots.ts` (la puerta),
+  `patrocinio.ts`, `budget.ts` y `model-guard.ts` (el tope de gasto y el bloqueo de modelos caros).
+- **Comprobado en rojo:** al borrar las pruebas del dinero, el build se cae con
+  `Coverage for lines (73.91%) does not meet "src/lib/orders.ts" threshold (90%)`.
+- **Lo que se cubrió al hacerlo** (y son cosas que importan, no relleno):
+  - **El precio NO viene del formulario.** El esquema no acepta `priceUsd` ni `notesTotal`, y
+    `createOrder` los lee del catálogo `PLANS`. Un pedido nace siempre en `'new'`: nadie se declara
+    pagado a sí mismo. Y los encargos nunca pasan de lo pagado, aunque manden ocho ideas con un plan
+    de una nota.
+  - **Un suscriptor nunca nace confirmado** y su enlace de baja se crea con él. Confirmar dos veces
+    sigue diciendo que sí — pasa de verdad: se pulsa el enlace, se vuelve atrás y se pulsa otra vez.
+  - **El recordatorio se marca aunque el correo falle**, para que nadie reciba el mismo aviso dos
+    veces; y el motivo del fallo queda escrito, no se traga.
+  - **Si la base se cae, el formulario NO se cierra a todo el mundo.** Perder clientes de verdad por
+    un fallo nuestro es peor que dejar pasar un mensaje de spam.
+  - **El tablero de tráfico mide todo desde la MISMA fecha de arranque.** Si cada consulta empezara
+    un día distinto, los números no cuadrarían entre sí y el tablero mentiría sin que se notara.
+- **Global:** de 74,1 % a 77,2 % de líneas, con el umbral subido a 76 (solo sube, nunca baja).
+- **Qué NO tocar:** no bajes ningún umbral para que pase un cambio. Si algo está rojo, se arregla el
+  cambio; no se apaga el semáforo.

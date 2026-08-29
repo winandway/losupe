@@ -201,3 +201,218 @@ describe("historial de tráfico", () => {
     expect(t.masLeidas).toEqual([]);
   });
 });
+
+describe("el historial completo, con datos de verdad (deuda cerrada el 29 ago 2026)", () => {
+  // Una D1 falsa que responde según qué le pregunten: es la única forma de comprobar que las seis
+  // ventanas, los orígenes, los países y el día a día salen bien armados.
+  function baseConDatos() {
+    let ventana = 0;
+    return new FakeD1((sql) => {
+      // Ojo con el orden: «AS lectores» empieza por «AS l», así que los agrupados van primero.
+      if (!/GROUP BY|MIN\(dia\)/.test(sql)) {
+        // hoy, ayer, semana, semana pasada, mes, mes pasado
+        const serie = [
+          { l: 12, v: 30, t: 95.4 },
+          { l: 8, v: 20, t: 80 },
+          { l: 60, v: 150, t: 100 },
+          { l: 40, v: 100, t: 90 },
+          { l: 200, v: 500, t: 110 },
+          { l: 0, v: 0, t: null },
+        ];
+        return [serie[ventana++] ?? serie[5]!];
+      }
+      if (sql.includes("GROUP BY origen"))
+        return [
+          { origen: "busqueda", lectores: 70 },
+          { origen: "directo", lectores: 30 },
+        ];
+      if (sql.includes("GROUP BY pais"))
+        return [
+          { pais: "US", lectores: 120 },
+          { pais: "VE", lectores: 40 },
+        ];
+      if (sql.includes("GROUP BY ruta"))
+        return [{ ruta: "/es/economia/el-dolar", lectores: 90, lecturas: 140, t: 212.7 }];
+      if (sql.includes("GROUP BY dia")) return [{ dia: "2026-08-28", lectores: 50, lecturas: 90 }];
+      if (sql.includes("GROUP BY referente")) return [{ referente: "google.com", lectores: 65 }];
+      if (sql.includes("MIN(dia)")) return [{ n: 830, desde: "2026-08-01" }];
+      return [];
+    });
+  }
+
+  it("arma los SEIS periodos y compara cada uno con su anterior", async () => {
+    const { resumenDeTrafico } = await import("@/lib/trafico");
+    const t = await resumenDeTrafico(baseConDatos().asD1(), new Date("2026-08-29T16:00:00Z"));
+    expect(t.periodos.map((p) => p.clave)).toEqual([
+      "hoy",
+      "ayer",
+      "semana",
+      "semanaPasada",
+      "mes",
+      "mesPasado",
+    ]);
+    // 12 hoy contra 8 ayer = +50 %. Solo los periodos actuales llevan variación.
+    expect(t.periodos[0]!.variacion).toBe(50);
+    expect(t.periodos[2]!.variacion).toBe(50); // 60 contra 40
+    expect(t.periodos[1]!.variacion).toBeNull();
+    // Y el tiempo medio se redondea a segundos enteros.
+    expect(t.periodos[0]!.tiempoMedio).toBe(95);
+  });
+
+  it("el porcentaje de cada origen se calcula sobre el total, y suma 100", async () => {
+    const { resumenDeTrafico } = await import("@/lib/trafico");
+    const t = await resumenDeTrafico(baseConDatos().asD1(), new Date("2026-08-29T16:00:00Z"));
+    expect(t.origenes).toEqual([
+      { origen: "busqueda", lectores: 70, porcentaje: 70 },
+      { origen: "directo", lectores: 30, porcentaje: 30 },
+    ]);
+  });
+
+  it("cada país sale con su nombre y su bandera, no con el código a secas", async () => {
+    const { resumenDeTrafico } = await import("@/lib/trafico");
+    const t = await resumenDeTrafico(baseConDatos().asD1(), new Date("2026-08-29T16:00:00Z"));
+    expect(t.paises[0]).toMatchObject({ pais: "US", lectores: 120 });
+    expect(t.paises[0]!.nombre).not.toBe("US");
+    expect(t.paises[0]!.bandera.length).toBeGreaterThan(0);
+  });
+
+  it("lo más leído, el día a día y de dónde vienen salen con sus números", async () => {
+    const { resumenDeTrafico } = await import("@/lib/trafico");
+    const t = await resumenDeTrafico(baseConDatos().asD1(), new Date("2026-08-29T16:00:00Z"));
+    expect(t.masLeidas[0]).toEqual({
+      ruta: "/es/economia/el-dolar",
+      lectores: 90,
+      lecturas: 140,
+      tiempoMedio: 213,
+    });
+    expect(t.porDia[0]).toEqual({ dia: "2026-08-28", lectores: 50, lecturas: 90 });
+    expect(t.referentes[0]).toEqual({ referente: "google.com", lectores: 65 });
+    expect(t.total).toEqual({ lecturas: 830, desde: "2026-08-01" });
+  });
+
+  it("todo se mide desde la MISMA fecha de arranque: el mes", async () => {
+    // Si cada consulta arrancara en un día distinto, los números no cuadrarían entre sí y el
+    // tablero mentiría sin que nadie lo notara.
+    const db = baseConDatos();
+    const { resumenDeTrafico } = await import("@/lib/trafico");
+    await resumenDeTrafico(db.asD1(), new Date("2026-08-29T16:00:00Z"));
+    const desdes = db.calls
+      .filter((c) => /GROUP BY (origen|pais|ruta|dia|referente)/.test(c.sql))
+      .map((c) => c.params[0]);
+    expect(new Set(desdes).size).toBe(1);
+  });
+
+  it("sin lectores todavía, el porcentaje no se divide entre cero", async () => {
+    const { FakeD1 } = await import("./fake-d1");
+    const { resumenDeTrafico } = await import("@/lib/trafico");
+    const t = await resumenDeTrafico(new FakeD1(() => []).asD1(), new Date("2026-08-29T16:00:00Z"));
+    expect(t.periodos).toHaveLength(6);
+    expect(t.periodos.every((p) => p.lectores === 0)).toBe(true);
+    expect(t.origenes).toEqual([]);
+    expect(t.total).toEqual({ lecturas: 0, desde: null });
+  });
+
+  it("la variación aguanta el arranque desde cero", async () => {
+    const { variacion } = await import("@/lib/trafico");
+    expect(variacion(10, 0)).toBe(100); // de nada a algo: subida completa
+    expect(variacion(0, 0)).toBeNull(); // de nada a nada: no hay nada que comparar
+    expect(variacion(0, 10)).toBe(-100);
+    expect(variacion(15, 10)).toBe(50);
+  });
+
+  it("los tiempos y los días se leen en palabras", async () => {
+    const { diaLegible, tiempoLegible } = await import("@/lib/trafico");
+    expect(tiempoLegible(0)).toBe("—");
+    expect(tiempoLegible(-4)).toBe("—");
+    expect(tiempoLegible(45)).toBe("45 s");
+    expect(tiempoLegible(120)).toBe("2 min");
+    expect(tiempoLegible(200)).toBe("3 min 20 s");
+    expect(diaLegible("2026-08-29", "2026-08-29")).toBe("hoy");
+    expect(diaLegible("2026-08-28", "2026-08-29")).toMatch(/28/);
+    expect(diaLegible("basura", "2026-08-29")).toBe("basura");
+  });
+});
+
+describe("el tablero de lectores, con datos (deuda cerrada el 29 ago 2026)", () => {
+  function base() {
+    let ventana = 0;
+    return new FakeD1((sql) => {
+      if (sql.includes("GROUP BY pais")) return [{ pais: "US", lectores: 90 }];
+      if (sql.includes("GROUP BY ruta")) return [{ ruta: "/es/economia/x", visitas: 140 }];
+      if (sql.includes("GROUP BY h"))
+        return [
+          { h: "07", lectores: 5 },
+          { h: "12", lectores: 30 },
+        ];
+      if (sql.includes("COUNT(*) AS n FROM visitas")) return [{ n: 4210 }];
+      if (sql.includes("AS n FROM visitas")) return [{ n: 7 }]; // en línea
+      // hoy, semana, mes
+      const serie = [
+        { l: 40, v: 90 },
+        { l: 220, v: 500 },
+        { l: 700, v: 1600 },
+      ];
+      return [serie[ventana++] ?? serie[2]!];
+    });
+  }
+
+  it("devuelve en línea, hoy, semana, mes, países, lo más leído y las horas", async () => {
+    const { resumenDeLectores } = await import("@/lib/lectores");
+    const r = await resumenDeLectores(base().asD1(), new Date("2026-08-29T16:00:00Z"));
+    expect(r.enLinea).toBe(7);
+    expect(r.hoy).toEqual({ lectores: 40, visitas: 90 });
+    expect(r.semana).toEqual({ lectores: 220, visitas: 500 });
+    expect(r.mes).toEqual({ lectores: 700, visitas: 1600 });
+    expect(r.paises).toEqual([{ pais: "US", lectores: 90 }]);
+    expect(r.masLeidas).toEqual([{ ruta: "/es/economia/x", visitas: 140 }]);
+    // La hora llega como texto ('07') y tiene que salir como número, o el gráfico se descoloca.
+    expect(r.porHora).toEqual([
+      { hora: 7, lectores: 5 },
+      { hora: 12, lectores: 30 },
+    ]);
+    expect(r.total).toBe(4210);
+  });
+
+  it("«en línea» son los últimos cinco minutos, no los de hoy", async () => {
+    const db = base();
+    const { resumenDeLectores } = await import("@/lib/lectores");
+    await resumenDeLectores(db.asD1(), new Date("2026-08-29T16:00:00Z"));
+    const enLinea = db.calls.find((c) => /AS n FROM visitas WHERE ts >/.test(c.sql));
+    expect(enLinea).toBeDefined();
+    expect(String(enLinea!.params[0])).toBe("2026-08-29T15:55:00.000Z");
+  });
+});
+
+describe("el detalle viejo se borra solo: no se guarda lo que no hace falta", () => {
+  it("borra lo que pasó de los 120 días y devuelve cuántas filas se fueron", async () => {
+    const { DIAS_DE_HISTORIAL, limpiarVisitasViejas } = await import("@/lib/lectores");
+    class Borradora extends FakeD1 {
+      prepare(sql: string) {
+        const st = super.prepare(sql);
+        const run = st.run;
+        st.run = async () => {
+          await run();
+          return { success: true, meta: { changes: 12 } };
+        };
+        return st;
+      }
+    }
+    const db = new Borradora();
+    const ahora = new Date("2026-08-29T16:00:00Z");
+    expect(await limpiarVisitasViejas(db.asD1(), ahora)).toBe(12);
+    const c = db.calls[0]!;
+    expect(c.sql).toContain("DELETE FROM visitas WHERE ts <");
+    const corte = new Date(ahora.getTime() - DIAS_DE_HISTORIAL * 86_400_000).toISOString();
+    expect(c.params[0]).toBe(corte);
+  });
+
+  it("si la base falla, devuelve 0 en vez de tumbar la corrida del robot", async () => {
+    const { limpiarVisitasViejas } = await import("@/lib/lectores");
+    const rota = {
+      prepare: () => {
+        throw new Error("sin tabla");
+      },
+    } as unknown as D1Database;
+    expect(await limpiarVisitasViejas(rota)).toBe(0);
+  });
+});

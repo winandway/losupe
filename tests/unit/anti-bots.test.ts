@@ -141,3 +141,98 @@ describe("Turnstile: se enciende solo cuando estén las llaves", () => {
     expect(await turnstileValido(env, "token", "1.2.3.4", caido)).toBe(true);
   });
 });
+
+describe("el escudo aguanta lo que falle (deuda cerrada el 29 ago 2026)", () => {
+  it("si la base se cae, el formulario NO se cierra a todo el mundo", async () => {
+    // Cerrar el formulario por un fallo nuestro es peor que dejar pasar un mensaje de spam: se
+    // pierden clientes de verdad y nadie se entera.
+    const { demasiadosEnvios } = await import("@/lib/anti-bots");
+    const rota = {
+      prepare: () => {
+        throw new Error("no such table: login_attempts");
+      },
+    } as unknown as D1Database;
+    expect(await demasiadosEnvios(rota, "203.0.113.9")).toBe(false);
+  });
+
+  it("anotar un envío tampoco puede tumbar la página si la base falla", async () => {
+    const { anotarEnvio } = await import("@/lib/anti-bots");
+    const rota = {
+      prepare: () => ({
+        bind: () => ({ run: async () => Promise.reject(new Error("caída")) }),
+      }),
+    } as unknown as D1Database;
+    await expect(anotarEnvio(rota, "203.0.113.9")).resolves.toBeUndefined();
+  });
+
+  it("los envíos se cuentan por IP y por hora, no en global", async () => {
+    const { demasiadosEnvios, MAX_POR_HORA } = await import("@/lib/anti-bots");
+    const { FakeD1 } = await import("./fake-d1");
+    const db = new FakeD1(() => [{ n: MAX_POR_HORA }]);
+    const ahora = new Date("2026-08-29T16:00:00Z");
+    expect(await demasiadosEnvios(db.asD1(), "203.0.113.9", ahora)).toBe(true);
+    const c = db.calls[0]!;
+    expect(c.params[0]).toBe("form:203.0.113.9");
+    expect(c.params[1]).toBe(new Date(ahora.getTime() - 3_600_000).toISOString());
+    // Justo por debajo del tope todavía pasa.
+    const casi = new FakeD1(() => [{ n: MAX_POR_HORA - 1 }]);
+    expect(await demasiadosEnvios(casi.asD1(), "203.0.113.9", ahora)).toBe(false);
+  });
+
+  it("el guardia rechaza por el motivo correcto, en orden: trampa, pase, tope", async () => {
+    const { crearPase, guardiaDeFormulario } = await import("@/lib/anti-bots");
+    const { FakeD1 } = await import("./fake-d1");
+    const ahora = new Date("2026-08-29T16:00:00Z");
+    const base = {
+      ip: "203.0.113.9",
+      turnstile: "",
+      minimoSegundos: 0,
+    };
+    // 1) La casilla escondida rellena = robot, y ni se mira nada más.
+    const db1 = new FakeD1();
+    const r1 = await guardiaDeFormulario(
+      db1.asD1(),
+      {},
+      { ...base, trampa: "soy un bot", pase: "" },
+      ahora,
+    );
+    expect(r1).toEqual({ ok: false, motivo: "robot" });
+    expect(db1.calls).toHaveLength(0);
+
+    // 2) Un pase inventado también es robot.
+    const r2 = await guardiaDeFormulario(
+      new FakeD1().asD1(),
+      {},
+      { ...base, trampa: "", pase: "inventado" },
+      ahora,
+    );
+    expect(r2).toEqual({ ok: false, motivo: "robot" });
+
+    // 3) Con pase bueno pero pasado del tope: «demasiados», que es un mensaje distinto. El pase se
+    //    firma con un secreto que vive en la base, así que hay que crearlo y revisarlo en la MISMA.
+    const lleno = new FakeD1((sql) =>
+      sql.includes("form_secret") ? [{ value: "secreto-de-prueba" }] : [{ n: 999 }],
+    );
+    const pase = await crearPase(lleno.asD1(), new Date(ahora.getTime() - 10_000));
+    const r3 = await guardiaDeFormulario(lleno.asD1(), {}, { ...base, trampa: "", pase }, ahora);
+    expect(r3).toEqual({ ok: false, motivo: "demasiados" });
+  });
+
+  it("con todo en regla deja pasar y anota el envío", async () => {
+    const { crearPase, guardiaDeFormulario } = await import("@/lib/anti-bots");
+    const { FakeD1 } = await import("./fake-d1");
+    const ahora = new Date("2026-08-29T16:00:00Z");
+    const db = new FakeD1((sql) =>
+      sql.includes("form_secret") ? [{ value: "secreto-de-prueba" }] : [{ n: 0 }],
+    );
+    const pase = await crearPase(db.asD1(), new Date(ahora.getTime() - 10_000));
+    const r = await guardiaDeFormulario(
+      db.asD1(),
+      {},
+      { ip: "203.0.113.9", turnstile: "", trampa: "", pase, minimoSegundos: 3 },
+      ahora,
+    );
+    expect(r).toEqual({ ok: true });
+    expect(db.calls.some((c) => c.sql.startsWith("INSERT INTO login_attempts"))).toBe(true);
+  });
+});

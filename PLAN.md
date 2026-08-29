@@ -14,6 +14,6 @@ lado mío»_. Al terminar, la lista de lo suyo.
       con su logo y su mención, y se ve en la portada de esa sección.
 - [x] 5. **Publicación en redes, todo listo menos la llave.** Dejar el código completo y probado
       para que cuando lleguen las cuentas solo haya que pegar los datos.
-- [ ] 6. **Repasar la deuda:** subir cobertura donde toca dinero o datos, y cerrar lo que quede
+- [x] 6. **Repasar la deuda:** subir cobertura donde toca dinero o datos, y cerrar lo que quede
       suelto.
 - [ ] 7. **Verificación completa, documentación, roadmap al día y publicación.**
