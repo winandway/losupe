@@ -276,6 +276,26 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status, created_at DESC);
 
 
+
+-- ── Publicacion en redes sociales (bloque 5) ────────────────────────────────────────────────────
+-- Una fila por (nota, red). La restriccion UNIQUE va DENTRO del CREATE TABLE a proposito: la tabla
+-- nace vacia, asi que no puede fallar. Anadir un indice unico sobre datos que ya existen es lo que
+-- tumbo el esquema entero el 28 ago 2026 (candado 37) y no se vuelve a hacer.
+CREATE TABLE IF NOT EXISTS social_posts (
+  id TEXT PRIMARY KEY,
+  article_id TEXT NOT NULL,
+  network TEXT NOT NULL,
+  status TEXT NOT NULL DEFAULT 'pending',
+  url TEXT,
+  error TEXT,
+  attempts INTEGER NOT NULL DEFAULT 0,
+  created_at TEXT NOT NULL,
+  sent_at TEXT,
+  UNIQUE (article_id, network)
+);
+
+CREATE INDEX IF NOT EXISTS idx_social_posts_fecha ON social_posts(created_at DESC);
+
 -- Datos base (idempotentes).
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('economia', 1, 2),

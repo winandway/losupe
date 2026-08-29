@@ -13,6 +13,7 @@ import {
 import { mailConfigured, parseRecipients } from "@/lib/mail";
 import { pickWriter } from "./authors";
 import { notifyPublished } from "./notify";
+import { publicarEnRedes, type ResultadoRedes } from "@/lib/redes";
 import { recordarConfirmacion } from "@/lib/subscribers";
 import { limpiarVisitasViejas } from "@/lib/lectores";
 import { enviarBoletin, estadoBoletin } from "@/lib/boletin";
@@ -80,6 +81,16 @@ export type RobotEnv = {
   YAD_TOKEN?: string;
   MAIL_FROM?: string;
   MAIL_FROM_NAME?: string;
+  // Redes sociales. Todas opcionales: la red que no tenga sus llaves sencillamente no se usa.
+  TELEGRAM_BOT_TOKEN?: string;
+  TELEGRAM_CHAT_ID?: string;
+  BLUESKY_IDENTIFIER?: string;
+  BLUESKY_APP_PASSWORD?: string;
+  BLUESKY_HOST?: string;
+  MASTODON_HOST?: string;
+  MASTODON_TOKEN?: string;
+  FACEBOOK_PAGE_ID?: string;
+  FACEBOOK_PAGE_TOKEN?: string;
 };
 
 export type PipelineOptions = {
@@ -108,6 +119,10 @@ export type NoteResult = {
   /** A cuántos correos se avisó (equipo + suscriptores) y el fallo si lo hubo. */
   notified?: number;
   notifyError?: string;
+  /** Cuántas redes recibieron el anuncio de esta nota. */
+  socialSent?: number;
+  /** Qué red falló y por qué. Se ve en el panel: un fallo mudo es un fallo que dura meses. */
+  socialError?: string;
 };
 
 export type RunSummary = {
@@ -481,6 +496,51 @@ async function leerPaginas(urls: readonly string[], fetchImpl: typeof fetch): Pr
     .map((p) => ({ title: p.title || p.url, url: p.url, text: p.text }));
 }
 
+/**
+ * El anuncio en redes, envuelto para que NUNCA pueda tumbar una publicación. La nota ya está en el
+ * sitio cuando esto corre: si aquí revienta algo, lo peor que puede pasar es quedarse sin post.
+ */
+async function anunciarEnRedes(
+  db: D1Database,
+  env: RobotEnv,
+  base: string,
+  nota: {
+    articleId: string;
+    titulo: string;
+    resumen: string;
+    path: string;
+    sectionId: string;
+  },
+  fetchImpl: typeof fetch,
+): Promise<ResultadoRedes> {
+  try {
+    return await publicarEnRedes(
+      db,
+      env as unknown as Record<string, string | undefined>,
+      {
+        articleId: nota.articleId,
+        titulo: nota.titulo,
+        resumen: nota.resumen,
+        url: absoluteUrl(base, nota.path),
+        seccion: nota.sectionId,
+        lang: "es",
+      },
+      fetchImpl,
+    );
+  } catch (error) {
+    return {
+      activas: 0,
+      enviados: [
+        {
+          red: "telegram",
+          ok: false,
+          error: `fallo inesperado: ${error instanceof Error ? error.message : String(error)}`,
+        },
+      ],
+    };
+  }
+}
+
 export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise<RunSummary> {
   const db = env.DB;
   const now = opts.now ?? new Date();
@@ -735,6 +795,25 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           ).catch(() => ({ team: 0, subscribers: 0, errors: ["aviso: fallo inesperado"] }));
           result.notified = aviso.team + aviso.subscribers;
           if (aviso.errors.length > 0) result.notifyError = aviso.errors.join(" | ");
+          // Y se anuncia en las redes encendidas. Como el correo: no puede frenar nada, y si falla
+          // queda escrito con su motivo en `social_posts` y sale en el panel.
+          const redes = await anunciarEnRedes(
+            db,
+            env,
+            opts.base,
+            {
+              articleId: saved.articleId,
+              titulo: draft.es.title,
+              resumen: draft.es.excerpt,
+              path: saved.pathEs,
+              sectionId: sectionId,
+            },
+            fetchImpl,
+          );
+          result.socialSent = redes.enviados.filter((e) => e.ok).length;
+          const malas = redes.enviados.filter((e) => !e.ok);
+          if (malas.length > 0)
+            result.socialError = malas.map((e) => `${e.red}: ${e.error}`).join(" | ");
         }
         Object.assign(result, {
           ok: true,
@@ -922,6 +1001,25 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           ).catch(() => ({ team: 0, subscribers: 0, errors: ["aviso: fallo inesperado"] }));
           result.notified = aviso.team + aviso.subscribers;
           if (aviso.errors.length > 0) result.notifyError = aviso.errors.join(" | ");
+          // Y se anuncia en las redes encendidas. Como el correo: no puede frenar nada, y si falla
+          // queda escrito con su motivo en `social_posts` y sale en el panel.
+          const redes = await anunciarEnRedes(
+            db,
+            env,
+            opts.base,
+            {
+              articleId: saved.articleId,
+              titulo: draft.es.title,
+              resumen: draft.es.excerpt,
+              path: saved.pathEs,
+              sectionId: c.sectionId,
+            },
+            fetchImpl,
+          );
+          result.socialSent = redes.enviados.filter((e) => e.ok).length;
+          const malas = redes.enviados.filter((e) => !e.ok);
+          if (malas.length > 0)
+            result.socialError = malas.map((e) => `${e.red}: ${e.error}`).join(" | ");
         }
         Object.assign(result, {
           ok: true,

@@ -22,6 +22,7 @@ import {
   SKILL_NAME,
 } from "./src/lib/agent-manifests";
 import { buildHealthReport } from "./src/lib/health";
+import { estadoDeRedes } from "./src/lib/redes";
 import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow";
 import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
@@ -98,8 +99,11 @@ export default {
           error: e instanceof Error ? e.message : String(e),
         }));
       }
+      // Qué redes están encendidas. Nombres de variables que faltan, nunca valores: /__health es
+      // público y una llave asomada ahí es una llave regalada.
+      const redes = estadoDeRedes(env as unknown as Record<string, string | undefined>);
       return Response.json(
-        { ...report, robot },
+        { ...report, robot, redes },
         {
           status: report.ok ? 200 : 503,
           headers: { "Cache-Control": "no-store" },

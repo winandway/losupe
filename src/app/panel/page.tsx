@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { PanelShell } from "@/components/panel/PanelShell";
 import { flashFrom, panelDict, requirePanelSession } from "@/lib/panel/server";
+import { estadoDeRedes, ultimosEnvios } from "@/lib/redes";
 import { robotStatus } from "@/lib/robot/pipeline";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
@@ -28,6 +29,8 @@ export default async function PanelHome({ searchParams }: Props) {
   const { lang, dict } = await panelDict();
   const p = dict.panel;
   const status = await robotStatus(env);
+  const redes = estadoDeRedes(env as unknown as Record<string, string | undefined>);
+  const envios = await ultimosEnvios(env.DB, 8);
   const sp = await searchParams;
   const flash = flashFrom(sp);
   const flashText = {
@@ -119,6 +122,45 @@ export default async function PanelHome({ searchParams }: Props) {
               </li>
             ))}
           </ul>
+        </Card>
+
+        <Card title={p.dashboard.redes}>
+          <p className="text-sm text-muted">{p.dashboard.redesHint}</p>
+          <ul className="mt-3 space-y-1.5 text-sm">
+            {redes.map((r) => (
+              <li key={r.id} className="flex flex-wrap items-center gap-2">
+                <Dot ok={r.configurada} />
+                <span className="font-semibold">{r.nombre}</span>
+                <span className="text-muted">
+                  {r.configurada ? p.dashboard.redesOn : p.dashboard.redesOff}
+                </span>
+                {!r.configurada && r.faltan.length > 0 ? (
+                  <span className="text-xs text-muted">
+                    ({p.dashboard.redesFaltan}: {r.faltan.join(", ")})
+                  </span>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+          <h3 className="mt-4 text-xs font-bold uppercase tracking-widest text-muted">
+            {p.dashboard.redesUltimos}
+          </h3>
+          {envios.length === 0 ? (
+            <p className="mt-2 text-sm text-muted">{p.dashboard.redesVacio}</p>
+          ) : (
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {envios.map((e) => (
+                <li key={e.id} className="flex items-start gap-2">
+                  <Dot ok={e.status === "sent"} />
+                  <span className="min-w-0">
+                    <span className="font-semibold capitalize">{e.network}</span>{" "}
+                    <span className="text-muted">{e.title ?? e.articleId}</span>
+                    {e.error ? <span className="block text-xs text-coral">{e.error}</span> : null}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
 
         <Card title={p.dashboard.budget}>

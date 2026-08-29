@@ -96,7 +96,8 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   Cron cada 2 h (11–23 UTC), una nota por corrida, cupo `notes_per_day`, tope `daily_budget_usd`,
   modelos caros bloqueados en código. Tutorial completo: [docs/robot-y-encargos.md](docs/robot-y-encargos.md).
 - Llaves (en YaDominios Cloud → Variables de entorno): `ADMIN_PASSWORD`, `GEMINI_API_KEY`,
-  `FAL_KEY` o `PEXELS_API_KEY`, opcionales `BRAVE_API_KEY`, `TURNSTILE_*`, `CRON_SECRET`.
+  `FAL_KEY` o `PEXELS_API_KEY`, opcionales `BRAVE_API_KEY`, `TURNSTILE_*`, `CRON_SECRET` y las de
+  redes sociales (`TELEGRAM_*`, `BLUESKY_*`, `MASTODON_*`, `FACEBOOK_*`).
 - Temas: Google Trends (RSS público, ES/EN, filtrado y clasificado por sección), Bing Noticias, RSS
   de medios y Brave; medios de confianza en `src/lib/robot/trusted-sources.ts` (el redactor los
   nombra: «según The New York Times»). Video corto de Pexels cuando suma. Plan de funcionamiento:
@@ -109,6 +110,15 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   clic se convierte en patrocinador + encargos en la cola del robot. Precios en `src/lib/orders.ts`
   (`PLANS`). Cobro manual por ahora; Stripe cuando Richard lo autorice.
 - Roadmap de las 10 ideas y su estado: [docs/monetizacion.md](docs/monetizacion.md).
+
+## Redes sociales
+
+Cada nota se anuncia sola en **Telegram, Bluesky, Mastodon y Facebook**. El código está escrito,
+probado y enchufado: lo único que falta es pegar las llaves en YaDominios Cloud → Variables de
+entorno. La red sin llaves se salta sin molestar; el estado de cada una se ve en el panel y en
+`/__health`, y nunca se enseña un valor, solo el nombre de la variable que falta.
+
+Cómo se saca cada llave, paso a paso: [docs/redes-sociales.md](docs/redes-sociales.md).
 
 ## Publicar una nota a mano (sin el robot)
 

@@ -1039,3 +1039,33 @@ diario…`, 23 ago 2026).
   campos estén en la ficha del panel.
 - **Qué NO tocar:** no quites la etiqueta de «Patrocinado» ni el `rel="sponsored"`; no le pases al
   robot quién patrocina una sección; y no dejes que un fallo del anuncio pueda romper la página.
+
+## 39. Redes sociales: todo escrito, esperando solo la llave
+
+- **Qué es:** cada nota se anuncia sola en Telegram, Bluesky, Mastodon y Facebook. Guía completa de
+  encendido en [`docs/redes-sociales.md`](redes-sociales.md).
+- **Por qué esas cuatro:** son las que se pueden encender **hoy**, sin aprobación y sin pagar (salvo
+  Facebook, que espera la revisión de Meta). X cobra por publicar desde un programa e Instagram exige
+  cuenta de empresa aprobada. Añadir una quinta es un archivo en `src/lib/redes/` y una línea en la
+  lista `REDES` — todos los adaptadores tienen la misma forma a propósito.
+- **EL DETALLE QUE SE ESCAPA (Bluesky):** el enlace no se detecta solo. Hay que marcarlo con un
+  «facet» que dice en qué **BYTES UTF-8** empieza y acaba. Contando letras, un titular con tildes
+  desplaza la marca y el enlace sale como texto muerto. `facetsDeEnlace()` cuenta bytes; la prueba
+  se pone roja si alguien lo cambia por `indexOf` (comprobado en rojo el 29 ago 2026).
+- **El orden de sacrificio del texto:** primero se van las etiquetas, después se acorta el gancho, y
+  **el titular y el enlace no se tocan jamás**. Un post sin enlace no sirve para nada.
+- **Los caracteres se cuentan por símbolos visibles, no por unidades UTF-16.** Un emoji es uno. Con
+  `.length` un post de 299 se rechaza por pasarse de 300.
+- **Tres reglas del envío:** (1) nunca frena la publicación — la nota ya está en el sitio; (2) el
+  fallo se VE, escrito en `social_posts` con su motivo y en rojo en el panel, nunca un `catch` mudo;
+  (3) nunca dos veces la misma nota en la misma red.
+- **La tabla nace con su UNIQUE dentro del `CREATE TABLE`**, no con un índice añadido después. Un
+  `CREATE UNIQUE INDEX` sobre datos que ya existen tumbó el esquema entero el 28 ago 2026
+  (candado 37). Hay una prueba que exige que siga así.
+- **Ni el panel ni `/__health` enseñan una llave.** Solo el NOMBRE de la que falta, para poder
+  pegarla. `/__health` es público: una llave asomada ahí es una llave regalada. Dos pruebas lo fijan.
+- **Un fallo colocado en schema.sql lo cazó otra prueba:** las tablas tienen que crearse ANTES de
+  cualquier `INSERT`/`UPDATE` del archivo. Puse el `CREATE TABLE` al final y saltó sola.
+- **Candados:** `tests/unit/redes.test.ts` (22 pruebas) y dos en `tests/e2e/smoke.spec.ts`.
+- **Qué NO tocar:** el conteo en bytes de los facets; el orden de sacrificio del texto; el `UNIQUE`
+  dentro del `CREATE TABLE`; y que el estado de las redes no devuelva nunca un valor de variable.

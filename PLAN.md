@@ -12,7 +12,7 @@ lado mío»_. Al terminar, la lista de lo suyo.
       enlaces y marca.
 - [x] 4. **Patrocinio de sección** (nº 3 de monetización): una marca patrocina una sección entera,
       con su logo y su mención, y se ve en la portada de esa sección.
-- [ ] 5. **Publicación en redes, todo listo menos la llave.** Dejar el código completo y probado
+- [x] 5. **Publicación en redes, todo listo menos la llave.** Dejar el código completo y probado
       para que cuando lleguen las cuentas solo haya que pegar los datos.
 - [ ] 6. **Repasar la deuda:** subir cobertura donde toca dinero o datos, y cerrar lo que quede
       suelto.

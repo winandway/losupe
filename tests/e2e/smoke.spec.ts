@@ -1009,3 +1009,35 @@ test("un patrocinio de sección se ve claramente como publicidad", async ({ page
   await expect(page.getByLabel("Hasta (fecha)")).toBeVisible();
   await expect(page.getByLabel("Frase que acompaña al nombre")).toBeVisible();
 });
+
+test("panel: la tarjeta de redes dice qué está encendido y qué llave falta", async ({ page }) => {
+  await page.goto("/panel/accion/idioma?lang=es");
+  await page.goto("/panel/entrar");
+  await page.getByLabel("Contraseña", { exact: true }).fill("losupe-panel-local");
+  await page.getByRole("button", { name: "Entrar" }).click();
+  await page.goto("/panel");
+
+  const tarjeta = page.locator("section", { hasText: "Redes sociales" }).last();
+  await expect(tarjeta).toBeVisible();
+  // Las cuatro redes se ven, encendidas o no: para saber qué falta hay que verlas todas.
+  for (const red of ["Telegram", "Bluesky", "Mastodon", "Facebook"]) {
+    await expect(tarjeta.getByText(red, { exact: true })).toBeVisible();
+  }
+  // Y de las apagadas se dice EL NOMBRE EXACTO de la variable que falta, para poder pegarla.
+  await expect(tarjeta.getByText(/BLUESKY_IDENTIFIER/)).toBeVisible();
+  // Nunca un valor: el panel enseña qué falta, jamás lo que ya está puesto.
+  await expect(tarjeta).not.toContainText("losupe-panel-local");
+});
+
+test("__health dice qué redes están encendidas y NO enseña ninguna llave", async ({ request }) => {
+  const res = await request.get("/__health");
+  const datos = (await res.json()) as {
+    redes?: { id: string; configurada: boolean; faltan: string[] }[];
+  };
+  expect(datos.redes?.map((r) => r.id)).toEqual(["telegram", "bluesky", "mastodon", "facebook"]);
+  // El cuerpo entero no puede contener un valor de variable, solo nombres.
+  const cuerpo = JSON.stringify(datos);
+  expect(cuerpo).not.toMatch(/losupe-panel-local/);
+  const bsky = datos.redes?.find((r) => r.id === "bluesky");
+  expect(bsky?.faltan).toContain("BLUESKY_APP_PASSWORD");
+});
