@@ -3,6 +3,22 @@ import type { SchemaStatus } from "./schema-guard";
 export type HealthReport = {
   ok: boolean;
   time: string;
+  /**
+   * QUIÉN DISPARA LAS CORRIDAS, de las últimas 48 horas.
+   *
+   * Hay tres reloj posibles y no dan igual: el **cron de la plataforma** (el que debería mandar,
+   * puntual y sin depender de nadie), el **reloj de GitHub** (que llega tarde o no llega: de 24
+   * disparos diarios llegaban uno o dos) y el **latido de una visita** (que solo existe si alguien
+   * entra al sitio a esa hora — con poco tráfico, sencillamente no hay nota).
+   *
+   * Sin este desglose no se puede saber por qué falta una nota, y se acaba adivinando. Medido el
+   * 29 ago 2026 después de un día con 2 notas de 4.
+   */
+  relojes: {
+    cron: number;
+    manual: number;
+    ultimas: { t: string; trigger: string; status: string }[];
+  } | null;
   db: {
     binding: boolean;
     schema: SchemaStatus | null;
@@ -24,6 +40,7 @@ export async function buildHealthReport(
     return {
       ok: false,
       time,
+      relojes: null,
       db: {
         binding: false,
         schema,
@@ -36,7 +53,7 @@ export async function buildHealthReport(
     };
   }
   try {
-    const [tables, articles, authors, runs] = await Promise.all([
+    const [tables, articles, authors, runs, relojes] = await Promise.all([
       db
         .prepare(`SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table'`)
         .first<{ n: number }>(),
@@ -45,10 +62,25 @@ export async function buildHealthReport(
         .first<{ n: number }>(),
       db.prepare(`SELECT COUNT(*) AS n FROM authors`).first<{ n: number }>(),
       db.prepare(`SELECT COUNT(*) AS n FROM runs`).first<{ n: number }>(),
+      db
+        .prepare(
+          `SELECT started_at, trigger, status FROM runs
+            WHERE started_at > datetime('now', '-2 days') ORDER BY started_at DESC LIMIT 40`,
+        )
+        .all<{ started_at: string; trigger: string; status: string }>()
+        .catch(() => ({ results: [] })),
     ]);
+    const filas = relojes.results ?? [];
     return {
       ok: true,
       time,
+      relojes: {
+        cron: filas.filter((r) => r.trigger === "cron").length,
+        manual: filas.filter((r) => r.trigger !== "cron").length,
+        ultimas: filas
+          .slice(0, 12)
+          .map((r) => ({ t: r.started_at, trigger: r.trigger, status: r.status })),
+      },
       db: {
         binding: true,
         schema,
@@ -62,6 +94,7 @@ export async function buildHealthReport(
     return {
       ok: false,
       time,
+      relojes: null,
       db: {
         binding: true,
         schema,

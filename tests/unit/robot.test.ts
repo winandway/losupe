@@ -101,3 +101,31 @@ describe("robot programado", () => {
     expect(res.status).toBe(500);
   });
 });
+
+describe("¿quién dispara las corridas? (medido el 29 ago 2026)", () => {
+  it("/__health separa el reloj de la plataforma del latido de una visita", async () => {
+    const { buildHealthReport } = await import("@/lib/health");
+    const { FakeD1 } = await import("./fake-d1");
+    const db = new FakeD1((sql) => {
+      if (sql.includes("FROM runs\n") || sql.includes("started_at, trigger"))
+        return [
+          { started_at: "2026-08-29T01:49:00Z", trigger: "manual", status: "error" },
+          { started_at: "2026-08-28T21:00:00Z", trigger: "cron", status: "ok" },
+          { started_at: "2026-08-28T20:27:00Z", trigger: "manual", status: "ok" },
+        ];
+      return [{ n: 5 }];
+    });
+    const r = await buildHealthReport(db.asD1(), null);
+    // Sin este desglose no se puede saber por qué falta una nota: se acaba adivinando, y adivinar
+    // costó dos tardes enteras.
+    expect(r.relojes).toMatchObject({ cron: 1, manual: 2 });
+    expect(r.relojes!.ultimas[0]).toMatchObject({ trigger: "manual", status: "error" });
+  });
+
+  it("sin base no inventa números: dice que no sabe", async () => {
+    const { buildHealthReport } = await import("@/lib/health");
+    const r = await buildHealthReport(undefined, null);
+    expect(r.relojes).toBeNull();
+    expect(r.ok).toBe(false);
+  });
+});
