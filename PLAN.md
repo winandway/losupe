@@ -16,4 +16,16 @@ lado mío»_. Al terminar, la lista de lo suyo.
       para que cuando lleguen las cuentas solo haya que pegar los datos.
 - [x] 6. **Repasar la deuda:** subir cobertura donde toca dinero o datos, y cerrar lo que quede
       suelto.
-- [ ] 7. **Verificación completa, documentación, roadmap al día y publicación.**
+- [x] 7. **Verificación completa, documentación, roadmap al día y publicación.**
+
+---
+
+**Terminado el 29 ago 2026.** Los siete puntos, más dos que aparecieron por el camino y no podían
+esperar: el arreglo del guardia que mataba a la corrida justo cuando terminaba de publicar
+(candado 41) y el desglose de relojes en `/__health` para poder verlo.
+
+407 pruebas de unidad, 172 de punta a punta, `npm run verify` completo en verde y las rutas
+críticas del sitio publicado respondiendo 200.
+
+Lo que queda está en el panel, en **Roadmap**: 3 tareas nuestras y 7 que esperan un dato o una
+cuenta de Richard.
