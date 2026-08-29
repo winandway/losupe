@@ -7,7 +7,7 @@ lado mío»_. Al terminar, la lista de lo suyo.
       arreglar lo que salga. Google usa esto para decidir posiciones.
 - [x] 2. **Boletín de resumen.** Hoy sale un aviso por cada nota; falta el resumen periódico con lo
       mejor, que es lo que la gente abre y reenvía. Con su plantilla, su baja y su control en el panel.
-- [ ] 3. **Widget de noticias para otros sitios** (idea de Richard, nº 5 de monetización). Un trozo
+- [x] 3. **Widget de noticias para otros sitios** (idea de Richard, nº 5 de monetización). Un trozo
       de código que cualquier web puede pegar para mostrar nuestras últimas notas. Nos trae visitas,
       enlaces y marca.
 - [ ] 4. **Patrocinio de sección** (nº 3 de monetización): una marca patrocina una sección entera,

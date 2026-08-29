@@ -986,3 +986,31 @@ diario…`, 23 ago 2026).
   apagar, que no se pueda colar código por el titular de una nota, y los tres casos de «no se manda».
 - **Qué NO tocar:** no bajes los días «para mandar más» (se paga en bajas y en spam); no marques el
   boletín como enviado si no salió; y no insistas cuando el servicio de correo rechaza.
+
+## 37. El widget para otros sitios: dónde se pinta y por qué no es un marco
+
+- **Qué es (idea nº 5 del plan de ingresos, de Richard):** una línea de código que cualquier web pega
+  y muestra nuestras últimas notas. Nos trae tres cosas a la vez: **visitas** de gente que no nos
+  conocía, **enlaces desde otros dominios** —que es lo que más pesa en el posicionamiento— y marca.
+- **Se sirve como JavaScript, no como marco (`iframe`), a propósito.** Un marco no aporta ni un
+  enlace al posicionamiento y muchos sitios lo bloquean. Esto escribe enlaces de verdad en la página
+  que lo incrusta, de los que Google sigue.
+- **DÓNDE SE PINTA, que es donde estuvo el problema.** Tres intentos, en orden: (1) un hueco
+  `data-losupe-aqui` que haya puesto quien nos incrusta, (2) justo donde está el script, (3) al final
+  de la página. La tercera no es un capricho: **muchos sitios ponen los scripts en la cabecera** —
+  Next.js lo hace solo—, y ahí un `div` no se ve. Sin ese respaldo el widget se pintaba **dentro del
+  `<head>`** y no aparecía nada.
+- **Y espera a que exista la página.** Con `async` en la cabecera el script puede ejecutarse **antes**
+  de que exista el resto del documento, así que si no encuentra dónde pintar, espera a que cargue.
+- **Los titulares se escapan.** Van dentro de un JavaScript que corre en la web **de otro**: escapar
+  mal sería meterle un agujero de seguridad a quien confía en nosotros.
+- **La vista previa de nuestra propia página es un caso aparte.** React vuelve a pintar el contenedor
+  al hidratar y se lleva por delante lo que el widget escribió (error 418). Por eso la vista previa
+  lo carga **después** de que React termine, con `VistaPreviaWidget`. Quien nos incruste no necesita
+  nada de eso.
+- **Candado:** `tests/unit/widget.test.ts` y, en el e2e, «el widget se puede pegar en cualquier web»:
+  que se sirva como JavaScript, que cualquiera pueda pedirlo (`Access-Control-Allow-Origin: *`), que
+  lleve enlaces de verdad y que **no** toque cookies ni almacenamiento en la web ajena.
+- **Qué NO tocar:** no lo conviertas en un marco (pierde todo el valor de posicionamiento); no
+  quites el respaldo de pintar al final de la página; y nunca metas cookies ni rastreo en código que
+  corre en el sitio de otro.

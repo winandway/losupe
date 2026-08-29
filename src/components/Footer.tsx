@@ -56,6 +56,11 @@ export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: nu
               </Link>
             </li>
             <li>
+              <Link href={staticPath("widget", lang)} className="hover:underline">
+                {dict.widget.title}
+              </Link>
+            </li>
+            <li>
               <Link href={searchPath(lang)} className="hover:underline">
                 {dict.nav.search}
               </Link>

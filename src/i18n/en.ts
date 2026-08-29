@@ -91,6 +91,32 @@ export const en: Dict = {
     articlesBy: "Stories by",
     newsroom: "Newsroom",
   },
+  widget: {
+    title: "Put our news on your site",
+    intro:
+      "One line of code and you're done: your site always shows the latest from losupe, updated on its own. Free, no cookies, no tracking, no sign-up.",
+    howTitle: "How to add it",
+    howBody: "Copy this line and paste it where you want the stories to appear. That's it.",
+    optionsTitle: "You can tweak it",
+    option: "Option",
+    values: "Values",
+    what: "What it does",
+    optLang: "Language of the stories.",
+    optN: "How many stories to show.",
+    optTheme: "Light for white backgrounds, dark for black ones.",
+    optSection: "Only stories from one section.",
+    previewTitle: "How it looks",
+    previewBody: "The box below is the real widget, running.",
+    slotTip:
+      "Want to decide exactly where it appears? Drop this placeholder wherever you like and the widget renders there:",
+    rulesTitle: "The rules, and there are few",
+    rules: [
+      "Use it anywhere, including commercial sites, no permission needed.",
+      "Don't remove or hide the losupe.com name or the links to the stories.",
+      "Don't alter it to change headlines or imply a story is someone else's.",
+      "If it gives you trouble or you want a different look, write to us.",
+    ],
+  },
   contact: {
     title: "Contact",
     intro: "Write to us. We read every message and reply, usually the same business day.",

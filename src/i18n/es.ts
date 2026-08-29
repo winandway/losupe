@@ -89,6 +89,33 @@ export const es = {
     articlesBy: "Notas de",
     newsroom: "Redacción",
   },
+  widget: {
+    title: "Pon nuestras noticias en tu web",
+    intro:
+      "Un trozo de código y listo: tu sitio muestra siempre lo último de losupe, actualizado solo. Es gratis, no lleva cookies, no rastrea a nadie y no hace falta registrarse.",
+    howTitle: "Cómo se pone",
+    howBody:
+      "Copia esta línea y pégala en tu página, donde quieras que salgan las notas. Nada más.",
+    optionsTitle: "Puedes ajustarlo",
+    option: "Opción",
+    values: "Valores",
+    what: "Qué hace",
+    optLang: "El idioma de las notas.",
+    optN: "Cuántas notas se muestran.",
+    optTheme: "Claro para fondos blancos, oscuro para fondos negros.",
+    optSection: "Solo notas de una sección.",
+    previewTitle: "Así se ve",
+    previewBody: "Esto de abajo es el widget de verdad, funcionando.",
+    slotTip:
+      "¿Quieres decidir exactamente dónde sale? Pon este hueco donde lo quieras y el widget se pintará ahí:",
+    rulesTitle: "Las reglas, que son pocas",
+    rules: [
+      "Puedes usarlo en cualquier sitio, también comercial, sin pedir permiso.",
+      "No quites ni tapes el nombre de losupe.com ni los enlaces a las notas.",
+      "No lo modifiques para cambiar los titulares o hacer creer que la nota es de otro.",
+      "Si te da problemas o quieres otro diseño, escríbenos y lo vemos.",
+    ],
+  },
   contact: {
     title: "Contacto",
     intro:

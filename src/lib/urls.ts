@@ -10,6 +10,7 @@ export const ROUTE_WORDS = {
   terms: { es: "terminos", en: "terms" },
   publish: { es: "publica", en: "publish" },
   contact: { es: "contacto", en: "contact" },
+  widget: { es: "widget", en: "widget" },
 } as const;
 
 type RouteKey = keyof typeof ROUTE_WORDS;

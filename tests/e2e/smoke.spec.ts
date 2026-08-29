@@ -973,3 +973,26 @@ test("panel: la sección de tráfico tiene el historial completo", async ({ page
   await expect(page.getByRole("heading", { name: /Día a día/ })).toBeVisible();
   await expect(page.getByText("Tiempo medio").first()).toBeVisible();
 });
+
+test("el widget se puede pegar en cualquier web y trae enlaces de verdad", async ({
+  request,
+  page,
+}) => {
+  const res = await request.get("/datos/widget?lang=es&n=3");
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toContain("javascript");
+  // Cualquier sitio tiene que poder pedirlo, si no, no sirve de nada.
+  expect(res.headers()["access-control-allow-origin"]).toBe("*");
+  const js = await res.text();
+  // Enlaces normales que Google sigue, no un marco: los enlaces desde otros dominios son lo que
+  // más pesa en el posicionamiento, y un iframe no aporta ninguno.
+  expect(js).toContain("<a href=");
+  expect(js).toContain("losupe");
+  // Y nada de cookies ni rastreo dentro del código que corre en la web de otro.
+  expect(js).not.toMatch(/document\.cookie|localStorage/);
+
+  // La página donde se copia el código existe y trae el código listo
+  await page.goto("/es/widget");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("noticias en tu web");
+  await expect(page.locator("pre code").first()).toContainText("/datos/widget");
+});
