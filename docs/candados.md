@@ -964,3 +964,25 @@ diario…`, 23 ago 2026).
   le inventen parámetros, y que el nombre de la miniatura sea previsible.
 - **Qué NO tocar:** no vuelvas a pedir `large2x` a secas; no quites el respaldo del servidor (rompe
   el archivo entero); y antes de guardar una imagen, pregúntate a qué tamaño se va a ver.
+
+## 36. El boletín de resumen: un correo cada cuatro días, no cuatro al día
+
+- **Por qué hacía falta:** hasta ahora salía un aviso por **cada** nota publicada. Para el equipo
+  está bien; para un lector son **cuatro correos al día**, que es la vía más rápida a que te marquen
+  como spam y pierdas el buzón para siempre.
+- **Qué es el boletín:** un solo correo cada cuatro días con lo mejor, con su foto, sus entradillas y
+  su enlace de baja. Es el formato que la gente abre entera y reenvía, y **el único canal de lectores
+  que no depende de Google ni de ninguna red**: si mañana cambia un algoritmo, esta lista sigue
+  siendo nuestra.
+- **Detalles que importan y son fáciles de hacer mal:**
+  1. **Sin suscriptores confirmados NO se marca como enviado.** Si se marcara, el primer boletín de
+     verdad tardaría cuatro días más en salir. Hay una prueba que lo vigila.
+  2. **Si el servicio de correo rechaza (por ejemplo, el tope diario del plan), se para.** Insistir
+     con el servicio diciendo que no es la forma de quemar la reputación del dominio.
+  3. Las notas se ordenan por **lectores reales** y, si aún no hay datos, por fecha.
+  4. Sale desde la propia corrida del robot: no hacía falta otro reloj para algo que va cada cuatro
+     días.
+- **Candado:** `tests/unit/boletin.test.ts` — el ritmo, que no salga dos veces seguidas, que se pueda
+  apagar, que no se pueda colar código por el titular de una nota, y los tres casos de «no se manda».
+- **Qué NO tocar:** no bajes los días «para mandar más» (se paga en bajas y en spam); no marques el
+  boletín como enviado si no salió; y no insistas cuando el servicio de correo rechaza.

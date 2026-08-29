@@ -36,8 +36,15 @@ import { SQL_NOW } from "./sql-time";
 export const MINIMO_SEGUNDOS = 3;
 export const MINIMO_BOLETIN = 1.5;
 export const VALIDEZ_MINUTOS = 90;
-/** Cuántos envíos se admiten desde una misma dirección en una hora. */
-export const MAX_POR_HORA = 5;
+/**
+ * Cuántos envíos se admiten desde una misma dirección en una hora.
+ *
+ * Diez, y no cinco: **varias personas pueden compartir la misma dirección** — una oficina, un
+ * colegio, una red móvil. Con el listón bajo se bloquea a gente de verdad, y esta es la ÚLTIMA red:
+ * lo gordo ya lo frenan el pase firmado y el tiempo mínimo. Se descubrió con una prueba que empezó
+ * a fallar por agotar el cupo desde la misma máquina (29 ago 2026).
+ */
+export const MAX_POR_HORA = 10;
 
 /** El secreto con el que se firman los pases. Se genera solo la primera vez y vive en la base. */
 export async function secretoDeFormularios(db: D1Database): Promise<string> {

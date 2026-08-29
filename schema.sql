@@ -375,7 +375,10 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   -- La mesa de redaccion: cuantas de cada diez notas propias son piezas de curiosidades y listas,
   -- y si se aprovechan las efemerides del dia (los 10 años sin Juan Gabriel, etc).
   ('mesa_ratio_propias', '0.4'),
-  ('mesa_efemerides', '1');
+  ('mesa_efemerides', '1'),
+  -- El boletin de resumen: uno cada cuatro dias con lo mejor, en vez de un correo por nota.
+  ('boletin_activo', '1'),
+  ('boletin_dias', '4');
 
 -- Fuentes iniciales del robot (RSS públicos). Se pueden apagar o ampliar desde el panel.
 INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VALUES

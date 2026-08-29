@@ -15,6 +15,7 @@ import { pickWriter } from "./authors";
 import { notifyPublished } from "./notify";
 import { recordarConfirmacion } from "@/lib/subscribers";
 import { limpiarVisitasViejas } from "@/lib/lectores";
+import { enviarBoletin, estadoBoletin } from "@/lib/boletin";
 import { embedVideo, findPexelsVideo, illustrate } from "./images";
 import { saveArticle } from "./publish";
 import {
@@ -135,6 +136,8 @@ export type RobotStatus = {
   mesa: { ratioPropias: number; efemerides: boolean };
   /** Suscriptores por estado. Solo cuentas, ningún correo: sirve para saber si el boletín llega. */
   subscribers: { confirmed: number; pending: number; unsubscribed: number; withError: number };
+  /** El boletín de resumen: si está encendido, cada cuánto sale y cuándo toca el siguiente. */
+  boletin: { activo: boolean; cada: number; ultimo: string | null; proximo: string | null };
   /** A qué horas publica el diario (hora del Este de EE. UU.) y en cuál estamos. */
   horario: {
     zona: string;
@@ -253,6 +256,7 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
     sponsorPace: pace,
     mesa: await reglasDeLaMesa(db),
     subscribers: await contarSuscriptores(db),
+    boletin: await estadoBoletin(db, now),
     queue,
     lastRun: last
       ? {
@@ -565,6 +569,8 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   await recordarConfirmacion(db, env, opts.base).catch(() => undefined);
   // Y el detalle de visitas que ya no sirve: se guarda lo justo y se borra solo.
   await limpiarVisitasViejas(db, now).catch(() => 0);
+  // Y el boletín, si toca. Sale cada cuatro días desde la propia corrida: no hace falta otro reloj.
+  await enviarBoletin(db, env, opts.base, now).catch(() => undefined);
   const discover = await discoverCandidates(db, { fetchImpl, now });
 
   // 5) Notas, alternando

@@ -336,6 +336,25 @@ export default async function PanelHome({ searchParams }: Props) {
               <p className="mt-1.5 text-xs text-muted">{p.mailSettings.pendingHint}</p>
             ) : null}
           </div>
+          {/* El boletín de resumen: uno cada pocos días con lo mejor, en vez de un correo por nota. */}
+          <div className="mt-4 border-t border-line pt-3">
+            <p className="text-xs font-bold uppercase tracking-wide text-muted">
+              {p.mailSettings.digest}
+            </p>
+            <p className="mt-1 flex items-center gap-2 text-sm">
+              <Dot ok={status.boletin.activo} />
+              {status.boletin.activo
+                ? p.mailSettings.digestEvery.replace("{n}", String(status.boletin.cada))
+                : p.mailSettings.digestOff}
+            </p>
+            {status.boletin.activo ? (
+              <p className="mt-1 text-xs text-muted">
+                {status.boletin.ultimo
+                  ? p.mailSettings.digestNext.replace("{fecha}", status.boletin.proximo ?? "—")
+                  : p.mailSettings.digestFirst}
+              </p>
+            ) : null}
+          </div>
           <form action="/panel/accion/correos" method="post" className="mt-3">
             <input type="hidden" name="op" value="test" />
             <button

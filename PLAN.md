@@ -3,9 +3,9 @@
 Autorizado por Richard el 29 ago 2026: _«haz lo que tengas que hacer y deja todo lo que sea del
 lado mío»_. Al terminar, la lista de lo suyo.
 
-- [ ] 1. **Velocidad de carga medida y corregida.** Medir la portada y una nota con datos reales,
+- [x] 1. **Velocidad de carga medida y corregida.** Medir la portada y una nota con datos reales,
       arreglar lo que salga. Google usa esto para decidir posiciones.
-- [ ] 2. **Boletín de resumen.** Hoy sale un aviso por cada nota; falta el resumen periódico con lo
+- [x] 2. **Boletín de resumen.** Hoy sale un aviso por cada nota; falta el resumen periódico con lo
       mejor, que es lo que la gente abre y reenvía. Con su plantilla, su baja y su control en el panel.
 - [ ] 3. **Widget de noticias para otros sitios** (idea de Richard, nº 5 de monetización). Un trozo
       de código que cualquier web puede pegar para mostrar nuestras últimas notas. Nos trae visitas,

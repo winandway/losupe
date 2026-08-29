@@ -104,6 +104,8 @@ describe("la puerta completa", () => {
   });
 
   it("pero no más de unos pocos por hora desde la misma dirección", async () => {
+    // Diez, no cinco: varias personas pueden compartir dirección (una oficina, una red móvil).
+    expect(MAX_POR_HORA).toBeGreaterThanOrEqual(10);
     const { db } = baseConSecreto(MAX_POR_HORA);
     const pase = await crearPase(db, AHORA);
     expect(await guardiaDeFormulario(db, {}, { ...datos, pase }, despues(15))).toEqual({
