@@ -1098,3 +1098,33 @@ diario…`, 23 ago 2026).
 - **Global:** de 74,1 % a 77,2 % de líneas, con el umbral subido a 76 (solo sube, nunca baja).
 - **Qué NO tocar:** no bajes ningún umbral para que pase un cambio. Si algo está rojo, se arregla el
   cambio; no se apaga el semáforo.
+
+## 41. El guardia que mataba al trabajador puntual
+
+- **Cómo se veía:** el 28 de agosto de 2026 salieron **2 notas de 4**. En el panel, casi todas las
+  corridas figuraban en `error` — y sin embargo las notas estaban publicadas. Cinco intentos
+  seguidos en la misma franja, cada uno con su llamada de pago a la IA.
+- **Cómo se cazó:** midiendo, no suponiendo. Se añadió a `/__health` el desglose de **quién dispara
+  cada corrida** y salió el patrón entero: los intentos caían cada 15-20 minutos, exactamente el
+  período de `closeStaleRuns`.
+- **La causa real, y son dos cosas encadenadas:**
+  1. `closeStaleRuns` daba por muerta cualquier corrida de más de **15 minutos**. Escribir una nota
+     bilingüe con imagen tarda de verdad unos quince. El guardia mataba a la corrida **en el mismo
+     instante en que terminaba de publicar**.
+  2. `claimTick` decidía si reintentar mirando **el estado de la última corrida**. Como esa corrida
+     acababa de marcarse `error`, creía que el turno seguía pendiente y volvía a escribir. Cuatro
+     veces más. Cada una gastando dinero por una nota que ya estaba en la portada.
+- **El arreglo, de raíz:**
+  - El turno se da por hecho **si hay una nota publicada dentro de la ventana de esta franja**, diga
+    lo que diga el estado de la corrida. **Una nota publicada no miente; un estado sí.**
+  - `MINUTOS_ANTES_DE_DARLA_POR_MUERTA = 30`. Un guardia que mata al trabajador puntual no es un
+    guardia, es el problema.
+- **Lo que se descubrió de paso, y hay que decirlo:** el reloj de GitHub **no sirve** para esto. Con
+  el cron configurado cada hora (24 disparos diarios), el 28 de agosto llegaron **dos**. El cron de
+  la plataforma sí dispara; lo que sostenía el diario, en la práctica, era el **latido de las
+  visitas** — que solo existe si alguien entra al sitio a esa hora.
+- **Candado:** cuatro pruebas en `tests/unit/franjas.test.ts` (comprobadas en rojo el 29 ago 2026:
+  al quitar la comprobación de la nota publicada, la prueba falla) y dos en `tests/unit/robot.test.ts`
+  para el desglose de relojes.
+- **Qué NO tocar:** no bajes `MINUTOS_ANTES_DE_DARLA_POR_MUERTA` por debajo de 30, y no vuelvas a
+  decidir el reintento por el estado de la corrida. Mira si la nota salió.

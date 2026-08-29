@@ -17,7 +17,7 @@
  */
 
 import { SQL_NOW } from "../sql-time";
-import { franjaActiva, marcaDeFranja, type Franja } from "./franjas";
+import { franjaActiva, inicioDeFranja, marcaDeFranja, type Franja } from "./franjas";
 
 export const TICK_KEY = "robot_last_tick";
 export const TICK_TOKEN_KEY = "robot_tick_token";
@@ -77,6 +77,20 @@ export async function claimTick(
     if (actual === base || actual.startsWith(`${base}#`)) {
       const previo = actual === base ? 1 : Number(actual.slice(base.length + 1)) || 1;
       if (previo >= MAX_INTENTOS_POR_FRANJA) return { run: false, reason: "turno_hecho" };
+      // ¿YA SALIÓ LA NOTA DE ESTE TURNO? Si la hay, el turno está hecho, diga lo que diga el
+      // estado de la corrida. Esto es lo que se aprendió el 28 ago 2026: una corrida que tarda más
+      // que el guardia de corridas colgadas se marca «error» aunque haya publicado, y entonces el
+      // turno se reintentaba cuatro veces más. Cada reintento es una llamada de pago a la IA por
+      // una nota que ya estaba en la portada. **Una nota publicada no miente; un estado sí.**
+      const yaSalio = await db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM articles
+            WHERE status = 'published' AND origin = 'robot' AND published_at >= ?1`,
+        )
+        .bind(inicioDeFranja(now, franja))
+        .first<{ n: number }>()
+        .catch(() => null);
+      if (Number(yaSalio?.n ?? 0) > 0) return { run: false, reason: "turno_hecho" };
       const ultima = await db
         .prepare(`SELECT status FROM runs ORDER BY started_at DESC LIMIT 1`)
         .first<{ status: string }>();
@@ -127,8 +141,18 @@ export async function getTickToken(db: D1Database): Promise<string | null> {
 /**
  * Corridas que se quedaron a medias (el worker se cortó antes de terminar). Se marcan como error
  * para que el estado no mienta y el panel muestre lo que de verdad pasó.
+ *
+ * **Media hora, no un cuarto.** Estaba en 15 minutos, que es *justo* lo que tarda una nota de
+ * verdad: investigar, escribir en dos idiomas, ilustrar y publicar. El 28 ago 2026 se midió la
+ * consecuencia: corridas que publicaban a los 15 minutos y se declaraban muertas en ese mismo
+ * instante. Un guardia que mata al trabajador puntual no es un guardia, es el problema.
  */
-export async function closeStaleRuns(db: D1Database, maxMinutes = 15): Promise<number> {
+export const MINUTOS_ANTES_DE_DARLA_POR_MUERTA = 30;
+
+export async function closeStaleRuns(
+  db: D1Database,
+  maxMinutes = MINUTOS_ANTES_DE_DARLA_POR_MUERTA,
+): Promise<number> {
   try {
     const limit = new Date(Date.now() - maxMinutes * 60_000).toISOString();
     const res = await db

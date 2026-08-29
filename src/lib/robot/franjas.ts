@@ -151,6 +151,15 @@ export function franjaActiva(
   return null;
 }
 
+/**
+ * A qué hora exacta (en UTC) abrió esta franja hoy. Hace falta para preguntarle a la base si ya
+ * salió la nota de este turno, que es la única fuente que no miente.
+ */
+export function inicioDeFranja(now: Date, franja: Franja): string {
+  const { desde } = rangoDelDiaLocal(now);
+  return new Date(Date.parse(desde) + franja.hour * 3_600_000).toISOString();
+}
+
 /** Etiqueta del turno para guardar en la base: «2026-08-24:mediodia». */
 export function marcaDeFranja(now: Date, franja: Franja): string {
   return `${diaLocal(now)}:${franja.key}`;

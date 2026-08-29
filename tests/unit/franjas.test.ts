@@ -188,3 +188,70 @@ describe("la corrida no depende de quien la llama", () => {
     expect(res.status).toBe(404);
   });
 });
+
+describe("el reintento no vuelve a pagar por una nota que ya salió (28 ago 2026)", () => {
+  /**
+   * Lo que pasó: la corrida de la tarde publicó a los 15 minutos, y en ese mismo instante el
+   * guardia de corridas colgadas la marcó «error» por llevar 15 minutos. El siguiente latido vio
+   * «error», creyó que el turno estaba pendiente y volvió a escribir. Cuatro veces. Cuatro llamadas
+   * de pago a la IA por una nota que ya estaba en la portada.
+   */
+  const TARDE = new Date("2026-08-28T21:30:00Z"); // 5:30 PM del Este, franja de tarde
+
+  function base(opts: { notasEnLaFranja: number; marca: string }) {
+    return {
+      prepare(sql: string) {
+        let params: unknown[] = [];
+        const stmt = {
+          bind: (...p: unknown[]) => {
+            params = p;
+            return stmt;
+          },
+          first: async () => {
+            if (sql.includes("robot_paused")) return { value: "0" };
+            if (sql.includes("FROM articles")) return { n: opts.notasEnLaFranja };
+            if (sql.includes("FROM runs")) return { status: "error" };
+            if (sql.includes("SELECT value FROM settings")) return { value: opts.marca };
+            return null;
+          },
+          run: async () => ({ success: true, meta: { changes: 1 } }),
+          all: async () => ({ results: [] }),
+        };
+        void params;
+        return stmt;
+      },
+    } as unknown as D1Database;
+  }
+
+  it("con la nota del turno YA publicada, no se reintenta aunque la corrida diga «error»", async () => {
+    const { claimTick } = await import("@/lib/robot/heartbeat");
+    const d = await claimTick(base({ notasEnLaFranja: 1, marca: "2026-08-28:tarde" }), TARDE);
+    expect(d).toEqual({ run: false, reason: "turno_hecho" });
+  });
+
+  it("sin nota todavía, sí se reintenta: una corrida cortada no puede perder el turno", async () => {
+    const { claimTick } = await import("@/lib/robot/heartbeat");
+    const d = await claimTick(base({ notasEnLaFranja: 0, marca: "2026-08-28:tarde" }), TARDE);
+    expect(d.run).toBe(true);
+  });
+
+  it("el guardia no mata a la corrida puntual: media hora, no un cuarto", async () => {
+    const { MINUTOS_ANTES_DE_DARLA_POR_MUERTA } = await import("@/lib/robot/heartbeat");
+    // Escribir una nota bilingüe con imagen tarda ~15 minutos de verdad. Con el límite en 15, el
+    // guardia la declaraba muerta justo al terminar.
+    expect(MINUTOS_ANTES_DE_DARLA_POR_MUERTA).toBeGreaterThanOrEqual(30);
+  });
+
+  it("el inicio de la franja se calcula en hora del Este, verano e invierno", async () => {
+    const { FRANJAS, inicioDeFranja } = await import("@/lib/robot/franjas");
+    const tarde = FRANJAS[2]!; // 17:00 ET
+    // En verano (UTC-4) las 5 PM del Este son las 21:00 UTC
+    expect(inicioDeFranja(new Date("2026-08-28T21:30:00Z"), tarde)).toBe(
+      "2026-08-28T21:00:00.000Z",
+    );
+    // En invierno (UTC-5), las 22:00 UTC
+    expect(inicioDeFranja(new Date("2026-01-28T22:30:00Z"), tarde)).toBe(
+      "2026-01-28T22:00:00.000Z",
+    );
+  });
+});
