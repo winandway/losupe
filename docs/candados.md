@@ -1295,3 +1295,31 @@ ignorar el rojo, que es exactamente como se cuela un fallo de verdad.
 - **Qué NO tocar:** no quites el rescate del final de la corrida; no busques fotos con el titular
   entero ni en español; y no dejes de guardar el crédito del fotógrafo — es la condición de la
   licencia de Pexels.
+
+## 46. La ola del mar: una foto real que no tenía nada que ver
+
+- **Cómo se veía:** al arreglar el candado 45, el rescate le puso a la nota de los cierres de cuentas
+  bancarias… **una foto de una ola rompiendo en el mar**. Con su crédito y todo.
+- **La causa, y es mía:** la primera versión sacaba las tres **primeras** palabras «útiles» del
+  titular en inglés. Para _«the **wave** of bank account closures»_ eso dio `wave`, y el banco de
+  fotos devolvió, muy obedientemente, una ola.
+- **La lección, que vale más que el arreglo:** **una foto real que no tiene nada que ver es PEOR que
+  un icono.** El icono al menos no miente; la foto equivocada hace pensar que el sitio está roto o
+  que nadie lo mira. Al «arreglar» el hueco vacío estuve a punto de dejar algo peor de lo que había.
+- **Y el fallo de fondo: un titular no describe una foto.** Lleva cifras («20.682»), metáforas («la
+  ola de», «golpea») y giros que no se pueden fotografiar.
+- **El arreglo, en dos capas:**
+  1. **Se le pregunta al modelo qué se debería VER** (`preguntarQueFoto`, `flash-lite`, milésimas de
+     centavo). Es lo que ya hacía el redactor con sus propias notas (`image_keywords`) y que el
+     rescate se había saltado. En las instrucciones va el caso real: _«si el titular dice la ola de
+     cierres de cuentas, la foto no es una ola del mar: es una tarjeta bancaria, un cajero o la
+     fachada de un banco»_.
+  2. **La heurística de respaldo, arreglada.** Ya no se come las metáforas (lista `METAFORAS`) y
+     toma las **últimas** palabras, no las primeras: en un titular de diario, delante va el gancho
+     (la cifra, la metáfora) y detrás el sustantivo de verdad.
+- **Candado:** 15 pruebas en `tests/unit/rescate-imagenes.test.ts`, con la ola como primer caso.
+  Comprobado en rojo el 31 ago 2026: al devolver `slice(0, 3)` y quitar el filtro de metáforas,
+  vuelve a salir `wave` y dos pruebas fallan.
+- **Qué NO tocar:** no quites el filtro de metáforas ni vuelvas a tomar las primeras palabras del
+  titular; y si el modelo no está disponible, que siga habiendo respaldo — pero uno que no busque
+  olas.

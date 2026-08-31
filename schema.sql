@@ -511,3 +511,11 @@ UPDATE settings SET value = '4', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now
 -- cae TODO el resto del esquema (paso el 28 ago 2026). La unicidad se resuelve en el codigo, con un
 -- UPDATE y, solo si no habia nada que actualizar, un INSERT. Ver anotarVisita() en lectores.ts.
 CREATE INDEX IF NOT EXISTS idx_visitas_lectura ON visitas(dia, visitante, ruta);
+
+-- La foto de la nota de los cierres de cuentas se eligio con el metodo viejo, que sacaba las
+-- primeras palabras del titular: de "the WAVE of bank account closures" salio *wave*, y el banco de
+-- fotos devolvio una ola del mar para una nota sobre bancos. Se borra para que el rescate le busque
+-- otra con el editor grafico (candado 46). Lleva la condicion del credito para que sea idempotente:
+-- si ya se cambio, esto no toca nada.
+UPDATE articles SET image_url = NULL, image_credit = NULL
+ WHERE id = 'art-2026-08-29-cierres-de-cuentas' AND image_credit LIKE '%Nayla Charo%';

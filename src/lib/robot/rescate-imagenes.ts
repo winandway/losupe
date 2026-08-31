@@ -1,4 +1,5 @@
 import { SQL_NOW } from "@/lib/sql-time";
+import { generateJson } from "./gemini";
 import { illustrate, type ImageEnv } from "./images";
 
 /**
@@ -28,15 +29,27 @@ export type ResultadoRescate = {
 };
 
 /**
- * Palabras para buscar la foto, sacadas del titular.
+ * QUÉ SE DEBERÍA VER EN LA FOTO.
  *
- * Se busca con el titular EN INGLÉS cuando existe: los bancos de fotos tienen mucho más material
- * etiquetado en inglés, y una búsqueda en español devuelve resultados pobres o nada.
+ * Aquí me equivoqué, y salió a la vista: la primera versión sacaba las tres primeras palabras
+ * «útiles» del titular en inglés. Para «the **wave** of bank account closures» eso dio *wave*, y el
+ * banco de fotos devolvió, muy obedientemente, **una ola del mar** para una nota sobre cierres de
+ * cuentas bancarias. Una foto real que no tiene nada que ver es peor que un icono: el icono al menos
+ * no miente.
  *
- * Y se quitan las palabras que no se pueden fotografiar. «20.682 quejas en seis meses» no es una
- * imagen; «bank account closed» sí. Buscar el titular entero devuelve fotos genéricas de oficina
- * que no dicen nada — que es justo lo que hay que evitar.
+ * El fallo de fondo: un titular no describe una foto. Lleva cifras («20.682»), metáforas («la ola
+ * de», «golpea») y giros que no se pueden fotografiar. Lo que hay que buscar es **el objeto o la
+ * escena concreta** de la que habla la nota.
+ *
+ * Por eso ahora se le pregunta al modelo, que es lo que ya hacía el redactor con sus notas
+ * (`image_keywords`). Cuesta milésimas de centavo con `flash-lite` y acierta. La heurística queda
+ * de respaldo para cuando no hay llave, y ya no se come las metáforas.
  */
+
+/** Metáforas y verbos de titular que devuelven fotos absurdas si se buscan literalmente. */
+const METAFORAS =
+  /^(ola|wave|oleada|golpe|golpea|hits|hitting|sacude|shakes|tsunami|terremoto financiero|lluvia|avalancha|tormenta|storm|batalla|battle|guerra|war|pulso|carrera|race|boom|caida libre)$/i;
+
 const VACIAS = new Set([
   "the",
   "a",
@@ -134,9 +147,66 @@ export function palabrasParaFoto(titulo: string, tituloEn?: string | null): stri
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9\s-]/g, " ")
     .split(/\s+/)
-    .filter((p) => p.length > 2 && !VACIAS.has(p) && !NO_FOTOGRAFIABLE.test(p));
-  // Las primeras del titular son las que llevan el tema; las últimas suelen ser la coletilla.
-  return [...new Set(palabras)].slice(0, 3);
+    .filter(
+      (p) => p.length > 2 && !VACIAS.has(p) && !NO_FOTOGRAFIABLE.test(p) && !METAFORAS.test(p),
+    );
+  // Se toman las ÚLTIMAS, no las primeras. En un titular de diario la parte de delante lleva el
+  // gancho (la cifra, la metáfora) y el sustantivo de verdad viene detrás: «la ola de cierres de
+  // **cuentas bancarias**». Tomando las primeras salía «wave», y con eso una ola del mar.
+  return [...new Set(palabras)].slice(-3);
+}
+
+export const SISTEMA_FOTO = `Eres el editor gráfico de un diario. Te dan el titular y la entradilla de una nota y dices QUÉ SE DEBERÍA VER en la foto que la acompaña.
+
+Reglas:
+- Responde con 2 o 3 palabras EN INGLÉS, separadas por espacios, que describan un OBJETO o una ESCENA que se pueda fotografiar.
+- Nada de metáforas ni conceptos abstractos. Si el titular dice «la ola de cierres de cuentas», la foto no es una ola del mar: es una tarjeta bancaria, un cajero automático o la fachada de un banco.
+- Nada de cifras, fechas ni nombres de leyes.
+- Piensa qué foto pondría un diario de verdad en esa página.
+
+Ejemplos:
+«20.682 quejas por cierres de cuentas bancarias» → bank card atm
+«Diez años sin Juan Gabriel» → vintage microphone stage
+«El precio del café bate su récord» → coffee beans harvest`;
+
+export const ESQUEMA_FOTO = {
+  type: "object",
+  properties: { buscar: { type: "string" } },
+  required: ["buscar"],
+} as const;
+
+/**
+ * Le pregunta al modelo qué debería verse. Si no hay llave o falla, devuelve `null` y manda la
+ * heurística: es un adorno de calidad, no un requisito para publicar.
+ */
+export async function preguntarQueFoto(opts: {
+  apiKey?: string;
+  titulo: string;
+  entradilla?: string | null;
+  fetchImpl?: typeof fetch;
+}): Promise<string[] | null> {
+  if (!opts.apiKey) return null;
+  try {
+    const r = await generateJson<{ buscar: string }>({
+      apiKey: opts.apiKey,
+      model: "gemini-2.5-flash-lite",
+      system: SISTEMA_FOTO,
+      prompt: `TITULAR: ${opts.titulo}\n${opts.entradilla ? `ENTRADILLA: ${opts.entradilla}` : ""}`,
+      responseSchema: ESQUEMA_FOTO,
+      temperature: 0,
+      maxOutputTokens: 120,
+      timeoutMs: 15_000,
+      fetchImpl: opts.fetchImpl,
+    });
+    const palabras = (r.data.buscar ?? "")
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, " ")
+      .split(/\s+/)
+      .filter((p) => p.length > 2 && !METAFORAS.test(p));
+    return palabras.length > 0 ? palabras.slice(0, 3) : null;
+  } catch {
+    return null;
+  }
 }
 
 type FilaSinImagen = {
@@ -144,6 +214,7 @@ type FilaSinImagen = {
   slug: string;
   title: string;
   title_en: string | null;
+  excerpt: string | null;
 };
 
 /** Notas publicadas que no tienen imagen. */
@@ -153,6 +224,7 @@ export async function notasSinImagen(db: D1Database, limite = 5): Promise<FilaSi
       `SELECT a.id,
               es.slug AS slug,
               es.title AS title,
+              es.excerpt AS excerpt,
               (SELECT title FROM article_i18n WHERE article_id = a.id AND lang = 'en') AS title_en
          FROM articles a
          JOIN article_i18n es ON es.article_id = a.id AND es.lang = 'es'
@@ -184,7 +256,15 @@ export async function rescatarImagenes(
     out.encontradas = pendientes.length;
     for (const nota of pendientes) {
       try {
-        const keywords = palabrasParaFoto(nota.title, nota.title_en);
+        // Primero el editor gráfico: dice qué se debería VER. Si no hay llave o falla, la
+        // heurística. Nunca se queda sin buscar.
+        const keywords =
+          (await preguntarQueFoto({
+            apiKey: (env as { GEMINI_API_KEY?: string }).GEMINI_API_KEY,
+            titulo: nota.title,
+            entradilla: nota.excerpt,
+            fetchImpl: opts.fetchImpl,
+          })) ?? palabrasParaFoto(nota.title, nota.title_en);
         const { image, errors } = await illustrate({
           env,
           db,

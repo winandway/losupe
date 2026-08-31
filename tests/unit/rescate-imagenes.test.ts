@@ -7,33 +7,98 @@ const TITULO =
 const TITULO_EN =
   "20,682 complaints in six months: the wave of bank account closures hitting immigrants in the United States";
 
-describe("con qué se busca la foto", () => {
-  it("BUSCA COSAS QUE SE PUEDEN FOTOGRAFIAR, no cifras ni coletillas", () => {
-    // «20.682 quejas en seis meses» no es una imagen. «bank account closures» sí.
+describe("LA OLA DEL MAR: qué se debe ver en la foto", () => {
+  /**
+   * El fallo que hay que recordar. La primera versión sacaba las tres primeras palabras «útiles»
+   * del titular en inglés. Para «the WAVE of bank account closures» eso dio *wave*, y Pexels
+   * devolvió, muy obedientemente, una ola del mar para una nota sobre cierres de cuentas.
+   * Una foto real que no tiene nada que ver es PEOR que un icono: el icono al menos no miente.
+   */
+  it("no busca metáforas: «la ola de cierres» no es una ola del mar", () => {
+    const p = palabrasParaFoto(TITULO, TITULO_EN);
+    expect(p, "«wave» es la metáfora del titular, no lo que hay que fotografiar").not.toContain(
+      "wave",
+    );
+    expect(p.join(" ")).toMatch(/bank|account|closures|immigrants|states/);
+  });
+
+  it("toma las ÚLTIMAS palabras, que es donde vive el sustantivo", () => {
+    // En un titular de diario, delante va el gancho (cifra, metáfora) y detrás el tema de verdad.
+    const p = palabrasParaFoto("x", "the wave of bank account closures hitting immigrants");
+    expect(p).not.toContain("wave");
+    expect(p.join(" ")).toContain("immigrants");
+  });
+
+  it("tampoco busca cifras ni medidas de tiempo", () => {
     const p = palabrasParaFoto(TITULO, TITULO_EN);
     expect(p).not.toContain("682");
     expect(p).not.toContain("months");
-    expect(p.join(" ")).toMatch(/complaints|wave|bank/);
   });
 
   it("usa el titular en INGLÉS cuando existe", () => {
-    // Los bancos de fotos tienen mucho más material etiquetado en inglés; buscar en español
-    // devuelve resultados pobres o ninguno.
+    // Los bancos de fotos tienen mucho más material etiquetado en inglés.
     expect(palabrasParaFoto("El dólar sube", "The dollar rises")).toContain("dollar");
-    // Y si no hay traducción, se apaña con el español antes que quedarse sin foto.
     expect(palabrasParaFoto("El dólar sube hoy").length).toBeGreaterThan(0);
   });
 
   it("quita las muletillas de titular que solo dan fotos genéricas", () => {
-    const p = palabrasParaFoto("10 curiosidades sobre el café", "10 facts about coffee");
+    const p = palabrasParaFoto("10 curiosidades sobre el café", "coffee beans facts");
     expect(p).not.toContain("facts");
     expect(p).toContain("coffee");
   });
 
   it("manda como mucho tres palabras y sin repetir", () => {
-    const p = palabrasParaFoto("bank bank bank account closures immigrants united states", null);
+    const p = palabrasParaFoto("x", "bank bank bank account closures immigrants united states");
     expect(p.length).toBeLessThanOrEqual(3);
     expect(new Set(p).size).toBe(p.length);
+  });
+});
+
+describe("el editor gráfico: se le pregunta al modelo qué se debe ver", () => {
+  it("le pide un OBJETO fotografiable y le prohíbe la metáfora", async () => {
+    const { SISTEMA_FOTO } = await import("@/lib/robot/rescate-imagenes");
+    // Lo que hace buena la respuesta está en las instrucciones, y el ejemplo es el caso real.
+    expect(SISTEMA_FOTO).toContain("no es una ola del mar");
+    expect(SISTEMA_FOTO).toContain("OBJETO");
+    expect(SISTEMA_FOTO).toContain("EN INGLÉS");
+  });
+
+  it("devuelve lo que dice el modelo, limpio y sin metáforas coladas", async () => {
+    const { preguntarQueFoto } = await import("@/lib/robot/rescate-imagenes");
+    const responder = (buscar: string) =>
+      vi.fn(async () =>
+        Response.json({
+          candidates: [{ content: { parts: [{ text: JSON.stringify({ buscar }) }] } }],
+          usageMetadata: { promptTokenCount: 90, candidatesTokenCount: 8 },
+        }),
+      );
+    const r = await preguntarQueFoto({
+      apiKey: "k",
+      titulo: TITULO,
+      fetchImpl: responder("bank card atm") as unknown as typeof fetch,
+    });
+    expect(r).toEqual(["bank", "card", "atm"]);
+    // Y si al modelo se le cuela una metáfora, se cae aquí también.
+    expect(
+      await preguntarQueFoto({
+        apiKey: "k",
+        titulo: TITULO,
+        fetchImpl: responder("wave ocean") as unknown as typeof fetch,
+      }),
+    ).toEqual(["ocean"]);
+  });
+
+  it("sin llave o si falla, no bloquea: manda la heurística", async () => {
+    const { preguntarQueFoto } = await import("@/lib/robot/rescate-imagenes");
+    expect(await preguntarQueFoto({ titulo: TITULO })).toBeNull();
+    const caido = vi.fn(async () => new Response("no", { status: 500 }));
+    expect(
+      await preguntarQueFoto({
+        apiKey: "k",
+        titulo: TITULO,
+        fetchImpl: caido as unknown as typeof fetch,
+      }),
+    ).toBeNull();
   });
 });
 
