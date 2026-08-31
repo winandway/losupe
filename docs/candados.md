@@ -1320,6 +1320,26 @@ ignorar el rojo, que es exactamente como se cuela un fallo de verdad.
 - **Candado:** 15 pruebas en `tests/unit/rescate-imagenes.test.ts`, con la ola como primer caso.
   Comprobado en rojo el 31 ago 2026: al devolver `slice(0, 3)` y quitar el filtro de metáforas,
   vuelve a salir `wave` y dos pruebas fallan.
+
+### Segunda vuelta: la pancarta
+
+Con el arreglo puesto, la foto pasó de una ola del mar a **una manifestación con una pancarta que
+decía «IMMIGRANTS MAKE AMERICA GREAT»**. Del tema, real, y aun así no la correcta: la nota es de
+servicio —explica un problema y hasta desmiente un bulo—, y una pancarta le pone al diario una
+opinión que el texto no tiene.
+
+Dos reglas más en las instrucciones, y las dos salieron de **mirar el resultado**, no de pensarlo:
+
+- **Fotografía LA COSA, no a quién le pasa.** Para una nota sobre cuentas cerradas a inmigrantes, la
+  foto es el banco o la tarjeta, no una manifestación.
+- **Nada de carteles ni pancartas**, salvo que la nota sea justamente sobre una protesta.
+
+### Y lo que de verdad cierra esto: que mande una persona
+
+Ninguna regla va a acertar siempre con una foto. Por eso en **Panel → Notas** cada nota tiene un
+botón **«Otra foto»**. Quien decide si una imagen pega con una nota es una persona, no un modelo, y
+ahora esa persona no tiene que pedirle nada a nadie para cambiarla.
+
 - **Qué NO tocar:** no quites el filtro de metáforas ni vuelvas a tomar las primeras palabras del
-  titular; y si el modelo no está disponible, que siga habiendo respaldo — pero uno que no busque
-  olas.
+  titular; no quites las reglas de «la cosa, no quién» y «nada de pancartas»; y no quites el botón
+  «Otra foto» — es el único que acierta siempre.

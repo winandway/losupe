@@ -627,6 +627,7 @@ export const es = {
       empty: "Nada por aquí todavía.",
       publish: "Publicar",
       unpublish: "Despublicar",
+      otraFoto: "Otra foto",
       discard: "Descartar",
       open: "Abrir",
       sponsored: "Patrocinada",

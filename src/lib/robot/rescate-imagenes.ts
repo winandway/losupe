@@ -161,11 +161,13 @@ export const SISTEMA_FOTO = `Eres el editor gráfico de un diario. Te dan el tit
 Reglas:
 - Responde con 2 o 3 palabras EN INGLÉS, separadas por espacios, que describan un OBJETO o una ESCENA que se pueda fotografiar.
 - Nada de metáforas ni conceptos abstractos. Si el titular dice «la ola de cierres de cuentas», la foto no es una ola del mar: es una tarjeta bancaria, un cajero automático o la fachada de un banco.
+- **Fotografía LA COSA de la que habla la nota, no a quién le pasa.** Para una nota sobre cuentas bancarias cerradas a inmigrantes, la foto es el banco o la tarjeta, no una manifestación.
+- **Nada de carteles, pancartas ni texto escrito** en la imagen, salvo que la nota sea justamente sobre una protesta. Una pancarta le pone al diario una opinión que la nota no tiene.
 - Nada de cifras, fechas ni nombres de leyes.
-- Piensa qué foto pondría un diario de verdad en esa página.
+- Piensa qué foto pondría un diario serio en esa página: la escena del hecho, en calma.
 
 Ejemplos:
-«20.682 quejas por cierres de cuentas bancarias» → bank card atm
+«20.682 quejas por cierres de cuentas bancarias a inmigrantes» → bank card atm
 «Diez años sin Juan Gabriel» → vintage microphone stage
 «El precio del café bate su récord» → coffee beans harvest`;
 
@@ -238,6 +240,24 @@ export async function notasSinImagen(db: D1Database, limite = 5): Promise<FilaSi
   return results ?? [];
 }
 
+/** Una nota concreta, tenga foto o no: para el botón «otra foto» del panel. */
+export async function notaConcreta(db: D1Database, id: string): Promise<FilaSinImagen[]> {
+  const fila = await db
+    .prepare(
+      `SELECT a.id,
+              es.slug AS slug,
+              es.title AS title,
+              es.excerpt AS excerpt,
+              (SELECT title FROM article_i18n WHERE article_id = a.id AND lang = 'en') AS title_en
+         FROM articles a
+         JOIN article_i18n es ON es.article_id = a.id AND es.lang = 'es'
+        WHERE a.id = ?1`,
+    )
+    .bind(id)
+    .first<FilaSinImagen>();
+  return fila ? [fila] : [];
+}
+
 /**
  * Le pone foto a las notas que no la tienen.
  *
@@ -248,11 +268,21 @@ export async function notasSinImagen(db: D1Database, limite = 5): Promise<FilaSi
 export async function rescatarImagenes(
   db: D1Database,
   env: ImageEnv,
-  opts: { limite?: number; fetchImpl?: typeof fetch } = {},
+  opts: {
+    limite?: number;
+    /**
+     * Rehacer la foto de UNA nota concreta, aunque ya tenga. Es el botón «otra foto» del panel:
+     * el que decide si una foto pega con la nota es una persona, no un modelo.
+     */
+    articleId?: string;
+    fetchImpl?: typeof fetch;
+  } = {},
 ): Promise<ResultadoRescate> {
   const out: ResultadoRescate = { encontradas: 0, ilustradas: 0, errores: [] };
   try {
-    const pendientes = await notasSinImagen(db, opts.limite ?? 5);
+    const pendientes = opts.articleId
+      ? await notaConcreta(db, opts.articleId)
+      : await notasSinImagen(db, opts.limite ?? 5);
     out.encontradas = pendientes.length;
     for (const nota of pendientes) {
       try {

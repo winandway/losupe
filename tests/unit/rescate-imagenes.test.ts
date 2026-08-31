@@ -61,6 +61,10 @@ describe("el editor gráfico: se le pregunta al modelo qué se debe ver", () => 
     expect(SISTEMA_FOTO).toContain("no es una ola del mar");
     expect(SISTEMA_FOTO).toContain("OBJETO");
     expect(SISTEMA_FOTO).toContain("EN INGLÉS");
+    // Y dos reglas que salieron de mirar el resultado: fotografiar LA COSA, no a quién le pasa; y
+    // nada de pancartas — una pancarta le pone al diario una opinión que la nota no tiene.
+    expect(SISTEMA_FOTO).toContain("no a quién le pasa");
+    expect(SISTEMA_FOTO).toContain("pancartas");
   });
 
   it("devuelve lo que dice el modelo, limpio y sin metáforas coladas", async () => {

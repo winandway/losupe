@@ -76,7 +76,11 @@ export async function POST(request: Request) {
     }
     if (op === "fotos") {
       // Buscarle foto a las notas que se quedaron sin ella, sin escribir ninguna nota nueva.
-      const r = await rescatarImagenes(env.DB, env, { limite: 12 });
+      const soloUna = String(form.get("articleId") ?? "").trim();
+      const r = await rescatarImagenes(env.DB, env, {
+        limite: 12,
+        ...(soloUna ? { articleId: soloUna } : {}),
+      });
       return back(
         r.errores.length > 0 && r.ilustradas === 0
           ? `/panel?error=${encodeURIComponent(r.errores[0]?.slice(0, 150) ?? "fotos")}`

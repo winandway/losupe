@@ -74,6 +74,14 @@ export default async function NotesPage({ searchParams }: Props) {
             </button>
           </form>
         )}
+        {/* «Otra foto»: quien decide si una imagen pega con la nota es una persona, no un modelo. */}
+        <form action="/panel/accion/robot" method="post">
+          <input type="hidden" name="op" value="fotos" />
+          <input type="hidden" name="articleId" value={r.id} />
+          <button className="rounded-full border border-line px-3 py-1 text-xs font-bold hover:bg-paper">
+            {p.otraFoto}
+          </button>
+        </form>
         {r.status === "review" ? (
           <form action="/panel/accion/notas" method="post">
             <input type="hidden" name="op" value="discard" />

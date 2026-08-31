@@ -627,6 +627,7 @@ export const en: Dict = {
       empty: "Nothing here yet.",
       publish: "Publish",
       unpublish: "Unpublish",
+      otraFoto: "New photo",
       discard: "Discard",
       open: "Open",
       sponsored: "Sponsored",
