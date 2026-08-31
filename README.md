@@ -120,6 +120,16 @@ entorno. La red sin llaves se salta sin molestar; el estado de cada una se ve en
 
 Cómo se saca cada llave, paso a paso: [docs/redes-sociales.md](docs/redes-sociales.md).
 
+## Imágenes
+
+Ninguna nota se publica con el hueco de la imagen vacío. El orden es: imagen propia generada
+(Seedream) → foto real de Pexels con crédito → **portada dibujada por nosotros**, que no cuesta nada
+y no necesita ninguna llave. La portada lee el titular y dibuja el tema (una tarjeta tachada para
+una nota de cuentas cerradas, una balanza para una demanda, un reloj para un aniversario).
+
+Detalle completo, tabla de símbolos y cómo regenerar las tarjetas sociales:
+[docs/imagenes.md](docs/imagenes.md).
+
 ## Publicar una nota a mano (sin el robot)
 
 1. Crea `seed/content/AAAA-MM-DD-tema.mjs` copiando `seed/content/2026-08-23-mercatren.mjs` (artículo + `i18n.es` + `i18n.en`, imágenes en `public/img/notas/...`).

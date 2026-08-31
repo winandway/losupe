@@ -22,6 +22,7 @@ import {
   SKILL_NAME,
 } from "./src/lib/agent-manifests";
 import { buildHealthReport } from "./src/lib/health";
+import { portadaDeNota } from "./src/lib/portadas-server";
 import { estadoDeRedes } from "./src/lib/redes";
 import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow";
 import { isLang } from "./src/i18n/config";
@@ -109,6 +110,27 @@ export default {
           headers: { "Cache-Control": "no-store" },
         },
       );
+    }
+
+    // Portada dibujada por nosotros para las notas que no tienen foto. Va ANTES del R2 porque no
+    // vive en el bucket: se dibuja aquí mismo, al momento, con el titular de la nota.
+    if (pathname.startsWith("/media/portada/") && request.method === "GET") {
+      const pedido = decodeURIComponent(pathname.slice("/media/portada/".length)).replace(
+        /\.svg$/i,
+        "",
+      );
+      // `-mini` pide la versión de tarjeta: solo el símbolo, sin el titular dentro.
+      const mini = pedido.endsWith("-mini");
+      const id = mini ? pedido.slice(0, -"-mini".length) : pedido;
+      const svg = await portadaDeNota(env.DB, id, mini);
+      if (!svg) return new Response("Not found", { status: 404 });
+      return new Response(svg, {
+        headers: {
+          "content-type": "image/svg+xml; charset=utf-8",
+          // Un día. No es eterno a propósito: si se corrige un titular, la portada se pone al día.
+          "Cache-Control": "public, max-age=86400",
+        },
+      });
     }
 
     // Imágenes de las notas (R2). Clave = ruta sin el prefijo /media/.

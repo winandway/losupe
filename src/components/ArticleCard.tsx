@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import type { ArticleCard as ArticleCardData } from "@/lib/queries";
+import { rutaPortada } from "@/lib/portadas";
 import { rutaMiniatura } from "@/lib/robot/images";
 import { articlePath } from "@/lib/urls";
 import { Byline } from "./Byline";
@@ -42,12 +43,18 @@ export function ArticleCard({
       className="h-full w-full object-cover"
     />
   ) : (
-    <div
-      aria-hidden="true"
-      className="flex h-full w-full items-center justify-center bg-ink font-display text-4xl font-extrabold text-accent"
-    >
-      l.
-    </div>
+    // Sin foto, una portada dibujada por nosotros con el símbolo del tema. Antes había aquí un
+    // cuadro azul con la «l.» del logotipo —que además se lee como un uno— y era exactamente lo que
+    // hace que nadie entre a la nota. La miniatura es lo que decide si alguien lee o pasa de largo.
+    <img
+      // El hero es grande y la imagen se ve entera: ahí cabe la portada con su titular. En las
+      // tarjetas pequeñas va solo el símbolo, porque el titular ya está escrito al lado.
+      src={rutaPortada(article.id, variant !== "hero")}
+      alt={article.imageAlt || article.title}
+      loading={priority ? "eager" : "lazy"}
+      decoding="async"
+      className="h-full w-full object-cover"
+    />
   );
 
   if (variant === "hero") {

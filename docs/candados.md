@@ -1229,3 +1229,38 @@ La prueba «la nota de Mercatren es la principal» se puso roja **solo porque se
 nueva**. Buscaba `article` y daba por hecho que era la primera. Ahora busca la nota **por su
 titular**. Una prueba que se rompe cada vez que el diario hace su trabajo no protege nada: enseña a
 ignorar el rojo, que es exactamente como se cuela un fallo de verdad.
+
+## 44. La miniatura vacía: portadas dibujadas por nosotros
+
+- **Cómo se veía (lo vio Richard el 29 ago 2026):** en la nota de los cierres de cuentas, donde iba
+  la miniatura había un cuadro azul oscuro con la «l.» del logotipo —que además se lee como un uno—.
+  Sus palabras: _«quedó horrible, de fea… las miniaturas son muy importantes porque son las que
+  jalan al usuario a leer»_. Tenía razón: en una portada de celular el pulgar baja rápido y lo que
+  lo frena es la imagen. Un hueco vacío es una nota que nadie abre.
+- **El arreglo:** `src/lib/portadas.ts` dibuja una portada que **cuenta el tema**, leyendo el
+  titular. La idea de Richard era la correcta —«un banco con una X grande roja o el símbolo de
+  prohibido»— y es literalmente lo que sale ahora. Tabla completa de símbolos en
+  [`docs/imagenes.md`](imagenes.md).
+- **Por qué SVG dibujado y no una imagen de IA:** sale al instante, no cuesta nada y no depende de
+  ninguna llave, así que puede ir en TODAS las notas sin foto y no solo en las que alcance el
+  presupuesto del día. La imagen generada y la foto de Pexels siguen siendo la primera y la segunda
+  opción; esto es la red que impide el hueco vacío.
+- **TRES COSAS QUE SE VIERON EN PANTALLA Y NO SE DEDUCEN LEYENDO CÓDIGO:**
+  1. **El titular se salía por la derecha.** El primer intento contaba LETRAS por línea. No vale:
+     «mmm» ocupa el triple que «lil». Hay que medir el ancho real (`anchoAprox`), con un 6 % de
+     margen — equivocarse por ancho solo hace la letra un punto más pequeña; equivocarse por estrecho
+     saca el texto de la imagen.
+  2. **Hacen falta DOS versiones.** La grande lleva el titular dentro porque viaja sola (WhatsApp,
+     Google). La de tarjeta (`-mini`) va **sin una letra**: en el sitio se pinta a ~140 px con el
+     titular escrito al lado, donde el texto de dentro no se lee y encima compite con el de fuera.
+  3. **Al compartir hacía falta PNG.** WhatsApp, Facebook y X **no pintan SVG** en la vista previa.
+     Antes el Open Graph iba a `undefined` sin foto, así que la nota se compartía sin imagen — y por
+     WhatsApp es por donde llega la gente. Ahora hay una tarjeta PNG por sección en `public/og/`,
+     generada con `node scripts/generar-og.mjs` (usa Playwright, ya instalado: cero dependencias).
+- **Candados:** 13 pruebas en `tests/unit/portadas.test.ts` (que el símbolo específico gane al
+  genérico, que ninguna línea se salga del ancho, que un `&` en el titular no deje la imagen en
+  blanco, que la miniatura no lleve texto) y 3 en `tests/e2e/smoke.spec.ts` (que la imagen cargue de
+  verdad con 200 y su tipo, y que el Open Graph sea PNG).
+- **Qué NO tocar:** lo específico manda sobre lo genérico al elegir símbolo; el texto se parte
+  midiendo ancho, nunca contando letras; la miniatura no lleva texto dibujado (el titular sí va en
+  el `aria-label`, para quien usa lector de pantalla); y el Open Graph apunta a PNG, nunca al SVG.

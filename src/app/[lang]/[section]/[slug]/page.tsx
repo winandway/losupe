@@ -70,15 +70,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       authors: [article.authorName],
       section: getSection(article.sectionId)?.name[lang],
       tags: article.tags,
-      images: article.imageUrl ? [{ url: article.imageUrl, alt: article.imageAlt }] : undefined,
+      images: [{ url: imagenSocial(article), alt: article.imageAlt || article.title }],
     },
     twitter: {
       card: "summary_large_image",
       title: article.title,
       description,
-      images: article.imageUrl ? [article.imageUrl] : undefined,
+      images: [imagenSocial(article)],
     },
   };
+}
+
+/**
+ * La imagen que se ve al compartir el enlace.
+ *
+ * Si la nota tiene foto, esa. Si no, la tarjeta de su sección, en PNG.
+ *
+ * Y tiene que ser PNG, no el SVG que dibujamos para el sitio: **WhatsApp, Facebook y X no pintan
+ * SVG** en la vista previa de un enlace. Antes aquí iba `undefined` cuando no había foto, así que
+ * una nota sin imagen se compartía como un renglón de texto gris que nadie toca — y por WhatsApp
+ * es justo por donde llega la gente. Las tarjetas se generan con `node scripts/generar-og.mjs`.
+ */
+function imagenSocial(article: { imageUrl: string | null; sectionId: string }): string {
+  return article.imageUrl ?? `/og/${article.sectionId}.png`;
 }
 
 export default async function ArticlePage({ params }: Props) {

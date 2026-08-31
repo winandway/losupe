@@ -1050,3 +1050,42 @@ test("__health dice qué redes están encendidas y NO enseña ninguna llave", as
   const bsky = datos.redes?.find((r) => r.id === "bluesky");
   expect(bsky?.faltan).toContain("BLUESKY_APP_PASSWORD");
 });
+
+test("una nota sin foto lleva portada dibujada, no un cuadro vacío", async ({ page }) => {
+  await page.goto("/es/economia");
+  // La tarjeta de la nota de los cierres de cuentas: su imagen tiene que ser la portada generada.
+  const tarjeta = page
+    .locator("article")
+    .filter({ hasText: /cierres de cuentas bancarias/ })
+    .first();
+  const img = tarjeta.locator("img").first();
+  await expect(img).toBeVisible();
+  await expect(img).toHaveAttribute("src", /\/media\/portada\/.*-mini\.svg$/);
+  // Y la imagen carga de verdad: un src correcto que devuelve 404 se ve igual de roto.
+  const res = await page.request.get((await img.getAttribute("src")) ?? "");
+  expect(res.status()).toBe(200);
+  expect(res.headers()["content-type"]).toContain("image/svg+xml");
+});
+
+test("la portada grande lleva el titular dentro y la de tarjeta no", async ({ request }) => {
+  const id = "art-2026-08-29-cierres-de-cuentas";
+  const grande = await (await request.get(`/media/portada/${id}.svg`)).text();
+  const mini = await (await request.get(`/media/portada/${id}-mini.svg`)).text();
+  // La grande viaja sola por WhatsApp y Google: necesita decir de qué va.
+  expect(grande).toContain("<text");
+  expect(grande).toContain("losupe");
+  // La de tarjeta va con el titular escrito al lado: dentro solo estorba.
+  expect(mini).not.toContain("<text");
+});
+
+test("al compartir una nota sin foto SÍ sale imagen (WhatsApp no pinta SVG)", async ({ page }) => {
+  await page.goto(
+    "/es/economia/cierres-de-cuentas-bancarias-inmigrantes-estados-unidos-chexsystems-bank-of-america",
+  );
+  const og = page.locator('meta[property="og:image"]');
+  await expect(og).toHaveCount(1);
+  const url = (await og.getAttribute("content")) ?? "";
+  // PNG, no SVG: es el formato que entienden las vistas previas de los mensajeros.
+  expect(url).toMatch(/\.png$/);
+  expect((await page.request.get(url)).status()).toBe(200);
+});
