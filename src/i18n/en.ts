@@ -419,6 +419,9 @@ export const en: Dict = {
       lastRun: "Last run",
       never: "Has never run",
       runNow: "Run now (1 story)",
+      buscarFotos: "Find photos for stories missing one",
+      fotosHint:
+        "Adds a real photo to any story left without one. It runs automatically on every pass; this is for when you don\u2019t want to wait.",
       pause: "Pause robot",
       resume: "Turn robot on",
       autoToggleOn: "Enable auto-publish",
@@ -650,6 +653,7 @@ export const en: Dict = {
       added: "Source added.",
     },
     flash: {
+      fotos: "Done: the stories that had no photo have one now.",
       robotPaused: "Robot paused.",
       robotResumed: "Robot turned on.",
       autoOn: "Auto-publish enabled.",

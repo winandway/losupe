@@ -93,7 +93,7 @@ export default async function PanelHome({ searchParams }: Props) {
               ))}
             </ul>
           ) : null}
-          <form action="/panel/accion/robot" method="post" className="mt-4">
+          <form action="/panel/accion/robot" method="post" className="mt-4 flex flex-wrap gap-2">
             <input type="hidden" name="op" value="run" />
             <button
               type="submit"
@@ -101,6 +101,16 @@ export default async function PanelHome({ searchParams }: Props) {
             >
               {p.dashboard.runNow}
             </button>
+          </form>
+          <form action="/panel/accion/robot" method="post" className="mt-2">
+            <input type="hidden" name="op" value="fotos" />
+            <button
+              type="submit"
+              className="rounded-full border border-line px-4 py-2 text-sm font-bold text-ink hover:bg-paper"
+            >
+              {p.dashboard.buscarFotos}
+            </button>
+            <p className="mt-1.5 text-xs text-muted">{p.dashboard.fotosHint}</p>
           </form>
         </Card>
 

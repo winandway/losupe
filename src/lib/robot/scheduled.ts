@@ -5,6 +5,7 @@
  */
 
 import { runPipeline, type RobotEnv, type RunSummary } from "./pipeline";
+import { rescatarImagenes } from "./rescate-imagenes";
 
 export type RunTrigger = "cron" | "manual";
 
@@ -16,6 +17,10 @@ export type RunResult = {
   startedAt: string;
   notes?: RunSummary["notes"];
   spentUsd?: number;
+  /** Notas que estaban sin foto y quedaron ilustradas en esta corrida. */
+  imagenesRescatadas?: number;
+  /** Las que siguen sin foto. Se ve en el panel: un rescate mudo es como no tenerlo. */
+  imagenesPendientes?: number;
 };
 
 export { isRobotPaused } from "./pipeline";
@@ -40,6 +45,15 @@ export async function runScheduled(
     force: opts.force,
     fetchImpl: opts.fetchImpl,
   });
+  // Antes de cerrar, se le pone foto a cualquier nota que se haya quedado sin ella —venga del robot,
+  // de una semilla del repositorio o del panel—. Una nota sin foto al lado de otras con foto se lee
+  // como un error del sitio, aunque el texto sea impecable (lo vio Richard el 30 ago 2026).
+  const rescate = await rescatarImagenes(env.DB, env, { fetchImpl: opts.fetchImpl }).catch(() => ({
+    encontradas: 0,
+    ilustradas: 0,
+    errores: ["rescate de imágenes: fallo inesperado"],
+  }));
+
   return {
     ok: summary.ok,
     runId: summary.runId,
@@ -48,6 +62,12 @@ export async function runScheduled(
     startedAt: summary.startedAt,
     notes: summary.notes,
     spentUsd: summary.spentUsd,
+    ...(rescate.encontradas > 0 || rescate.errores.length > 0
+      ? {
+          imagenesRescatadas: rescate.ilustradas,
+          imagenesPendientes: rescate.encontradas - rescate.ilustradas,
+        }
+      : {}),
   };
 }
 

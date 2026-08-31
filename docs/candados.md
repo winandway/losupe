@@ -1264,3 +1264,34 @@ ignorar el rojo, que es exactamente como se cuela un fallo de verdad.
 - **Qué NO tocar:** lo específico manda sobre lo genérico al elegir símbolo; el texto se parte
   midiendo ancho, nunca contando letras; la miniatura no lleva texto dibujado (el titular sí va en
   el `aria-label`, para quien usa lector de pantalla); y el Open Graph apunta a PNG, nunca al SVG.
+
+## 45. La nota sembrada a mano se quedaba sin foto
+
+- **Cómo se veía (Richard, 30 ago 2026):** en la portada, la nota de los cierres de cuentas salía
+  con el icono dibujado **al lado de tres notas con fotos reales**. Sus palabras: _«pareciera que es
+  una imagen de esas que salen cuando falta una imagen»_. Y tenía razón. El dibujo no estaba mal
+  hecho: el problema es que **junto a fotos de verdad, un icono se lee como un hueco**. El contraste
+  lo delata.
+- **La causa, y era más tonta de lo que parecía:** `PEXELS_API_KEY` llevaba días puesta y el robot
+  ilustra todas sus notas. Pero esa nota **se sembró a mano desde el repositorio**, y las semillas
+  nunca pasaban por el ilustrador. Nadie las miraba.
+- **El arreglo NO fue ponerle una foto a esa nota.** Es que cualquier nota publicada sin imagen se
+  ilustre sola —venga del robot, de una semilla o del panel—. `rescatarImagenes()` corre al final de
+  **cada** corrida y hay un botón en el panel para no esperar. Un fallo se arregla para todas.
+- **Con qué se busca la foto importa tanto como buscarla:** se usa el titular **en inglés** (los
+  bancos de fotos tienen mucho más material etiquetado así) y se quitan las palabras que **no se
+  pueden fotografiar** — cifras, «seis meses», «guía», «curiosidades». Buscar «20.682 quejas en seis
+  meses» devuelve fotos genéricas de oficina que no dicen nada; buscar «bank account closures», la
+  foto que toca.
+- **Nunca frena la publicación.** Si no hay foto, la nota queda con su portada dibujada (candado 44)
+  y el motivo queda escrito por nota. Un fallo en una nota no deja a la siguiente sin foto.
+- **El orden completo sigue igual** y está en [`docs/imagenes.md`](imagenes.md): imagen propia
+  generada → foto real de Pexels → portada dibujada. Lo que cambió es que **ahora todas las notas
+  entran en ese orden**, no solo las que escribe el robot.
+- **Candado:** 10 pruebas en `tests/unit/rescate-imagenes.test.ts` — que las palabras de búsqueda
+  sean fotografiables, que solo se rescaten notas publicadas y de verdad sin imagen (incluida la
+  cadena vacía), que el crédito del fotógrafo se guarde, que un fallo quede escrito con el nombre de
+  la nota, y que un fallo en una no deje a la siguiente sin foto.
+- **Qué NO tocar:** no quites el rescate del final de la corrida; no busques fotos con el titular
+  entero ni en español; y no dejes de guardar el crédito del fotógrafo — es la condición de la
+  licencia de Pexels.

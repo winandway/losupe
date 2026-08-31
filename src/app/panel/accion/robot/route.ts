@@ -2,12 +2,13 @@ import { z } from "zod";
 import { sessionFromRequest } from "@/lib/panel/auth";
 import { panelEnv } from "@/lib/panel/server";
 import { setSetting } from "@/lib/robot/budget";
+import { rescatarImagenes } from "@/lib/robot/rescate-imagenes";
 import { runScheduled } from "@/lib/robot/scheduled";
 
 export const dynamic = "force-dynamic";
 
 const schema = z.object({
-  op: z.enum(["pause", "resume", "auto_on", "auto_off", "run", "settings"]),
+  op: z.enum(["pause", "resume", "auto_on", "auto_off", "run", "settings", "fotos"]),
   notesPerDay: z.coerce.number().int().min(1).max(24).optional(),
   evergreenPercent: z.coerce.number().int().min(0).max(100).optional(),
   dailyBudget: z.coerce.number().min(0).max(10).optional(),
@@ -72,6 +73,15 @@ export async function POST(request: Request) {
     if (op === "auto_off") {
       await setSetting(env.DB, "robot_auto_publish", "0");
       return back("/panel?ok=autoOff");
+    }
+    if (op === "fotos") {
+      // Buscarle foto a las notas que se quedaron sin ella, sin escribir ninguna nota nueva.
+      const r = await rescatarImagenes(env.DB, env, { limite: 12 });
+      return back(
+        r.errores.length > 0 && r.ilustradas === 0
+          ? `/panel?error=${encodeURIComponent(r.errores[0]?.slice(0, 150) ?? "fotos")}`
+          : `/panel?ok=fotos&n=${r.ilustradas}`,
+      );
     }
     const base = env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") || new URL(request.url).origin;
     const result = await runScheduled(env, "manual", { base, maxNotes: 1, force: true });

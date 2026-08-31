@@ -420,6 +420,9 @@ export const es = {
       lastRun: "Última corrida",
       never: "Nunca ha corrido",
       runNow: "Ejecutar ahora (1 nota)",
+      buscarFotos: "Buscarle foto a las notas que no tienen",
+      fotosHint:
+        "Le pone una foto real a cada nota que se quedó sin ella. Se hace solo en cada corrida; esto es para no esperar.",
       pause: "Pausar robot",
       resume: "Encender robot",
       autoToggleOn: "Activar publicación automática",
@@ -650,6 +653,7 @@ export const es = {
       added: "Fuente agregada.",
     },
     flash: {
+      fotos: "Listo: las notas que estaban sin foto ya la tienen.",
       robotPaused: "Robot en pausa.",
       robotResumed: "Robot encendido.",
       autoOn: "Publicación automática activada.",
