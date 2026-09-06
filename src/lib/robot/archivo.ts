@@ -331,10 +331,26 @@ export type Veredicto =
       parecido: number;
       novedades: string[];
       motivo: string;
+      /**
+       * `alta` = descartar sin preguntar. `media` = sospecha; que lo mire la mesa antes de tirarlo,
+       * porque una regla de palabras no distingue un capítulo nuevo de una repetición.
+       */
+      certeza: "alta" | "media";
     };
 
-/** A partir de aquí es el MISMO TEMA contado otra vez. Calibrado con casos reales. */
-export const UMBRAL_PARECIDO = 0.6;
+/**
+ * DOS umbrales, y la diferencia es la que evita cortar de más.
+ *
+ * `UMBRAL_SEGURO` es certeza: a partir de ahí es el mismo tema y se descarta sin consultar a nadie.
+ * `UMBRAL_PARECIDO` es sospecha: se marca y **decide la mesa**, que sabe leer.
+ *
+ * Antes había uno solo en 0,6 y por debajo no pasaba nada. El caso del diésel del 6 sep 2026 dio
+ * **0,50** —el mismo hecho contado por otro medio— y se coló entero sin que nadie lo mirara.
+ * Bajar el umbral no significa cortar más notas: significa **consultar más**, y consultar cuesta
+ * milésimas de centavo.
+ */
+export const UMBRAL_SEGURO = 0.6;
+export const UMBRAL_PARECIDO = 0.45;
 /**
  * Zona de «la misma historia, otro ángulo»: se parecen a medias pero hablan del mismo suceso. Solo
  * cuenta si además comparten un nombre propio — el terremoto de Filipinas del lunes y el del jueves
@@ -385,8 +401,13 @@ export function revisarArchivo(
       `${peor.nota.titulo} ${peor.nota.entradilla ?? ""}`,
     );
     const seguimiento = novedades.length >= MINIMO_HECHOS_NUEVOS && !peor.mismaFuente;
+    // Solo se descarta a ciegas lo que no admite duda: la misma fuente, o un parecido altísimo sin
+    // nada nuevo. Todo lo demás se marca y lo mira la mesa.
+    const certeza: "alta" | "media" =
+      peor.mismaFuente || (peor.p >= UMBRAL_SEGURO && !seguimiento) ? "alta" : "media";
     return {
       repite: true,
+      certeza,
       seguimiento,
       parecidoCon: peor.nota.titulo,
       parecido: Math.round(peor.p * 100) / 100,
@@ -463,27 +484,49 @@ export const SISTEMA_MESA = `Eres el jefe de redacción de un diario. Tu única 
 
 Piensa como un lector, no como un buscador de palabras: dos titulares con palabras distintas pueden ser exactamente la misma nota. «Sanciones económicas y el Estrecho de Ormuz» y «Medidas económicas y rutas comerciales» son LA MISMA NOTA, aunque no compartan casi ninguna palabra.
 
-Hay una excepción que importa tanto como la regla: una noticia que sigue viva se cuenta varios días seguidos, y eso está bien. De un terremoto se publica el primer balance, luego cuántas víctimas van, luego qué países mandaron ayuda, luego qué decidió el gobierno. Cada una es un capítulo distinto y todas se publican.
+LO MÁS IMPORTANTE, y es lo que se nos coló dos veces: **el mismo hecho contado por otro medio SIGUE SIENDO EL MISMO HECHO.** Que la fuente sea distinta no lo convierte en una noticia nueva. Si ayer publicamos que el diésel llegó a un precio récord citando a un medio, y hoy llega la misma subida contada por otro, ESO ES UNA REPETICIÓN. No importa que el titular esté escrito de otra forma, ni que uno sea noticia y el otro una guía sobre lo mismo.
 
-La diferencia entre un capítulo y una repetición son los HECHOS NUEVOS: cifras, nombres, decisiones o fechas que la nota anterior no tenía. Si el tema propuesto solo trae las mismas ideas con otras palabras, es una repetición.
+Hay una excepción, y solo una: **una noticia que AVANZA**. De un terremoto se publica el primer balance, y luego se publica que las víctimas subieron a 340, que llegaron equipos de doce países, que el gobierno declaró el estado de emergencia. Cada una cuenta algo que ANTES NO HABÍA PASADO.
+
+Para que sea un capítulo nuevo y no una repetición tienen que cumplirse las DOS cosas:
+1. El hecho avanzó de verdad: hay un dato, una decisión o un suceso NUEVO, posterior a lo que ya publicamos.
+2. Ese avance es el centro de la nota, no un detalle.
+
+NO son capítulos nuevos, son repeticiones:
+- El mismo hecho con otras palabras.
+- El mismo hecho contado por otro medio.
+- Una guía o un análisis sobre algo que ya contamos como noticia.
+- «Más contexto» o «cómo te afecta» de lo mismo.
 
 Responde:
 - repetido: true si el tema ya está contado en alguno de nuestros titulares.
-- seguimiento: true SOLO si es repetido y además aporta hechos nuevos que la nota anterior no tenía.
+- seguimiento: true SOLO si se cumplen las dos condiciones de arriba.
 - choca_con: el titular nuestro con el que choca, copiado tal cual. Cadena vacía si no choca con ninguno.
 - motivo: una frase corta y en palabras normales.
 
-Ante la duda, di que NO es repetido: perder una nota buena es peor que publicar una parecida.`;
+ANTE LA DUDA, DI QUE SÍ ES REPETIDO. Tenemos decenas de temas esperando y el mundo entero del que hablar: perder uno no cuesta nada. Publicar dos veces lo mismo hace que el diario parezca descuidado, y eso sí cuesta lectores.`;
 
+/**
+ * Con el titular a secas no se puede decidir. «Diésel a precios récord» y «Diésel caro: guía para
+ * entender el precio» parecen dos notas hasta que se leen las entradillas y resulta que las dos
+ * cuentan la misma subida del mismo día. Por eso van también las entradillas y la fecha: para saber
+ * si el hecho AVANZÓ hace falta saber qué se contó y cuándo.
+ */
 export function promptDecision(
   candidato: { titulo: string; resumen?: string | null },
-  yaPublicado: readonly string[],
+  yaPublicado: readonly (string | NotaDelArchivo)[],
 ): string {
+  const linea = (n: string | NotaDelArchivo, i: number) => {
+    if (typeof n === "string") return `${i + 1}. ${n}`;
+    const dia = n.publicadaEn?.slice(0, 10) ?? "";
+    const entradilla = n.entradilla ? `\n   ${n.entradilla.slice(0, 220)}` : "";
+    return `${i + 1}. [${dia}] ${n.titulo}${entradilla}`;
+  };
   return `TEMA PROPUESTO: ${candidato.titulo}
 ${candidato.resumen ? `RESUMEN: ${candidato.resumen}` : ""}
 
 LO QUE YA PUBLICAMOS ESTOS DÍAS:
-${yaPublicado.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
+${yaPublicado.map(linea).join("\n")}`;
 }
 
 /**
@@ -496,7 +539,8 @@ ${yaPublicado.map((t, i) => `${i + 1}. ${t}`).join("\n")}`;
 export async function preguntarALaMesa(opts: {
   apiKey?: string;
   candidato: { titulo: string; resumen?: string | null };
-  yaPublicado: readonly string[];
+  /** Titulares, o mejor las notas enteras: con la entradilla y la fecha decide mucho mejor. */
+  yaPublicado: readonly (string | NotaDelArchivo)[];
   fetchImpl?: typeof fetch;
 }): Promise<{ decision: DecisionMesa; costUsd: number } | null> {
   if (!opts.apiKey || opts.yaPublicado.length === 0) return null;

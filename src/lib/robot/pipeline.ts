@@ -662,7 +662,11 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   /** Firma de esta nota: turno del equipo para esa sección (o la de por defecto si no hay equipo). */
   const authorFor = async (section: SectionId) =>
     (await pickWriter(db, section, now).catch(() => null))?.id ?? defaultAuthor;
+  // Se conserva por compatibilidad con el ajuste guardado, pero YA NO DECIDE NADA: el tipo de nota
+  // lo pone la escaleta (actualidad → noticia; pieza propia → guía). El porcentaje falló dos veces
+  // por la misma aritmética y no se vuelve a usar.
   const evergreenRatio = Number((await getSetting(db, "evergreen_ratio")) ?? "0.7");
+  void evergreenRatio;
   const maxNotes = Math.max(
     1,
     Math.min(
@@ -925,7 +929,9 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           const mesa = await preguntarALaMesa({
             apiKey: env.GEMINI_API_KEY,
             candidato: { titulo: c.title, resumen: c.summary },
-            yaPublicado: archivo.map((n) => n.titulo),
+            // Las notas enteras, no solo los titulares: con la entradilla y la fecha, la mesa
+            // puede ver si el hecho avanzó o si es la misma subida contada por otro medio.
+            yaPublicado: archivo,
             fetchImpl,
           });
           if (mesa) {
@@ -954,7 +960,22 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
             await markCandidate(db, c.id, "skipped");
             throw new Error(`No se pudo leer la fuente: ${c.url}`);
           }
-          noteKind = todayTotal % 10 < Math.round(evergreenRatio * 10) ? "evergreen" : "news";
+          // UNA NOTA DE ACTUALIDAD ES UNA NOTICIA. Punto.
+          //
+          // Aquí había un porcentaje —`todayTotal % 10 < evergreenRatio * 10`— y era el MISMO fallo
+          // aritmético de la escaleta (candado 20): con 4 notas al día, `todayTotal` solo llega a 3,
+          // y 3 siempre es menor que 5. **Ninguna nota se marcó nunca como noticia.** Las
+          // consecuencias se vieron el 6 sep 2026 y eran dos, las dos graves:
+          //   1. Todos los titulares salían con forma de guía («guía para entender…», «claves
+          //      para…»), y por eso se parecían entre sí — que es lo que hacía que el diario
+          //      pareciera repetirse.
+          //   2. En los datos estructurados salían como `Article` y no como `NewsArticle`, así que
+          //      **Google Noticias no las veía como noticias**. El diario llevaba semanas sin poder
+          //      entrar por la puerta de las noticias.
+          //
+          // Se quita el porcentaje: lo decide la escaleta, igual que el género. Si la franja pidió
+          // actualidad, es una noticia; las guías y curiosidades salen por su propia rama.
+          noteKind = "news";
           await noteItem(db, runId, itemId, { status: "working", step: "write" });
           prompt = buildUniversalPrompt({
             sectionId: seccion,

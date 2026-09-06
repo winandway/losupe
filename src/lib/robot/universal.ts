@@ -354,9 +354,11 @@ export async function pickCandidate(
         archivo,
         now,
       );
-      // Ya lo contamos y no trae nada nuevo: se aparta y se prueba con el siguiente tema. Hay
+      // Ya lo contamos y no admite duda: se aparta y se prueba con el siguiente tema. Hay
       // demasiadas cosas de las que hablar en el mundo como para contar dos veces la misma.
-      if (veredicto.repite && !veredicto.seguimiento) {
+      // Lo dudoso (certeza «media») NO se tira aquí: pasa marcado y lo decide la mesa, que sabe
+      // leer. Una regla de palabras no distingue un capítulo nuevo de una repetición.
+      if (veredicto.repite && !veredicto.seguimiento && veredicto.certeza === "alta") {
         await descartar(row.id, `ya lo contamos: ${veredicto.motivo} («${veredicto.parecidoCon}»)`);
         continue;
       }

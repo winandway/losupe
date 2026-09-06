@@ -51,6 +51,18 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
   const title = `${dict.brand.name} — ${dict.brand.tagline}`;
   return {
     metadataBase: new URL(base),
+    // Verificación de las herramientas para dueños de sitios. Sin esto, Search Console no deja ver
+    // por qué palabras nos encuentran ni pedir que se indexe una nota nueva — es decir, se publica
+    // a ciegas. Van por variable de entorno para que se peguen sin tocar el código, y si no están,
+    // sencillamente no se pinta nada.
+    verification: {
+      ...(process.env.GOOGLE_SITE_VERIFICATION
+        ? { google: process.env.GOOGLE_SITE_VERIFICATION }
+        : {}),
+      ...(process.env.BING_SITE_VERIFICATION
+        ? { other: { "msvalidate.01": process.env.BING_SITE_VERIFICATION } }
+        : {}),
+    },
     title: { default: title, template: `%s · ${dict.brand.name}` },
     description: dict.brand.description,
     applicationName: dict.brand.name,

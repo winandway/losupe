@@ -183,3 +183,24 @@ describe("el roadmap dice la verdad", () => {
     expect(new Set(titulos).size).toBe(titulos.length);
   });
 });
+
+describe("verificación de Search Console: sin ella se publica a ciegas", () => {
+  it("la etiqueta sale SOLO si la variable está puesta, y nunca inventa un valor", async () => {
+    const layout = (await import("node:fs")).readFileSync("src/app/[lang]/layout.tsx", "utf8");
+    // Va por variable de entorno para que Richard la pegue sin tocar código.
+    expect(layout).toContain("GOOGLE_SITE_VERIFICATION");
+    expect(layout).toContain("BING_SITE_VERIFICATION");
+    expect(layout).toContain("verification:");
+    // Y si no está, no se pinta nada: una etiqueta con un valor inventado hace fallar la
+    // verificación y deja el sitio fuera de Search Console sin decir por qué.
+    expect(layout).toMatch(/process\.env\.GOOGLE_SITE_VERIFICATION\s*\n?\s*\?/);
+  });
+
+  it("los nombres están documentados en .env.example, sin valores", async () => {
+    const env = (await import("node:fs")).readFileSync(".env.example", "utf8");
+    expect(env).toContain("GOOGLE_SITE_VERIFICATION=");
+    expect(env).toContain("BING_SITE_VERIFICATION=");
+    // Nombres sí, valores nunca: el archivo va al repositorio.
+    expect(env).not.toMatch(/GOOGLE_SITE_VERIFICATION=\S/);
+  });
+});

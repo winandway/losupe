@@ -309,10 +309,11 @@ describe("EL JEFE DE REDACCIÓN: el criterio que las palabras no dan", () => {
     const p = promptDecision({ titulo: "Medidas económicas y rutas comerciales" }, REALES);
     for (const t of REALES) expect(p).toContain(t);
     // Lo que hace que la respuesta sea buena está en las instrucciones, no en el algoritmo:
-    expect(SISTEMA_MESA).toContain("HECHOS NUEVOS");
+    expect(SISTEMA_MESA).toContain("una noticia que AVANZA");
     expect(SISTEMA_MESA).toContain("terremoto");
-    // Y ante la duda, publicar: perder una nota buena es peor que publicar una parecida.
-    expect(SISTEMA_MESA).toContain("Ante la duda");
+    // Y ante la duda, NO publicar. Se invirtió el 6 sep 2026: con el sesgo contrario, la segunda
+    // cobertura del mismo hecho pasaba siempre.
+    expect(SISTEMA_MESA).toContain("ANTE LA DUDA, DI QUE SÍ ES REPETIDO");
   });
 
   it("usa el modelo MÁS BARATO: es una decisión de dos líneas, no una redacción", async () => {
@@ -378,5 +379,74 @@ describe("EL JEFE DE REDACCIÓN: el criterio que las palabras no dan", () => {
         fetchImpl: caido as unknown as typeof fetch,
       }),
     ).toBeNull();
+  });
+});
+
+describe("SEGUNDA VEZ: el mismo hecho contado por otro medio (5-6 sep 2026)", () => {
+  /**
+   * Richard lo reportó por segunda vez. En dos días salieron cuatro notas que eran dos:
+   *   05-09  «Diésel a precios récord…»            (fuente: Clarín)
+   *   06-09  «Diésel caro: guía para entender…»    (fuente: Infobae)
+   *   05-09  «Conflictos económicos globales…»     (fuente: El País)
+   *   06-09  «Conflictos globales y tu bolsillo…»  (fuente: Yucatán)
+   *
+   * Cada par es EL MISMO HECHO contado por otro medio. Mi filtro comparaba URLs de fuente —y eran
+   * distintas— y el parecido léxico bajaba a 0,00 en el caso de los conflictos.
+   *
+   * Y lo que de verdad lo dejó pasar fue una instrucción MÍA: al jefe de redacción le había escrito
+   * «ante la duda, di que NO es repetido». Con ese sesgo, la segunda cobertura siempre pasa.
+   */
+  it("la instrucción ahora dice lo contrario: ante la duda, ES repetido", async () => {
+    const { SISTEMA_MESA } = await import("@/lib/robot/archivo");
+    expect(SISTEMA_MESA).toContain("ANTE LA DUDA, DI QUE SÍ ES REPETIDO");
+    expect(SISTEMA_MESA).not.toContain("Ante la duda, di que NO es repetido");
+  });
+
+  it("y le dice explícitamente que otro medio NO es una noticia nueva", async () => {
+    const { SISTEMA_MESA } = await import("@/lib/robot/archivo");
+    expect(SISTEMA_MESA).toContain("SIGUE SIENDO EL MISMO HECHO");
+    // Los cuatro casos que se colaron, escritos como lo que son: repeticiones.
+    expect(SISTEMA_MESA).toContain("El mismo hecho contado por otro medio");
+    expect(SISTEMA_MESA).toContain("Una guía o un análisis sobre algo que ya contamos");
+  });
+
+  it("un capítulo nuevo exige que el hecho AVANCE, no que cambie el medio", async () => {
+    const { SISTEMA_MESA } = await import("@/lib/robot/archivo");
+    expect(SISTEMA_MESA).toContain("una noticia que AVANZA");
+    expect(SISTEMA_MESA).toContain("ANTES NO HABÍA PASADO");
+  });
+
+  it("LA MESA RECIBE ENTRADILLA Y FECHA, no solo titulares", async () => {
+    const { promptDecision } = await import("@/lib/robot/archivo");
+    // Con el titular a secas no se puede saber si el hecho avanzó: hace falta qué se contó y cuándo.
+    const p = promptDecision({ titulo: "Los precios del diésel alcanzaron un máximo histórico" }, [
+      {
+        titulo: "Diésel a precios récord: cómo impacta en tu bolsillo",
+        entradilla: "El precio del diésel llegó a un promedio de 5,85 dólares por galón.",
+        publicadaEn: "2026-09-05T04:14:00.000Z",
+      },
+    ]);
+    expect(p).toContain("5,85 dólares por galón");
+    expect(p).toContain("2026-09-05");
+    // Y sigue aceptando titulares sueltos, para no romper a quien la llame así.
+    expect(promptDecision({ titulo: "x" }, ["Un titular"])).toContain("1. Un titular");
+  });
+
+  it("el caso del diésel llega marcado a la mesa, no se descarta ni se aprueba solo", () => {
+    // La capa barata lo detecta (comparten «Estados Unidos» y el parecido es 0,5) pero NO decide:
+    // trae cifras nuevas, y con eso una regla de palabras lo llamaría «capítulo». Quien decide si
+    // el hecho avanzó de verdad es la mesa.
+    const v = revisarArchivo(
+      { titulo: "Los precios del diésel en Estados Unidos alcanzaron un máximo histórico" },
+      [
+        {
+          titulo: "Diésel a precios récord: cómo impacta en tu bolsillo y la economía de EE. UU.",
+          entradilla: "El precio del diésel alcanzó un récord de 5,85 dólares por galón.",
+          publicadaEn: "2026-09-05T04:14:00.000Z",
+        },
+      ],
+      new Date("2026-09-06T04:24:00.000Z"),
+    );
+    expect(v.repite, "la capa barata tiene que verlo").toBe(true);
   });
 });

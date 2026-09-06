@@ -1343,3 +1343,46 @@ ahora esa persona no tiene que pedirle nada a nadie para cambiarla.
 - **Qué NO tocar:** no quites el filtro de metáforas ni vuelvas a tomar las primeras palabras del
   titular; no quites las reglas de «la cosa, no quién» y «nada de pancartas»; y no quites el botón
   «Otra foto» — es el único que acierta siempre.
+
+## 47. Ninguna nota se marcaba como noticia (y por eso se repetían y no entrábamos en Google Noticias)
+
+- **Cómo se veía (Richard, 6 sep 2026, segunda vez que lo reporta):** en dos días salieron cuatro
+  notas que eran dos. «Diésel a precios récord» (día 5, fuente Clarín) y «Diésel caro: guía para
+  entender…» (día 6, fuente Infobae). «Conflictos económicos globales» (día 5, El País) y
+  «Conflictos globales y tu bolsillo» (día 6, Yucatán). Sus palabras: _«con tanta información aquí
+  en el mundo uno no puede repetir lo mismo»_.
+- **LA CAUSA RAÍZ, que resultó ser otra cosa y explicaba las dos quejas a la vez.** El tipo de nota
+  se decidía con un porcentaje:
+  `noteKind = todayTotal % 10 < Math.round(evergreenRatio * 10) ? "evergreen" : "news"`.
+  Con 4 notas al día, `todayTotal` solo llega a 3, y **3 siempre es menor que 5**. Es EXACTAMENTE el
+  mismo fallo aritmético que tumbó la escaleta (candado 20), repetido en otro sitio del archivo.
+  **Ninguna nota se marcó nunca como noticia.** Consecuencias, las dos graves:
+  1. Todos los titulares salían con forma de guía («guía para entender…», «claves para…»), y por eso
+     **se parecían entre sí**. Lo que Richard veía como notas repetidas era, en parte, el molde.
+  2. En los datos estructurados salían como `Article` y no como `NewsArticle`: **Google Noticias no
+     veía ni una sola noticia**. El diario llevaba semanas sin poder entrar por esa puerta.
+- **El arreglo:** se quita el porcentaje. Lo decide la escaleta, igual que el género — si la franja
+  pidió actualidad, es una **noticia**; las guías y curiosidades salen por su propia rama. El ajuste
+  `evergreen_ratio` se conserva por compatibilidad pero ya no decide nada.
+- **Y el segundo agujero, el de la repetición de verdad:** el mismo hecho contado por **otro medio**.
+  El filtro comparaba URLs de fuente (distintas) y el parecido léxico bajaba a **0,00** en el caso de
+  los conflictos. Pero lo que de verdad lo dejó pasar fue **una instrucción mía**: al jefe de
+  redacción le había escrito _«ante la duda, di que NO es repetido»_. Con ese sesgo, la segunda
+  cobertura pasa siempre. Ahora dice lo contrario, y con motivo escrito: hay decenas de temas
+  esperando; perder uno no cuesta nada, repetirse sí.
+- **Tres cambios más en el mismo sitio:**
+  - A la mesa se le pasan **las entradillas y las fechas**, no solo titulares. Con el titular a secas
+    no se puede saber si el hecho avanzó.
+  - Se le dice explícitamente que **otro medio no es una noticia nueva**, y que una guía sobre algo
+    ya contado tampoco.
+  - **Dos umbrales en vez de uno.** `UMBRAL_SEGURO` (0,6) descarta sin preguntar; `UMBRAL_PARECIDO`
+    (0,45) solo marca, y decide la mesa. El diésel dio **0,50** y con un único umbral en 0,6 pasaba
+    sin que nadie lo mirara. Bajar el umbral no corta más notas: hace **consultar** más, y consultar
+    cuesta milésimas de centavo.
+- **Candados:** `tests/unit/tipo-de-nota.test.ts` (4 pruebas, con la aritmética vieja demostrada
+  número a número y la comprobación de que una nota `news` declara `NewsArticle`) y 5 pruebas nuevas
+  en `tests/unit/archivo.test.ts` con los cuatro titulares reales. Comprobado en rojo el 6 sep 2026:
+  al devolver el porcentaje, dos pruebas fallan.
+- **Qué NO tocar:** no devuelvas el porcentaje para decidir el tipo de nota —falló dos veces por la
+  misma aritmética—; no vuelvas a poner «ante la duda, publica» en las instrucciones de la mesa; y no
+  subas `UMBRAL_PARECIDO` a 0,6 pensando que se corta de más: lo que hace es consultar.
