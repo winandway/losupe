@@ -152,6 +152,8 @@ a mano: `GET /__scheduled?key=<CRON_SECRET>`.
 
 Plan completo: [docs/plan-losupe-2026-08-22.pdf](docs/plan-losupe-2026-08-22.pdf).
 SEO y descubrimiento por IA (checklist vivo): [docs/seo-y-descubrimiento.md](docs/seo-y-descubrimiento.md).
+**Estado del posicionamiento** (qué está hecho, qué falta y quién lo hace):
+[docs/posicionamiento.md](docs/posicionamiento.md).
 
 ---
 
