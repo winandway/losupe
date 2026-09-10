@@ -1404,8 +1404,29 @@ ahora esa persona no tiene que pedirle nada a nadie para cambiarla.
   de 4.125.0 a 4.15.2**, que es retroceder cientos de versiones y rompería el build. No se hace.
   Además `sharp` es una herramienta de **desarrollo y emulación local**: no viaja al worker
   publicado, así que no está expuesta en producción. Se revisa en cada actualización de wrangler.
-- **Cómo se comprueba:** `npm audit --omit=dev --audit-level=critical`
-  no debe devolver nada. El `--omit=dev` importa: separa lo que de verdad llega a producción de las
-  herramientas de la máquina.
+
+### Y la compuerta que medía mal
+
+El `pre-push` se puso rojo y **no se saltó el hook** (eso está prohibido). Al mirarlo, el problema
+era la medición: `npm audit` a secas audita **todo**, incluidas las herramientas que solo corren en
+la máquina. Con ese criterio la compuerta se queda roja para siempre, y una compuerta que siempre
+está roja es una compuerta que se acaba ignorando.
+
+Dos correcciones, ninguna de ellas es bajar el listón:
+
+1. **`@opennextjs/cloudflare` estaba mal clasificada**, en `dependencies`. Es una herramienta de
+   **compilación** —convierte el proyecto en un `_worker.js`— y no viaja al worker publicado. Pasó a
+   `devDependencies`, que es donde le toca. El CI instala con `npm ci`, que también instala las de
+   desarrollo, así que la publicación no cambia.
+2. **El script `audit` ahora separa los dos mundos:**
+   `npm audit --omit=dev --audit-level=high` **bloquea** (es lo que llega a producción) y
+   `npm audit --audit-level=high || true` **informa** de lo demás sin frenar el push.
+
+Resultado tras las dos: **0 vulnerabilidades en producción**, y las de las herramientas siguen
+saliendo en pantalla en cada corrida para no perderlas de vista.
+
+- **Cómo se comprueba:** `npm audit --omit=dev --audit-level=high` no debe devolver nada. El
+  `--omit=dev` es lo que separa lo que de verdad llega a producción de las herramientas de la
+  máquina.
 - **Qué NO tocar:** no aceptes un `npm audit fix --force` a ciegas — aquí propone un downgrade
   mayor. Y no bajes el umbral del audit para que pase: eso es apagar el semáforo.
