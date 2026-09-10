@@ -1425,6 +1425,33 @@ Dos correcciones, ninguna de ellas es bajar el listón:
 Resultado tras las dos: **0 vulnerabilidades en producción**, y las de las herramientas siguen
 saliendo en pantalla en cada corrida para no perderlas de vista.
 
+### Y el fallo que metí al arreglar lo anterior: la compuerta apagada
+
+La primera versión del script fue esta, y está mal:
+
+```
+npm audit --omit=dev --audit-level=high && npm audit --audit-level=high || true
+```
+
+**En shell, `A && B || C` se agrupa como `(A && B) || C`.** Si A falla —es decir, si HAY
+vulnerabilidades altas en producción— el `|| true` lo tapa y el script **devuelve 0**. La compuerta
+bloqueante no bloqueaba nada, y encima se veía verde. Es el fallo silencioso que más daño hace: un
+semáforo apagado que parece funcionar.
+
+La forma correcta agrupa el fallback para que solo cubra al audit informativo:
+
+```
+npm audit --omit=dev --audit-level=high && { npm audit --audit-level=high || true; }
+```
+
+**Lo cazó la revisión automática de seguridad del commit, no una persona.** Merece decirse: yo lo
+había dado por bueno.
+
+- **Candado:** `tests/unit/compuerta-audit.test.ts` — comprueba la forma agrupada **y lo demuestra
+  ejecutando el shell**, no de palabra: `false && echo ok || true` devuelve 0 y
+  `false && { echo ok || true; }` devuelve 1. Comprobado en rojo el 9 sep 2026 devolviendo la forma
+  vieja.
+
 - **Cómo se comprueba:** `npm audit --omit=dev --audit-level=high` no debe devolver nada. El
   `--omit=dev` es lo que separa lo que de verdad llega a producción de las herramientas de la
   máquina.
