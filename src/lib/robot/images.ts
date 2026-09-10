@@ -1,3 +1,4 @@
+import { CON_MINIATURA } from "@/lib/miniaturas-locales";
 import { assertImageModelAllowed, IMAGE_MODELS } from "./model-guard";
 import { recordSpend } from "./budget";
 
@@ -54,8 +55,28 @@ export function aMedida(url: string, ancho: number): string {
 }
 
 /** El nombre de la versión pequeña de una imagen guardada. */
+/**
+ * La versión pequeña de una imagen, para las tarjetas.
+ *
+ * Se pide en dos casos, y **solo cuando existe de verdad**:
+ *  - Imágenes de `/media/` (R2): el robot guarda las dos tallas, y además el worker sirve la grande
+ *    si la pequeña falta. Siempre seguro.
+ *  - Imágenes locales que están en `CON_MINIATURA`, la lista que genera `npm run miniaturas`.
+ *
+ * Antes inventaba el `-sm` para TODAS y ahí estaba el fallo que vio Richard el 10 sep 2026: las
+ * notas sembradas a mano llevan sus imágenes en `/img/notas/...`, que las sirve el servidor de
+ * estáticos. Ese servidor **no tiene el respaldo que sí tiene R2**, así que devolvía 404 y en la
+ * portada salía el recuadro roto con el texto alternativo. La nota se veía bien al abrirla y muerta
+ * en la miniatura — que es justo donde se decide si alguien entra.
+ *
+ * La lista se genera, no se escribe a mano: en el worker no hay disco que consultar, y una lista a
+ * mano se desactualiza al primer descuido.
+ */
 export function rutaMiniatura(url: string): string {
-  return url.replace(/\.(jpg|jpeg|png|webp)$/i, "-sm.$1");
+  const pequena = url.replace(/\.(jpg|jpeg|png|webp)$/i, "-sm.$1");
+  if (pequena === url) return url; // no es una imagen con extensión conocida
+  if (url.startsWith("/media/")) return pequena;
+  return CON_MINIATURA.has(url) ? pequena : url;
 }
 
 async function guardarMiniatura(

@@ -19,12 +19,13 @@ export default {
     status: "published",
     kind: "evergreen",
     origin: "editorial",
-    image_url: "/img/notas/mercatren-casillero/casillero.jpg",
-    image_alt_es:
-      "Página del casillero de Mercatren en Miami, con los cuatro pasos: crear el casillero, comprar donde quieras, recibir el paquete y enviarlo a tu país",
-    image_alt_en:
-      "Mercatren's Miami mailbox page showing the four steps: create your mailbox, shop anywhere, receive the package, and ship it to your country",
-    image_credit: "Captura: mercatren.com",
+    // SIN imagen principal a propósito: la pone sola el rescate (`rescate-imagenes.ts`) con una foto
+    // real de paquetería. Aquí había una captura de pantalla del sitio y Richard tenía razón — a los
+    // 140 píxeles de una tarjeta, una captura es una mancha gris que no invita a entrar. Las
+    // capturas siguen dentro del cuerpo, que es donde sí explican algo.
+    image_url: null,
+    image_alt_es: "Cajas de paquetería listas para enviar desde un almacén",
+    image_alt_en: "Shipping boxes ready to leave a warehouse",
     ai_assisted: 1,
     published_at: "2026-09-09T13:00:00.000Z",
     updated_at: "2026-09-09T13:00:00.000Z",

@@ -1457,3 +1457,37 @@ había dado por bueno.
   máquina.
 - **Qué NO tocar:** no aceptes un `npm audit fix --force` a ciegas — aquí propone un downgrade
   mayor. Y no bajes el umbral del audit para que pase: eso es apagar el semáforo.
+
+## 49. La miniatura rota: pedir una imagen que no existe
+
+- **Cómo se veía (Richard, 10 sep 2026):** en la portada, la nota del casillero salía con el
+  recuadro gris y el **texto alternativo escrito** en vez de la foto. Al abrir la nota se veía bien;
+  en la tarjeta, muerta. Sus palabras: _«la miniatura no llama la atención, está muerta… esto no
+  debería volver a pasar más nunca»_.
+- **La causa:** `rutaMiniatura()` convertía `x.jpg` en `x-sm.jpg` para **cualquier** imagen. Eso
+  vale para las fotos del robot, que viven en R2 y donde el worker sirve la grande si falta la
+  pequeña (hay un respaldo escrito para eso). Pero las notas sembradas a mano llevan sus imágenes en
+  `/img/notas/…`, que las sirve el **servidor de estáticos** — y ahí no hay ningún respaldo.
+  Resultado: **404 y hueco roto**.
+- **No era solo esa nota.** NINGUNA imagen local tenía miniatura, así que la nota de Mercatren de
+  agosto estaba igual de rota desde el primer día. Nadie lo vio porque ya no estaba en portada.
+- **El arreglo, en tres piezas:**
+  1. **`rutaMiniatura` ya no inventa rutas.** Pide la pequeña siempre para `/media/` (R2, con su
+     respaldo) y, para las locales, **solo si están en `CON_MINIATURA`**.
+  2. **`npm run miniaturas`** genera las versiones pequeñas de `public/img/notas/` (640 px, como las
+     del robot) **y escribe la lista** en `src/lib/miniaturas-locales.ts`. La lista se genera, no se
+     escribe a mano: en el worker no hay disco que consultar y una lista a mano se desactualiza al
+     primer descuido.
+  3. Con eso, la tarjeta del casillero pasó de descargar **99 KB a 23 KB** — que es además el
+     candado 35, el de no servir una foto enorme para pintarla a 142 píxeles.
+- **Y lo que Richard señaló además del error técnico:** _«no llama la atención»_. Tenía razón por
+  otro motivo — la imagen era **una captura de pantalla del sitio**, y a 140 píxeles una captura es
+  una mancha gris. Se le quitó la portada para que el rescate le ponga una **foto real**; las
+  capturas siguen dentro del cuerpo, que es donde explican algo.
+- **Candados:** `tests/unit/imagenes-de-notas.test.ts` (7 pruebas) — recorre TODAS las semillas y
+  exige que cada imagen exista en disco, que **cada una tenga su miniatura** (con el mensaje de
+  error diciendo `corre npm run miniaturas`), que la miniatura pese menos que la grande, y que la
+  lista generada **no mienta**. Comprobado en rojo el 10 sep 2026 borrando una miniatura.
+- **Qué NO tocar:** `rutaMiniatura` no puede volver a inventar el `-sm` para rutas locales; la lista
+  `miniaturas-locales.ts` se genera con el script, nunca a mano; y al añadir una imagen a una nota
+  se corre `npm run miniaturas` — si se olvida, la prueba lo dice antes del push.

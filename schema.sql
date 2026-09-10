@@ -519,3 +519,11 @@ CREATE INDEX IF NOT EXISTS idx_visitas_lectura ON visitas(dia, visitante, ruta);
 -- si ya se cambio, esto no toca nada.
 UPDATE articles SET image_url = NULL, image_credit = NULL
  WHERE id = 'art-2026-08-29-cierres-de-cuentas' AND image_credit LIKE '%Nayla Charo%';
+
+-- La nota del casillero llevaba de portada una captura de pantalla del sitio. A los 140 pixeles de
+-- una tarjeta, una captura es una mancha gris que no invita a entrar (lo vio Richard el 10 sep
+-- 2026). Se le quita para que el rescate le ponga una foto real de paqueteria; las capturas siguen
+-- dentro del cuerpo, que es donde explican algo. Idempotente: solo actua si sigue la captura.
+UPDATE articles SET image_url = NULL, image_credit = NULL
+ WHERE id = 'art-2026-09-09-casillero-miami'
+   AND image_url = '/img/notas/mercatren-casillero/casillero.jpg';
