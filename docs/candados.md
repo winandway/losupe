@@ -1491,3 +1491,30 @@ había dado por bueno.
 - **Qué NO tocar:** `rutaMiniatura` no puede volver a inventar el `-sm` para rutas locales; la lista
   `miniaturas-locales.ts` se genera con el script, nunca a mano; y al añadir una imagen a una nota
   se corre `npm run miniaturas` — si se olvida, la prueba lo dice antes del push.
+
+## 50. El edificio nevado: la foto tiene que corresponder, o no va
+
+- **Cómo se veía:** al quitarle la captura de pantalla a la guía del casillero, el rescate le puso
+  **una foto de un edificio universitario nevado en Milwaukee**. Para una guía sobre un casillero en
+  Miami. Con su crédito y todo.
+- **Es la TERCERA foto equivocada seguida**, y ahí está la lección: primero fue una ola del mar en
+  una nota de bancos (candado 46), luego una pancarta de protesta, ahora un edificio nevado. Las dos
+  veces anteriores afiné **las palabras de búsqueda**. No bastaba.
+- **La causa real, que no era el prompt:** el banco de fotos **siempre devuelve algo**, tenga que ver
+  o no, y nos quedábamos con **la primera**. Mientras nadie mire el RESULTADO, la foto equivocada
+  vuelve. Afinar la búsqueda mejora la probabilidad; no cierra el agujero.
+- **El arreglo, que sí lo cierra:** se piden **quince** fotos y se comprueba que la **descripción**
+  de la foto (`alt`, que Pexels devuelve en cada una) **coincida con lo que se buscó**. Gana la que
+  coincide en más palabras. **Si ninguna coincide, no se pone ninguna** y la nota se queda con su
+  portada dibujada.
+- **La regla de fondo, y vale para todo:** _una foto que no tiene nada que ver es PEOR que no tener
+  foto._ El hueco no engaña; la foto equivocada sí, y hace pensar que el diario no lo mira nadie.
+- **Y sin nada que verificar, tampoco hay foto.** Si no quedan palabras útiles con las que comparar
+  (todas muy cortas, o ninguna), se devuelve `undefined`. Aceptar a ciegas es exactamente lo que
+  trajo la ola.
+- **Candado:** 5 pruebas en `tests/unit/rescate-imagenes.test.ts`, con el edificio nevado y la ola
+  como casos. Comprobado en rojo el 10 sep 2026: al devolver «si ninguna coincide, la primera», dos
+  pruebas fallan.
+- **Qué NO tocar:** no vuelvas a quedarte con `photos[0]`; no bajes el mínimo de 3 letras por
+  palabra (con dos letras coincide medio catálogo); y si no hay descripción que comprobar, que siga
+  sin ponerse foto.

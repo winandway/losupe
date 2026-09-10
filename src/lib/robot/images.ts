@@ -160,14 +160,57 @@ export async function illustrateWithFal(opts: IllustrateOpts): Promise<Illustrat
     : null;
 }
 
+/**
+ * ELIGE LA FOTO QUE DE VERDAD CORRESPONDE, y si ninguna corresponde, no elige.
+ *
+ * El banco de fotos **siempre devuelve algo**, tenga que ver o no. Quedarse con la primera es lo que
+ * puso una ola del mar en una nota de bancos (31 ago 2026) y un edificio nevado de Milwaukee en una
+ * guía sobre un casillero en Miami (10 sep 2026). Afinar las palabras de búsqueda ayudó, pero no
+ * cierra el agujero: mientras nadie mire el resultado, va a volver a pasar.
+ *
+ * Así que se mira. Cada foto trae su propia descripción (`alt`), y se exige que **coincida con lo
+ * que se buscó**. Si ninguna de las quince coincide, se devuelve `null` y la nota se queda con su
+ * portada dibujada — que es honesta. **Una foto que no tiene nada que ver es peor que no tener
+ * foto**: el hueco no engaña, la foto equivocada sí, y hace pensar que el diario no lo mira nadie.
+ */
+export function elegirFoto<T extends { alt?: string }>(
+  fotos: readonly T[],
+  buscadas: readonly string[],
+): T | undefined {
+  if (fotos.length === 0) return undefined;
+  const claves = buscadas.map((k) => k.toLowerCase().trim()).filter((k) => k.length > 2);
+  // Sin palabras con las que comparar no se puede verificar NADA, y aceptar a ciegas es justo lo
+  // que trajo la ola y el edificio nevado. Sin verificación no hay foto.
+  if (claves.length === 0) return undefined;
+
+  const puntos = (foto: T) => {
+    const alt = (foto.alt ?? "").toLowerCase();
+    if (!alt) return 0;
+    return claves.filter((k) => alt.includes(k)).length;
+  };
+  let mejor: T | undefined;
+  let mejorPuntos = 0;
+  for (const foto of fotos) {
+    const p = puntos(foto);
+    if (p > mejorPuntos) {
+      mejor = foto;
+      mejorPuntos = p;
+    }
+  }
+  // Ninguna descripción menciona nada de lo que buscábamos: mejor sin foto.
+  return mejorPuntos > 0 ? mejor : undefined;
+}
+
 export async function illustrateWithPexels(opts: IllustrateOpts): Promise<Illustration | null> {
   const key = opts.env.PEXELS_API_KEY;
   if (!key) return null;
   assertImageModelAllowed("pexels");
   const fetchImpl = opts.fetchImpl ?? fetch;
+  const buscadas = opts.keywords.slice(0, 3);
   const url = new URL(PEXELS_ENDPOINT);
-  url.searchParams.set("query", opts.keywords.slice(0, 3).join(" ") || "business");
-  url.searchParams.set("per_page", "5");
+  url.searchParams.set("query", buscadas.join(" ") || "business");
+  // Se piden VARIAS y se elige la que de verdad corresponde, en vez de quedarse con la primera.
+  url.searchParams.set("per_page", "15");
   url.searchParams.set("orientation", "landscape");
   const res = await fetchImpl(url, {
     headers: { Authorization: key },
@@ -175,9 +218,14 @@ export async function illustrateWithPexels(opts: IllustrateOpts): Promise<Illust
   });
   if (!res.ok) throw new Error(`Pexels respondió ${res.status}`);
   const body = (await res.json()) as {
-    photos?: { src?: { large2x?: string; large?: string }; photographer?: string; url?: string }[];
+    photos?: {
+      src?: { large2x?: string; large?: string };
+      photographer?: string;
+      url?: string;
+      alt?: string;
+    }[];
   };
-  const photo = body.photos?.[0];
+  const photo = elegirFoto(body.photos ?? [], buscadas);
   const src = photo?.src?.large2x ?? photo?.src?.large;
   if (!photo || !src) return null;
   // Se guardan DOS tallas: la grande para la nota y una pequeña para las tarjetas. Ver `aMedida()`.

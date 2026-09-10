@@ -132,7 +132,14 @@ describe("el rescate en marcha", () => {
     const db = baseCon([fila]);
     const pexels = vi.fn(async () =>
       Response.json({
-        photos: [{ src: { large2x: "https://images.pexels.com/x.jpg" }, photographer: "Ana Ruiz" }],
+        photos: [
+          {
+            src: { large2x: "https://images.pexels.com/x.jpg" },
+            photographer: "Ana Ruiz",
+            // Las fotos de verdad traen su descripción, y ahora se comprueba que corresponda.
+            alt: "Immigrants waiting at a United States government office",
+          },
+        ],
       }),
     );
     const env = {
@@ -198,7 +205,13 @@ describe("el rescate en marcha", () => {
           llamada += 1;
           if (llamada === 1) throw new Error("Pexels cayó");
           return Response.json({
-            photos: [{ src: { large2x: "https://images.pexels.com/y.jpg" }, photographer: "Luis" }],
+            photos: [
+              {
+                src: { large2x: "https://images.pexels.com/y.jpg" },
+                photographer: "Luis",
+                alt: "Immigrants waiting at a United States government office",
+              },
+            ],
           });
         }
         return new Response(new Uint8Array([1]), { headers: { "content-type": "image/jpeg" } });
@@ -206,5 +219,64 @@ describe("el rescate en marcha", () => {
     });
     expect(r.ilustradas).toBe(1);
     expect(r.errores.length).toBe(1);
+  });
+});
+
+describe("EL EDIFICIO NEVADO: la foto tiene que corresponder, o no va", () => {
+  /**
+   * Tercer intento con las fotos, y el que cierra el agujero de verdad.
+   *
+   * Afinar las palabras de búsqueda ayudó, pero no basta: **el banco de fotos siempre devuelve
+   * algo**, tenga que ver o no. Quedarse con la primera puso una ola del mar en una nota de bancos
+   * (31 ago 2026) y un edificio nevado de Milwaukee en una guía sobre un casillero en Miami
+   * (10 sep 2026). Mientras nadie mire el RESULTADO, va a volver a pasar.
+   *
+   * Ahora se mira: cada foto trae su descripción y se exige que coincida con lo buscado.
+   */
+  it("elige la que coincide con lo buscado, no la primera de la lista", async () => {
+    const { elegirFoto } = await import("@/lib/robot/images");
+    const fotos = [
+      { alt: "Snow covered university building in winter", id: 1 },
+      { alt: "Aerial view of a city street", id: 2 },
+      { alt: "Warehouse worker scanning shipping boxes", id: 3 },
+    ];
+    expect(elegirFoto(fotos, ["warehouse", "shipping", "boxes"])?.id).toBe(3);
+  });
+
+  it("SI NINGUNA CORRESPONDE, NO PONE NINGUNA", async () => {
+    const { elegirFoto } = await import("@/lib/robot/images");
+    // Es el caso real: se buscaba un casillero y llegaron edificios y calles.
+    const fotos = [
+      { alt: "Snow covered university building in winter", id: 1 },
+      { alt: "Aerial view of a city street", id: 2 },
+    ];
+    expect(elegirFoto(fotos, ["mailbox", "shipping", "warehouse"])).toBeUndefined();
+    // Porque una foto que no tiene nada que ver es PEOR que no tener foto: el hueco no engaña.
+  });
+
+  it("gana la que coincide en más palabras", async () => {
+    const { elegirFoto } = await import("@/lib/robot/images");
+    const fotos = [
+      { alt: "A shipping container at sunset", id: 1 },
+      { alt: "Shipping boxes stacked in a warehouse", id: 2 },
+    ];
+    expect(elegirFoto(fotos, ["shipping", "boxes", "warehouse"])?.id).toBe(2);
+  });
+
+  it("sin descripciones ni palabras no se bloquea: sigue como siempre", async () => {
+    const { elegirFoto } = await import("@/lib/robot/images");
+    // Sin palabras con las que comparar no hay nada que verificar, así que no hay foto.
+    expect(elegirFoto([{ alt: "x", id: 1 }], [])).toBeUndefined();
+    // Sin lista, no hay foto y punto.
+    expect(elegirFoto([], ["boxes"])).toBeUndefined();
+    // Una foto sin descripción no puede verificarse, así que no se elige a ciegas.
+    expect(elegirFoto([{ alt: undefined }], ["boxes"])).toBeUndefined();
+  });
+
+  it("no se cuela por una coincidencia de dos letras", async () => {
+    const { elegirFoto } = await import("@/lib/robot/images");
+    // Las palabras muy cortas se ignoran: «us» aparecería dentro de cientos de descripciones. Y si
+    // no queda ninguna palabra verificable, no hay foto — aceptar a ciegas es lo que trajo la ola.
+    expect(elegirFoto([{ alt: "A bus in the city", id: 1 }], ["us"])).toBeUndefined();
   });
 });

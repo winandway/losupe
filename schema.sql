@@ -527,3 +527,10 @@ UPDATE articles SET image_url = NULL, image_credit = NULL
 UPDATE articles SET image_url = NULL, image_credit = NULL
  WHERE id = 'art-2026-09-09-casillero-miami'
    AND image_url = '/img/notas/mercatren-casillero/casillero.jpg';
+
+-- La foto que el rescate le puso a la nota del casillero era un edificio nevado de Milwaukee, para
+-- una guia sobre un casillero en Miami. Se elegia la PRIMERA foto que devolvia el banco, sin mirar
+-- si tenia que ver (candado 50). Se le quita para que la vuelva a buscar, ya con la comprobacion
+-- puesta. Idempotente: solo actua si sigue esa foto.
+UPDATE articles SET image_url = NULL, image_credit = NULL
+ WHERE id = 'art-2026-09-09-casillero-miami' AND image_credit LIKE '%Quang Vuong%';
