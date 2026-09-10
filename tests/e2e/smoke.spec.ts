@@ -104,7 +104,11 @@ test("el equipo de redacción: fotos, fichas y la firma de cada nota", async ({ 
   const nota =
     "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos";
   await page.goto(nota);
-  await expect(page.locator("article").getByRole("link", { name: "Merry Melina" })).toBeVisible();
+  // `.first()` porque Merry ya firma más de una nota y el enlace también sale en «Te puede
+  // interesar». Sin esto, la prueba se pone roja solo porque el diario publicó otra nota suya.
+  await expect(
+    page.locator("article").getByRole("link", { name: "Merry Melina" }).first(),
+  ).toBeVisible();
   await expect(page.locator("article").getByText("Magaly Molina")).toHaveCount(0);
 });
 

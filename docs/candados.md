@@ -1386,3 +1386,26 @@ ahora esa persona no tiene que pedirle nada a nadie para cambiarla.
 - **Qué NO tocar:** no devuelvas el porcentaje para decidir el tipo de nota —falló dos veces por la
   misma aritmética—; no vuelvas a poner «ante la duda, publica» en las instrucciones de la mesa; y no
   subas `UMBRAL_PARECIDO` a 0,6 pensando que se corta de más: lo que hace es consultar.
+
+## 48. Next.js 16.3.2 → 16.3.4: dos fallos de ejecución remota sin autenticación
+
+- **Cómo apareció:** `npm run verify` marcó **1 crítica y 5 altas** el 9 sep 2026, en una corrida
+  normal. No lo reportó nadie: lo cazó la compuerta de seguridad del blindaje.
+- **Qué era:** dos avisos de Next.js con **ejecución remota de código sin autenticación**:
+  - [GHSA-p293-qw3h-jr36](https://github.com/advisories/GHSA-p293-qw3h-jr36) — solo servidores
+    Windows. **No nos afectaba** (corremos en Workers), pero venía en el mismo paquete.
+  - [GHSA-2xp9-vwfh-vxw4](https://github.com/advisories/GHSA-2xp9-vwfh-vxw4) — en la API de
+    optimización de imágenes **cuando se usan archivos AVIF**. Esta sí podía tocarnos.
+- **El arreglo:** subir a **16.3.4**, que es un parche (`16.3.2` → `16.3.4`, sin cambio mayor).
+  Fijado con `--save-exact`. Verificado después: tipos, 470 pruebas, build de OpenNext y 178 e2e,
+  todo en verde.
+- **LO QUE QUEDA, Y POR QUÉ SE QUEDA ASÍ.** Siguen 4 avisos «high» encadenados:
+  `wrangler` → `miniflare` → `sharp` → `libheif`. **El «arreglo» que propone npm es BAJAR wrangler
+  de 4.125.0 a 4.15.2**, que es retroceder cientos de versiones y rompería el build. No se hace.
+  Además `sharp` es una herramienta de **desarrollo y emulación local**: no viaja al worker
+  publicado, así que no está expuesta en producción. Se revisa en cada actualización de wrangler.
+- **Cómo se comprueba:** `npm audit --omit=dev --audit-level=critical`
+  no debe devolver nada. El `--omit=dev` importa: separa lo que de verdad llega a producción de las
+  herramientas de la máquina.
+- **Qué NO tocar:** no aceptes un `npm audit fix --force` a ciegas — aquí propone un downgrade
+  mayor. Y no bajes el umbral del audit para que pase: eso es apagar el semáforo.
