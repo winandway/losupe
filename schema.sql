@@ -534,3 +534,9 @@ UPDATE articles SET image_url = NULL, image_credit = NULL
 -- puesta. Idempotente: solo actua si sigue esa foto.
 UPDATE articles SET image_url = NULL, image_credit = NULL
  WHERE id = 'art-2026-09-09-casillero-miami' AND image_credit LIKE '%Quang Vuong%';
+
+-- Cuarta foto fuera de lugar en la nota del casillero: una bandera de Estados Unidos. La heuristica
+-- buscaba 'america without surprises' —medido— porque tomaba las ultimas palabras del titular. Se le
+-- quita para que la busque otra vez, ya con las cosas mandando sobre los lugares (candado 50).
+UPDATE articles SET image_url = NULL, image_credit = NULL
+ WHERE id = 'art-2026-09-09-casillero-miami' AND image_credit LIKE '%Matthis Volquardsen%';

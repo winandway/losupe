@@ -136,24 +136,47 @@ const VACIAS = new Set([
   "muy",
 ]);
 
-/** Palabras que no se pueden fotografiar: cifras, medidas de tiempo, muletillas de titular. */
+/**
+ * Palabras que NO se pueden fotografiar: cifras, medidas de tiempo, muletillas de titular,
+ * conectores y **abstractos**.
+ *
+ * La lista creció el 10 sep 2026 con un caso medido: para la guía del casillero, la heurística
+ * buscó `america without surprises` — y el banco devolvió una bandera de Estados Unidos. Ni
+ * «without» ni «surprises» son cosas que se puedan fotografiar; «america» sí, pero de la forma
+ * equivocada.
+ */
 const NO_FOTOGRAFIABLE =
-  /^\d[\d.,%]*$|^(mes|meses|month|months|semana|semanas|week|weeks|año|años|year|years|día|días|day|days|hora|horas|hour|hours|guía|guide|claves|keys|razones|reasons|cosas|things|curiosidades|facts)$/i;
+  /^\d[\d.,%]*$|^(mes|meses|month|months|semana|semanas|week|weeks|año|años|year|years|día|días|day|days|hora|horas|hour|hours|guía|guide|claves|keys|razones|reasons|cosas|things|curiosidades|facts|without|within|through|across|toward|además|surprise|surprises|sorpresa|sorpresas|impacto|impact|manera|forma|way|ways|paso|pasos|step|steps|truco|trucos|tip|tips|consejo|consejos|error|errores|mistake|mistakes|detalle|detalles|detail|details|cambio|cambios|change|changes|futuro|future|problema|problemas|problem|problems|uno|dos|tres|seis|diez|one|two|three|four|five|six|seven|eight|nine|ten|primer|primero|first|ultimo|last|nuevo|nueva)$/i;
+
+/**
+ * LUGARES. Se pueden fotografiar, pero solos dan **banderas y mapas**, que no ilustran nada.
+ * Solo valen acompañando a una cosa concreta («warehouse miami» sí, «miami» a secas no).
+ */
+const LUGARES =
+  /^(estados|unidos|united|states|eeuu|usa|america|american|americana|sudamerica|suramerica|latinoamerica|venezuela|colombia|chile|miami|florida|mexico|españa|spain|europa|europe|asia|africa|china|japon|india|brasil|brazil|argentina|peru|ecuador|panama|texas|california|york|londres|london|paris)$/i;
 
 export function palabrasParaFoto(titulo: string, tituloEn?: string | null): string[] {
   const base = (tituloEn?.trim() || titulo).toLowerCase();
-  const palabras = base
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9\s-]/g, " ")
-    .split(/\s+/)
-    .filter(
-      (p) => p.length > 2 && !VACIAS.has(p) && !NO_FOTOGRAFIABLE.test(p) && !METAFORAS.test(p),
-    );
-  // Se toman las ÚLTIMAS, no las primeras. En un titular de diario la parte de delante lleva el
-  // gancho (la cifra, la metáfora) y el sustantivo de verdad viene detrás: «la ola de cierres de
-  // **cuentas bancarias**». Tomando las primeras salía «wave», y con eso una ola del mar.
-  return [...new Set(palabras)].slice(-3);
+  const utiles = [
+    ...new Set(
+      base
+        .normalize("NFD")
+        .replace(/[̀-ͯ]/g, "")
+        .replace(/[^a-z0-9\s-]/g, " ")
+        .split(/\s+/)
+        .filter(
+          (p) => p.length > 2 && !VACIAS.has(p) && !NO_FOTOGRAFIABLE.test(p) && !METAFORAS.test(p),
+        ),
+    ),
+  ];
+  // Las COSAS mandan; los lugares solo acompañan. Tomar las últimas palabras dio «america without
+  // surprises» y con eso una bandera (10 sep 2026); tomar las primeras dio «wave» y con eso una ola
+  // (31 ago 2026). Ni una posición ni la otra: primero lo que se puede fotografiar de verdad.
+  const cosas = utiles.filter((p) => !LUGARES.test(p));
+  const lugares = utiles.filter((p) => LUGARES.test(p));
+  // Sin una sola cosa concreta no hay nada que buscar: mejor sin foto que una bandera.
+  if (cosas.length === 0) return [];
+  return [...cosas.slice(0, 2), ...lugares.slice(0, 1)].slice(0, 3);
 }
 
 export const SISTEMA_FOTO = `Eres el editor gráfico de un diario. Te dan el titular y la entradilla de una nota y dices QUÉ SE DEBERÍA VER en la foto que la acompaña.

@@ -1515,6 +1515,43 @@ había dado por bueno.
 - **Candado:** 5 pruebas en `tests/unit/rescate-imagenes.test.ts`, con el edificio nevado y la ola
   como casos. Comprobado en rojo el 10 sep 2026: al devolver «si ninguna coincide, la primera», dos
   pruebas fallan.
+
+### La cuarta: una bandera, y el diagnóstico que faltaba
+
+Con la comprobación puesta, la siguiente foto fue **una bandera de Estados Unidos**. La verificación
+funcionó —la descripción coincidía— pero el resultado seguía siendo malo, así que el problema estaba
+antes: **en qué se buscaba**.
+
+Se midió, en vez de suponer. Para el titular de la guía del casillero, la heurística devolvía:
+
+```
+["america", "without", "surprises"]
+```
+
+Tomaba **las últimas tres palabras** del titular en inglés («…to South America without surprises»).
+Ni «without» ni «surprises» son cosas que se puedan fotografiar, y «america» sola devuelve banderas
+y mapas.
+
+**Ni las primeras ni las últimas: LAS COSAS.** Tomar las primeras dio `wave` (la ola, 31 ago); tomar
+las últimas dio `america` (la bandera, 10 sep). Ahora se separan y se ordenan:
+
+- **Cosas** (lo fotografiable) → van primero, hasta dos.
+- **Lugares** (`LUGARES`: países, ciudades, regiones) → solo acompañan, y nunca los primeros. Un
+  lugar suelto da bandera; «warehouse miami» da un almacén.
+- **Si no queda ni una cosa concreta, no se busca nada** y la nota se queda con su portada dibujada.
+
+Y la lista de lo no fotografiable creció con lo que se coló: conectores (`without`, `through`),
+abstractos (`surprises`, `impacto`, `manera`, `consejo`) y números escritos en palabra (`six`).
+
+Resultado medido para los tres casos que fallaron:
+
+| Titular                     | Antes                       | Ahora                     |
+| --------------------------- | --------------------------- | ------------------------- |
+| Guía del casillero          | `america without surprises` | `mailbox shopping miami`  |
+| Cierres de cuentas          | `immigrants united states`  | `complaints bank united`  |
+| «Estados Unidos y Colombia» | `united states colombia`    | _(nada — mejor sin foto)_ |
+
 - **Qué NO tocar:** no vuelvas a quedarte con `photos[0]`; no bajes el mínimo de 3 letras por
-  palabra (con dos letras coincide medio catálogo); y si no hay descripción que comprobar, que siga
-  sin ponerse foto.
+  palabra (con dos letras coincide medio catálogo); si no hay descripción que comprobar, que siga
+  sin ponerse foto; y **no elijas las palabras por su posición en el titular** — ni las primeras ni
+  las últimas: las cosas primero, los lugares detrás.

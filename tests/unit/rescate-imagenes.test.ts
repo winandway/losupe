@@ -19,14 +19,32 @@ describe("LA OLA DEL MAR: qué se debe ver en la foto", () => {
     expect(p, "«wave» es la metáfora del titular, no lo que hay que fotografiar").not.toContain(
       "wave",
     );
-    expect(p.join(" ")).toMatch(/bank|account|closures|immigrants|states/);
+    expect(p.join(" ")).toMatch(/bank|account|closures/);
   });
 
-  it("toma las ÚLTIMAS palabras, que es donde vive el sustantivo", () => {
-    // En un titular de diario, delante va el gancho (cifra, metáfora) y detrás el tema de verdad.
+  it("LAS COSAS MANDAN; LOS LUGARES SOLO ACOMPAÑAN (la bandera, 10 sep 2026)", () => {
+    // Caso medido: para la guía del casillero la heurística buscaba «america without surprises» y
+    // el banco devolvió una bandera de Estados Unidos. Ni «without» ni «surprises» son cosas, y
+    // «america» sola da banderas y mapas.
+    const p = palabrasParaFoto(
+      "Casillero en Miami: la guía para comprar en Estados Unidos y que te llegue a Sudamérica",
+      "A Miami mailbox: the guide to shopping in the U.S. and getting it to South America without surprises",
+    );
+    expect(p).not.toContain("without");
+    expect(p).not.toContain("surprises");
+    expect(p[0], "primero la cosa que se fotografía").toBe("mailbox");
+    // El lugar puede ir, pero acompañando y nunca el primero.
+    expect(p.indexOf("miami")).toBeGreaterThan(0);
+  });
+
+  it("un titular que SOLO nombra lugares no busca nada: mejor sin foto que una bandera", () => {
+    expect(palabrasParaFoto("Estados Unidos y Colombia", "United States and Colombia")).toEqual([]);
+  });
+
+  it("y sigue sin comerse las metáforas del principio", () => {
     const p = palabrasParaFoto("x", "the wave of bank account closures hitting immigrants");
     expect(p).not.toContain("wave");
-    expect(p.join(" ")).toContain("immigrants");
+    expect(p.join(" ")).toMatch(/bank|account|closures/);
   });
 
   it("tampoco busca cifras ni medidas de tiempo", () => {
@@ -137,7 +155,7 @@ describe("el rescate en marcha", () => {
             src: { large2x: "https://images.pexels.com/x.jpg" },
             photographer: "Ana Ruiz",
             // Las fotos de verdad traen su descripción, y ahora se comprueba que corresponda.
-            alt: "Immigrants waiting at a United States government office",
+            alt: "Bank complaints desk in a United States office",
           },
         ],
       }),
@@ -209,7 +227,7 @@ describe("el rescate en marcha", () => {
               {
                 src: { large2x: "https://images.pexels.com/y.jpg" },
                 photographer: "Luis",
-                alt: "Immigrants waiting at a United States government office",
+                alt: "Bank complaints desk in a United States office",
               },
             ],
           });
