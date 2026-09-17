@@ -1,6 +1,7 @@
 import type { Lang } from "@/i18n/config";
 import { isSectionId, type SectionId } from "./sections";
-import { stripInlineBylines } from "./html";
+import { stripHtml, stripInlineBylines } from "./html";
+import { filtrarSabiasQue } from "./sabias-que";
 import { nowIso } from "./dates";
 
 export type ArticleCard = {
@@ -189,8 +190,11 @@ export function mapFull(
     machineTranslated: row.machine_translated === 1,
     translations,
     guion: row.guion?.trim() || null,
-    sabiasQue: parseJsonArray<string>(row.sabias_que_json).filter(
-      (d) => typeof d === "string" && d.trim().length > 0,
+    // Se filtra también AL MOSTRAR, contra el texto de la nota: un dato guardado antes de una regla
+    // nueva no puede saltársela (candado 52).
+    sabiasQue: filtrarSabiasQue(
+      parseJsonArray<string>(row.sabias_que_json).filter((d) => typeof d === "string"),
+      stripHtml(row.content_html),
     ),
   };
 }

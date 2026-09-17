@@ -258,3 +258,59 @@ describe("la guía del casillero trae su guion de ejemplo", () => {
     }
   });
 });
+
+describe("LAS LETRAS NO ESQUIVAN LA COMPROBACIÓN (primer día en producción, 17 sep 2026)", () => {
+  it("un dato con el año escrito en letras se descarta: así no se puede verificar", () => {
+    // El caso real de Raúl Magaña. Ese año SÍ estaba en la nota, pero un año inventado en letras
+    // habría pasado igual por el filtro de cifras.
+    const nota = "Raúl Magaña hizo doblaje en 2017 para Ultraman Zero.";
+    expect(
+      filtrarSabiasQue(
+        ["¿Sabías que Raúl Magaña incursionó en el doblaje en dos mil diecisiete?"],
+        nota,
+      ),
+    ).toEqual([]);
+    // Con número se puede comprobar, y pasa.
+    expect(
+      filtrarSabiasQue(["¿Sabías que Raúl Magaña incursionó en el doblaje en 2017?"], nota),
+    ).toHaveLength(1);
+  });
+
+  it("también en inglés", () => {
+    expect(
+      filtrarSabiasQue(["Did you know he won his first award in nineteen ninety?"], "x"),
+    ).toEqual([]);
+  });
+
+  it("«miles de personas» no es una cifra y no se descarta por eso", () => {
+    expect(
+      filtrarSabiasQue(["¿Sabías que miles de personas ven sus telenovelas cada tarde?"], "x"),
+    ).toHaveLength(1);
+  });
+
+  it("las instrucciones piden números en el «¿Sabías qué?»", () => {
+    expect(SISTEMA_GUION).toContain("CON NÚMEROS");
+  });
+});
+
+describe("el filtro se aplica también AL MOSTRAR la nota", () => {
+  it("un «¿Sabías qué?» guardado antes de la regla de letras no se muestra", async () => {
+    const { mapFull } = await import("@/lib/queries");
+    const { sampleFullRow } = await import("./fake-d1");
+    const nota = mapFull(
+      {
+        ...sampleFullRow,
+        content_html: "<p>Hizo doblaje en 2017.</p>",
+        sabias_que_json: JSON.stringify([
+          "¿Sabías que incursionó en el doblaje en dos mil diecisiete?",
+          "¿Sabías que incursionó en el doblaje en 2017, ya siendo actor?",
+        ]),
+      },
+      "es",
+      {},
+    );
+    expect(nota.sabiasQue).toEqual([
+      "¿Sabías que incursionó en el doblaje en 2017, ya siendo actor?",
+    ]);
+  });
+});

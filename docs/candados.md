@@ -1609,8 +1609,23 @@ Resultado medido para los tres casos que fallaron:
 - **El botón de copiar** prueba el portapapeles moderno, luego el método clásico (hay navegadores
   internos de redes sociales que no dejan el moderno) y, si nada funciona, **lo dice** y deja el texto
   seleccionado.
-- **Candados:** `tests/unit/guion.test.ts` (16), `tests/unit/para-creadores.test.tsx` (7) y dos e2e
+- **Candados:** `tests/unit/guion.test.ts` (21), `tests/unit/para-creadores.test.tsx` (7) y dos e2e
   (el bloque se ve, el botón copia; en inglés sale el guion en inglés). Comprobado en rojo el 17 sep
   2026 quitando el filtro de cifras y el cierre de losupe.
-- **Qué NO tocar:** el filtro de cifras del «¿Sabías qué?»; que el guion se genere aparte y después
-  de publicar; y el cierre «Lo leí en losupe.com».
+
+### El primer día en producción: las letras esquivaban la comprobación
+
+El «¿Sabías qué?» de Raúl Magaña salió con **«en dos mil diecisiete»**. Ese año sí estaba en la nota,
+pero escrito en letras **el filtro de cifras no podía comprobar nada** — y un año inventado habría
+pasado igual. La culpa era de una instrucción: al guion se le pide escribir las cifras como se dicen
+en voz alta, y el modelo lo aplicó también al «¿Sabías qué?», que se lee en pantalla.
+
+- Las instrucciones ahora piden **números** en el «¿Sabías qué?».
+- Y el candado por si no hace caso: un dato con cifras en letras (años, cientos, miles, decenas, en
+  español e inglés) **se descarta** (`CIFRA_EN_LETRAS`). «Miles de personas» no es una cifra y pasa.
+- **El filtro se aplica también AL MOSTRAR** (`src/lib/sabias-que.ts`, usado por `mapFull`), contra
+  el texto de la nota. Así un dato guardado antes de una regla nueva no puede saltársela.
+
+- **Qué NO tocar:** el filtro de cifras y el de letras del «¿Sabías qué?»; que se aplique al guardar
+  Y al mostrar; que el guion se genere aparte y después de publicar; y el cierre «Lo leí en
+  losupe.com».

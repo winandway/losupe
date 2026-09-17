@@ -1,7 +1,10 @@
 import { stripHtml } from "@/lib/html";
 import { SQL_NOW } from "@/lib/sql-time";
 import { assertBudget, BudgetExceededError, recordSpend } from "./budget";
+import { filtrarSabiasQue } from "@/lib/sabias-que";
 import { generateJson } from "./gemini";
+
+export { filtrarSabiasQue } from "@/lib/sabias-que";
 
 /**
  * EL GUION PARA CREADORES Y EL «¿SABÍAS QUÉ?».
@@ -67,6 +70,7 @@ EL GUION:
 EL «¿SABÍAS QUÉ?»:
 - Solo datos curiosos, sorprendentes o poco conocidos QUE ESTÉN EN LA NOTA.
 - Cada uno empieza con «¿Sabías que…» (en inglés «Did you know…») y cabe en una o dos frases.
+- Aquí las cifras van CON NÚMEROS («en 2017», «el 40 %»), NO en letras: este bloque se lee en la pantalla, no en voz alta.
 - Si la nota no tiene un dato así, devuelve las listas VACÍAS. Es mejor ninguno que uno forzado.
 
 LA REGLA QUE NO SE ROMPE:
@@ -111,24 +115,6 @@ export function limpiarGuion(texto: string, lang: "es" | "en"): string {
     .trim();
   const cierre = CIERRE[lang];
   return limpio.toLowerCase().includes(cierre.toLowerCase()) ? limpio : `${limpio}\n\n${cierre}`;
-}
-
-/** Las cifras de un texto, normalizadas para comparar («5,85», «5.85» y «585» no son lo mismo). */
-function cifras(texto: string): string[] {
-  return (texto.match(/\d[\d.,]*/g) ?? []).map((n) => n.replace(/[.,]+$/, ""));
-}
-
-/**
- * Los «¿Sabías qué?» que se pueden publicar: como mucho dos, cortos, y **sin una sola cifra que no
- * esté en la nota**. El dato que traiga un número inventado se tira; los demás se quedan.
- */
-export function filtrarSabiasQue(datos: readonly string[], cuerpoNota: string): string[] {
-  const enLaNota = new Set(cifras(cuerpoNota));
-  return datos
-    .map((d) => d.replace(/\s+/g, " ").trim())
-    .filter((d) => d.length >= 20 && d.length <= 320)
-    .filter((d) => cifras(d).every((c) => enLaNota.has(c)))
-    .slice(0, 2);
 }
 
 export type ResultadoGuion = { guion: Guion; costUsd: number } | null;
