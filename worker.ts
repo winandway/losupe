@@ -17,11 +17,13 @@ import { renderMarkdown, wantsMarkdown } from "./src/lib/agent-markdown";
 import {
   buildAiCatalog,
   buildApiCatalog,
+  buildAuthMd,
   buildSkillMarkdown,
   buildSkillsIndex,
   SKILL_NAME,
 } from "./src/lib/agent-manifests";
 import { esquemaDe, origenCanonico, redireccionCanonica } from "./src/lib/dominio";
+import { buildServerCard, handleMcpRequest, MCP_CARD_PATH, MCP_PATH } from "./src/lib/mcp";
 import { buildHealthReport } from "./src/lib/health";
 import { portadaDeNota } from "./src/lib/portadas-server";
 import { estadoDeRedes } from "./src/lib/redes";
@@ -180,6 +182,10 @@ export default {
     if (pathname === `/.well-known/agent-skills/${SKILL_NAME}/SKILL.md`) {
       return text(buildSkillMarkdown(base), "text/markdown; charset=utf-8");
     }
+    // Servidor MCP: por aquí entra un asistente de IA a buscar y leer notas (solo lectura).
+    if (pathname === MCP_PATH) return handleMcpRequest(request, env.DB, base);
+    if (pathname === MCP_CARD_PATH) return json(buildServerCard(base));
+    if (pathname === "/auth.md") return text(buildAuthMd(base), "text/markdown; charset=utf-8");
 
     // URLs viejas de notas que cambiaron de slug → 301 a la nueva.
     // `/es/about` → `/es/acerca`: una sola dirección por página (auditoría SEO, 17 sep 2026).

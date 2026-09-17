@@ -1676,3 +1676,62 @@ Lo que salió mal, en orden de gravedad:
 - **Qué NO tocar:** `redireccionCanonica` nunca redirige `/__*` (el reloj y `/__health`) ni
   `losupe.sitios.dev`; `unirLink` en vez de `headers.set("Link")`; la tarjeta social completa en cada
   página; y que los rescates no escriban `updated_at`.
+
+## 54. La puerta para los asistentes de IA: servidor MCP, tarjeta y auth.md
+
+Richard pasó los cinco puntos en rojo del escáner de agentes de Cloudflare
+(`https://isitagentready.com`) y pidió mejorarlos. Se hicieron los tres que son de verdad, y los dos
+que no aplican quedan explicados por escrito. Guía completa: [`agentes-ia.md`](agentes-ia.md).
+
+### Lo que se construyó
+
+- **Servidor MCP público en `https://losupe.com/mcp`** (`src/lib/mcp.ts`). Transporte Streamable
+  HTTP: `POST` con JSON-RPC 2.0 y respuesta JSON, sin sesiones ni SSE — es lo que encaja en un
+  worker y lo que aceptan los clientes. Cuatro herramientas de **solo lectura**: `search_news`,
+  `latest_news`, `read_article` y `list_sections`. Reutilizan las consultas y el Markdown que ya
+  usaba el sitio (`searchSmart`, `listLatest`, `renderMarkdown`), así que no hay una segunda
+  verdad que mantener.
+- **Tarjeta de descubrimiento** en `/.well-known/mcp/server-card.json` (SEP-2127). Lleva los campos
+  del esquema oficial v1 (`$schema`, `name` en DNS invertido, `version`, `remotes`) **y además**
+  `serverInfo`, `transport` y `capabilities`, que es lo que mira el escáner; el esquema admite
+  campos extra. Va enlazada desde `/.well-known/ai-catalog.json`, el catálogo de API y `llms.txt`.
+- **`/auth.md`**: dice que no hace falta ninguna credencial, dónde está cada puerta, cómo
+  identificarse con el `User-Agent` y las condiciones (citar con enlace, no entrenar).
+
+### Decisiones que NO hay que deshacer
+
+- **No se publican `/.well-known/oauth-authorization-server` ni `/.well-known/oauth-protected-resource`.**
+  No hay nada protegido: todo lo que servimos a un agente es público. Publicarlos sin un servidor
+  OAuth detrás manda al agente a una puerta que no abre, y es peor que no tener nada. Si algún día se
+  vende acceso por volumen, se publican junto con el servidor de verdad.
+- **Nada de A2A:** losupe publica noticias, no ejecuta tareas para otros agentes.
+- **El servidor no escribe.** Ninguna herramienta toca la base más allá de leer lo publicado, y por
+  eso puede ir sin autenticación. Si algún día se agrega una que escriba, deja de ser público.
+- **`/mcp` y `/auth.md` están en la lista de rutas sin idioma** (`lang-redirect.ts`). Sin eso, el
+  redirector los mandaría a `/es/mcp` y no habría servidor.
+
+### Candados
+
+- `tests/unit/mcp.test.ts` (15): saludo y versión del protocolo, aviso sin respuesta (202), lotes
+  rechazados, `GET` → 405, método desconocido → −32601, cuerpo roto → 400, las cuatro herramientas
+  con su esquema, el enlace completo en cada resultado, sección inventada avisada, base caída
+  reportada como resultado (no como caída), y la tarjeta y el `auth.md` con sus campos.
+- Dos e2e contra el worker real: un asistente se presenta, lista herramientas, pide las últimas
+  notas y lee una entera; y la tarjeta, el `auth.md` y el 405 de `GET /mcp`.
+- Comprobado en rojo el 17 sep 2026 quitando la ruta del worker y sacando `/mcp` de la lista de
+  rutas sin idioma.
+
+### Cómo se comprueba que sigue vivo
+
+```bash
+curl -s https://losupe.com/mcp -H "content-type: application/json" -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'
+```
+
+Tiene que listar las cuatro herramientas. Y `https://isitagentready.com` con `losupe.com` debe
+seguir marcando en verde la tarjeta MCP y el `auth.md`.
+
+### Lo que falta y no depende del código
+
+**DNS-AID**: dos registros `SVCB` bajo `_agents.losupe.com` y DNSSEC. Los crea quien administra la
+zona (hoy en Cloudflare, con los nameservers de la plataforma); el panel de YaDominios solo crea A,
+CNAME, MX y TXT. Valores exactos en [`PENDIENTES.md`](../PENDIENTES.md).

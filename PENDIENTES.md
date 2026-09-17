@@ -19,6 +19,19 @@
 - [ ] 👤 **Bing Webmaster Tools** (variable `BING_SITE_VERIFICATION`). Alimenta Bing, DuckDuckGo y
       ChatGPT.
 
+- [ ] 👤 **DNS-AID: dos registros `SVCB` en la zona de losupe.com** (y DNSSEC si se puede). Es el
+      único punto del escáner de agentes de IA que no se puede hacer desde el código. Se crean donde
+      vive la zona (Cloudflare); el panel de YaDominios hoy solo crea A, CNAME, MX y TXT.
+
+      Registro 1 — nombre: `_index._agents` · tipo: `SVCB` · valor:
+              `1 losupe.com. alpn="h2,http/1.1" port=443`
+
+              Registro 2 — nombre: `_mcp._agents` · tipo: `SVCB` · valor:
+              `1 losupe.com. alpn="h2,http/1.1" port=443`
+
+              Con eso, un agente que pregunte al DNS de losupe.com encuentra solo nuestro servidor MCP.
+              Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+
 ## 🤖 Fila de la IA
 
 - [x] 🤖 Vista previa de WhatsApp con la foto, no con el logo (17 sep 2026, candado 51).
@@ -28,3 +41,5 @@
 - [ ] 🤖 (bajo) Página 404 vacía desde el servidor: se pinta con JavaScript. Status 404 correcto.
 - [ ] 🤖 (bajo) Contraste de las etiquetas de sección y tamaño táctil de los nombres de autor
       (accesibilidad). Proponer tonos a Richard con captura antes de tocar colores de marca.
+- [x] 🤖 Servidor MCP público, tarjeta de descubrimiento y auth.md para asistentes de IA
+      (17 sep 2026, candado 54).

@@ -29,6 +29,10 @@ describe("redirección de idioma en el worker", () => {
       "/__health",
       "/noticia/viejo-slug",
       "/archivo.pdf",
+      // El servidor MCP y su ficha: si el redirector se los lleva a /es/mcp, no hay servidor
+      // (candado 54).
+      "/mcp",
+      "/auth.md",
     ]) {
       expect(langRedirectTarget(u(p), "en"), p).toBeNull();
     }

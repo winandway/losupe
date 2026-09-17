@@ -3,8 +3,10 @@
  * - /.well-known/api-catalog           (RFC 9727, linkset)
  * - /.well-known/ai-catalog.json       (ARD — Agentic Resource Discovery)
  * - /.well-known/agent-skills/index.json + /.well-known/agent-skills/losupe-news/SKILL.md
+ * - /auth.md                           (Auth.md: cómo se identifica un agente; aquí, sin llaves)
  */
 import { buildApiCatalog } from "./agent-discovery";
+import { MCP_CARD_PATH, MCP_PATH, MCP_SERVER_NAME } from "./mcp";
 
 export { buildApiCatalog };
 
@@ -60,6 +62,22 @@ export function buildAiCatalog(base: string) {
         representativeQueries: [
           "Dame el texto completo de una nota de losupe en Markdown",
           "Read a losupe article as Markdown",
+        ],
+      },
+      {
+        identifier: urn("mcp", "news-server"),
+        displayName: "Servidor MCP de losupe (buscar y leer notas) / losupe MCP server",
+        type: "application/json",
+        url: `${origin}${MCP_CARD_PATH}`,
+        mcp: {
+          name: MCP_SERVER_NAME,
+          transport: "streamable-http",
+          endpoint: `${origin}${MCP_PATH}`,
+          serverCard: `${origin}${MCP_CARD_PATH}`,
+        },
+        representativeQueries: [
+          "Conéctame al servidor MCP de losupe para buscar noticias",
+          "Connect to the losupe MCP server and read the latest stories",
         ],
       },
       {
@@ -125,4 +143,55 @@ export async function buildSkillsIndex(base: string) {
       },
     ],
   };
+}
+
+/**
+ * `/auth.md`: cómo se identifica un agente ante losupe. La respuesta honesta es «no hace falta
+ * nada»: todo lo que servimos es público y de solo lectura, así que no hay OAuth ni registro que
+ * publicar. El estándar admite justo este caso —un auth.md autocontenido— y decirlo por escrito
+ * evita que un agente pierda tiempo buscando una puerta que no existe.
+ */
+export function buildAuthMd(base: string): string {
+  const origin = base.replace(/\/$/, "");
+  return `# auth.md — losupe
+
+Audience: AI agents and automated clients reading ${origin}.
+
+## Do I need credentials?
+
+**No.** Everything losupe serves to agents is published, public and read-only:
+
+- MCP server (Streamable HTTP): \`${origin}${MCP_PATH}\` — no token, no account, no registration.
+- Server card: \`${origin}${MCP_CARD_PATH}\`
+- Any page as Markdown: send \`Accept: text/markdown\` to any URL.
+- Feeds: \`${origin}/es/rss.xml\`, \`${origin}/en/rss.xml\`. Sitemaps: \`${origin}/sitemap.xml\`, \`${origin}/news-sitemap.xml\`.
+- Site guide for models: \`${origin}/llms.txt\`. API catalog: \`${origin}/.well-known/api-catalog\`.
+
+There is no OAuth authorization server and no protected resource, so
+\`/.well-known/oauth-authorization-server\` and \`/.well-known/oauth-protected-resource\` are not
+published. Publishing them empty would send agents to a door that does not open.
+
+## Registration
+
+None. There is nothing to register for and no credential to claim or revoke. If that ever changes
+(for example, a paid bulk feed), this file and the OAuth metadata will be published together.
+
+## How to identify yourself
+
+Send a descriptive \`User-Agent\` with a contact URL, e.g.
+\`MyAgent/1.0 (+https://example.com/bot)\`. It is not required, but it is what we look at if we
+ever need to reach you about traffic.
+
+## Terms of use
+
+- Content Signals (robots.txt): \`search=yes, ai-input=yes, ai-train=no\`.
+- You may read, quote and summarize with a link to the story URL. You may **not** use this content
+  to train models.
+- Be reasonable with request volume. The private dashboard at \`/panel\` is not part of this and is
+  off limits.
+
+## Contact
+
+Commercial or bulk access: ${origin}/es/contacto
+`;
 }

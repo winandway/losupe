@@ -96,6 +96,13 @@ export function buildLlmsTxt(base: string, latest: Record<Lang, LlmsArticle[]>):
     `- [News sitemap](${abs("/news-sitemap.xml")})`,
     "",
   );
+  lines.push("## Para agentes de IA / For AI agents", "");
+  lines.push(
+    `- [Servidor MCP (Streamable HTTP) / MCP server](${abs("/mcp")}): buscar y leer notas sin llaves. Search and read stories, no credentials.`,
+    `- [Tarjeta del servidor / Server card](${abs("/.well-known/mcp/server-card.json")})`,
+    `- [auth.md](${abs("/auth.md")}): no hace falta autenticarse. No authentication needed.`,
+    "",
+  );
   lines.push("## Sobre el medio / About", "");
   lines.push(
     `- [Acerca de losupe](${abs(aboutPath("es"))})`,
@@ -142,6 +149,17 @@ export function buildApiCatalog(base: string) {
             type: "text/markdown",
             title: "Cualquier nota en Markdown con Accept: text/markdown",
           },
+          {
+            href: `${origin}/mcp`,
+            type: "application/json",
+            title: "Servidor MCP (Streamable HTTP) / MCP server",
+          },
+          {
+            href: `${origin}/.well-known/mcp/server-card.json`,
+            type: "application/json",
+            title: "Tarjeta del servidor MCP / MCP server card",
+          },
+          { href: `${origin}/auth.md`, type: "text/markdown", title: "auth.md" },
         ],
       },
     ],

@@ -58,7 +58,8 @@ for (const route of ROUTES_200) {
 }
 
 test("rutas desconocidas dan 404 de verdad (no la portada)", async ({ request }) => {
-  for (const p of ["/auth.md", "/foo.txt", "/cualquier-cosa", "/es/nada-de-nada"]) {
+  // Ojo: /auth.md SÍ existe desde el 17 sep 2026 (es la ficha para agentes de IA).
+  for (const p of ["/quien-sabe.md", "/foo.txt", "/cualquier-cosa", "/es/nada-de-nada"]) {
     const res = await request.get(p, { maxRedirects: 5 });
     expect(res.status(), p).toBe(404);
   }
@@ -1209,4 +1210,82 @@ test("velocidad: la foto grande de la portada se pide primero (LCP)", async ({ r
   // Y nuestros enlaces para agentes siguen ahí.
   expect(res.headers().link ?? "").toContain("llms.txt");
   expect(html).not.toMatch(/hero-v2-poster\.jpg"[^>]*fetchPriority="low"/i);
+});
+
+// ── Candado 54: servidor MCP público para asistentes de IA ────────────────────────────────────────
+
+test("MCP: un asistente se presenta, ve las herramientas y lee notas", async ({ request }) => {
+  const rpc = async (body: unknown) =>
+    (
+      await request.post("/mcp", { data: body, headers: { "content-type": "application/json" } })
+    ).json();
+
+  const saludo = await rpc({
+    jsonrpc: "2.0",
+    id: 1,
+    method: "initialize",
+    params: {
+      protocolVersion: "2025-06-18",
+      capabilities: {},
+      clientInfo: { name: "e2e", version: "1" },
+    },
+  });
+  expect(saludo.result.serverInfo.name).toBe("com.losupe/news");
+  expect(saludo.result.capabilities.tools).toBeDefined();
+
+  const lista = await rpc({ jsonrpc: "2.0", id: 2, method: "tools/list" });
+  expect(lista.result.tools.map((t: { name: string }) => t.name).sort()).toEqual([
+    "latest_news",
+    "list_sections",
+    "read_article",
+    "search_news",
+  ]);
+
+  const ultimas = await rpc({
+    jsonrpc: "2.0",
+    id: 3,
+    method: "tools/call",
+    params: { name: "latest_news", arguments: { lang: "es", limit: 3 } },
+  });
+  const texto: string = ultimas.result.content[0].text;
+  expect(texto).toContain("/es/");
+  expect(ultimas.result.isError).toBeUndefined();
+
+  // Y leer una nota entera trae su texto y sus fuentes.
+  const nota = await rpc({
+    jsonrpc: "2.0",
+    id: 4,
+    method: "tools/call",
+    params: {
+      name: "read_article",
+      arguments: {
+        url: "/es/ventas/casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica",
+      },
+    },
+  });
+  expect(nota.result.content[0].text).toContain("casillero");
+});
+
+test("MCP: la tarjeta, el auth.md y la ruta no se los come el redirector de idioma", async ({
+  request,
+}) => {
+  const card = await request.get("/.well-known/mcp/server-card.json");
+  expect(card.status()).toBe(200);
+  const json = await card.json();
+  expect(json.serverInfo.name).toBe("com.losupe/news");
+  expect(json.transport.endpoint).toMatch(/\/mcp$/);
+  expect(json.capabilities.tools).toBeDefined();
+  expect(card.headers()["access-control-allow-origin"]).toBe("*");
+
+  const auth = await request.get("/auth.md");
+  expect(auth.status()).toBe(200);
+  expect(auth.headers()["content-type"]).toContain("text/markdown");
+  const md = await auth.text();
+  expect(md.split("\n")[0]).toMatch(/^# .*auth\.md/i);
+
+  // /mcp no lleva prefijo de idioma: si el redirector se lo llevara a /es/mcp, no habría servidor.
+  const get = await request.get("/mcp", { maxRedirects: 0 });
+  expect(get.status()).toBe(405);
+  // Y el mapa para modelos lo anuncia.
+  expect(await (await request.get("/llms.txt")).text()).toContain("/mcp");
 });

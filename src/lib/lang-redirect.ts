@@ -20,6 +20,8 @@ const SKIP_EXACT = new Set([
   "/favicon.ico",
   "/manifest.webmanifest",
   "/llms.txt",
+  "/mcp",
+  "/auth.md",
   "/icon.png",
   "/apple-icon.png",
   "/opengraph-image.png",
