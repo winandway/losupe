@@ -19,18 +19,20 @@
 - [ ] 👤 **Bing Webmaster Tools** (variable `BING_SITE_VERIFICATION`). Alimenta Bing, DuckDuckGo y
       ChatGPT.
 
-- [ ] 👤 **DNS-AID: dos registros `SVCB` en la zona de losupe.com** (y DNSSEC si se puede). Es el
-      único punto del escáner de agentes de IA que no se puede hacer desde el código. Se crean donde
-      vive la zona (Cloudflare); el panel de YaDominios hoy solo crea A, CNAME, MX y TXT.
+- [x] 👤 **DNS-AID: los dos registros `SVCB` ya están puestos** (17 sep 2026). Comprobado en los dos
+      resolvedores que usa el escáner: `_index._agents.losupe.com` y `_mcp._agents.losupe.com`
+      responden `1 losupe.com. alpn=h2,http/1.1 port=443`.
+- [ ] 👤 **El DS de DNSSEC en el registrador.** La zona ya está FIRMADA (Cloudflare), pero el
+      registrador (YaDominios) todavía no publica el `DS`, y sin él ningún resolvedor puede validar
+      la firma — es lo único que el escáner sigue marcando en rojo del DNS. Se pega en
+      YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
-      Registro 1 — nombre: `_index._agents` · tipo: `SVCB` · valor:
-              `1 losupe.com. alpn="h2,http/1.1" port=443`
+      Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
+              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-              Registro 2 — nombre: `_mcp._agents` · tipo: `SVCB` · valor:
-              `1 losupe.com. alpn="h2,http/1.1" port=443`
-
-              Con eso, un agente que pregunte al DNS de losupe.com encuentra solo nuestro servidor MCP.
-              Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
 

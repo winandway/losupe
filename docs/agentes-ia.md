@@ -75,12 +75,27 @@ todas las letras.
 Lo mismo con A2A (agente contra agente): losupe no ejecuta tareas para otros agentes, publica
 noticias.
 
-## Lo que falta: DNS-AID
+## DNS-AID: descubrimiento por DNS
 
-Es el descubrimiento por DNS: un agente pregunta al DNS de `losupe.com` qué agentes tiene. Hacen
-falta dos registros `SVCB` en la zona y, si se puede, DNSSEC. **No se puede hacer desde el código:**
-lo tiene que crear quien administra la zona. Los valores exactos están en
-[`PENDIENTES.md`](../PENDIENTES.md).
+Un agente le pregunta al DNS de `losupe.com` qué agentes tiene. Los registros están puestos desde el
+17 de septiembre de 2026:
+
+```dns
+_index._agents.losupe.com. IN SVCB 1 losupe.com. alpn="h2,http/1.1" port=443
+_mcp._agents.losupe.com.   IN SVCB 1 losupe.com. alpn="h2,http/1.1" port=443
+```
+
+Se comprueban así (tienen que responder los dos):
+
+```bash
+dig +short SVCB _index._agents.losupe.com
+dig +short SVCB _mcp._agents.losupe.com
+```
+
+**Falta el DS de DNSSEC.** La zona ya está firmada, pero mientras el registrador no publique el
+registro `DS`, ningún resolvedor puede validar esa firma y el escáner lo marca en rojo. El valor
+exacto y dónde se pega están en [`PENDIENTES.md`](../PENDIENTES.md). Comprobación:
+`dig +short DS losupe.com` tiene que devolver algo.
 
 ## Dónde vive esto en el código
 
