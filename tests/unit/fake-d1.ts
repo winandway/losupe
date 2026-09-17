@@ -82,4 +82,6 @@ export const sampleFullRow = {
   image_caption_es: null,
   image_caption_en: null,
   machine_translated: 0,
+  guion: null,
+  sabias_que_json: null,
 };

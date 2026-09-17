@@ -38,6 +38,13 @@ export type ArticleFull = ArticleCard & {
   machineTranslated: boolean;
   /** Slug por idioma de las traducciones disponibles. */
   translations: Partial<Record<Lang, string>>;
+  /**
+   * Guion para leer en un teleprompter y grabar un video corto. Es el del idioma que se está
+   * mostrando: nunca se mezcla un guion en español dentro de la página en inglés.
+   */
+  guion: string | null;
+  /** Hasta dos datos del «¿Sabías qué?». Vacío cuando la nota no tiene ninguno de verdad. */
+  sabiasQue: string[];
 };
 
 export type Author = {
@@ -88,6 +95,8 @@ type FullRow = CardRow & {
   image_caption_es: string | null;
   image_caption_en: string | null;
   machine_translated: number;
+  guion: string | null;
+  sabias_que_json: string | null;
 };
 
 const CARD_COLUMNS = `
@@ -106,7 +115,9 @@ const FULL_COLUMNS = `${CARD_COLUMNS},
   COALESCE(t.meta_description, f.meta_description) AS meta_description,
   COALESCE(t.tags_json, f.tags_json) AS tags_json,
   a.sources_json, a.image_credit, a.image_caption_es, a.image_caption_en,
-  COALESCE(t.machine_translated, f.machine_translated, 0) AS machine_translated`;
+  COALESCE(t.machine_translated, f.machine_translated, 0) AS machine_translated,
+  CASE WHEN t.article_id IS NOT NULL THEN t.guion ELSE f.guion END AS guion,
+  CASE WHEN t.article_id IS NOT NULL THEN t.sabias_que_json ELSE f.sabias_que_json END AS sabias_que_json`;
 
 // ?1 = idioma pedido, ?2 = ahora (ISO). Siempre hay respaldo al español.
 const FROM_PUBLISHED = `
@@ -177,6 +188,10 @@ export function mapFull(
       null,
     machineTranslated: row.machine_translated === 1,
     translations,
+    guion: row.guion?.trim() || null,
+    sabiasQue: parseJsonArray<string>(row.sabias_que_json).filter(
+      (d) => typeof d === "string" && d.trim().length > 0,
+    ),
   };
 }
 

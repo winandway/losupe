@@ -5,7 +5,8 @@
  */
 
 import { runPipeline, type RobotEnv, type RunSummary } from "./pipeline";
-import { rescatarImagenes } from "./rescate-imagenes";
+import { rescatarGuiones } from "./guion";
+import { rehacerImagenesPesadas, rescatarImagenes } from "./rescate-imagenes";
 
 export type RunTrigger = "cron" | "manual";
 
@@ -21,6 +22,12 @@ export type RunResult = {
   imagenesRescatadas?: number;
   /** Las que siguen sin foto. Se ve en el panel: un rescate mudo es como no tenerlo. */
   imagenesPendientes?: number;
+  /** Fotos recientes que no se podían compartir (PNG o pesadas) y cuántas se rehicieron. */
+  fotosPesadas?: number;
+  fotosRehechas?: number;
+  /** Guiones para creadores escritos en esta corrida, y los que fallaron. */
+  guionesNuevos?: number;
+  guionesFallidos?: number;
 };
 
 export { isRobotPaused } from "./pipeline";
@@ -54,6 +61,19 @@ export async function runScheduled(
     errores: ["rescate de imágenes: fallo inesperado"],
   }));
 
+  // Y las fotos recientes que no se pueden compartir (PNG o demasiado pesadas): al pegar el enlace en
+  // WhatsApp salía el logo en vez de la foto (17 sep 2026).
+  const pesadas = await rehacerImagenesPesadas(env.DB, env, { fetchImpl: opts.fetchImpl }).catch(
+    () => ({ revisadas: 0, pesadas: 0, rehechas: 0, errores: ["fotos pesadas: fallo inesperado"] }),
+  );
+
+  // El guion para creadores y el «¿Sabías qué?» (17 sep 2026). Va al final y aparte: si falla, la
+  // nota ya está publicada y sale igual, solo que sin ese bloque.
+  const guiones = await rescatarGuiones(env.DB, env, {
+    fetchImpl: opts.fetchImpl,
+    runId: summary.runId,
+  }).catch(() => ({ encontradas: 0, hechas: 0, errores: ["guiones: fallo inesperado"] }));
+
   return {
     ok: summary.ok,
     runId: summary.runId,
@@ -67,6 +87,12 @@ export async function runScheduled(
           imagenesRescatadas: rescate.ilustradas,
           imagenesPendientes: rescate.encontradas - rescate.ilustradas,
         }
+      : {}),
+    ...(guiones.encontradas > 0
+      ? { guionesNuevos: guiones.hechas, guionesFallidos: guiones.encontradas - guiones.hechas }
+      : {}),
+    ...(pesadas.pesadas > 0
+      ? { fotosPesadas: pesadas.pesadas, fotosRehechas: pesadas.rehechas }
       : {}),
   };
 }

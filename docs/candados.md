@@ -1555,3 +1555,62 @@ Resultado medido para los tres casos que fallaron:
   palabra (con dos letras coincide medio catálogo); si no hay descripción que comprobar, que siga
   sin ponerse foto; y **no elijas las palabras por su posición en el titular** — ni las primeras ni
   las últimas: las cosas primero, los lugares detrás.
+
+## 51. Al compartir en WhatsApp salía el logo en vez de la foto
+
+- **Cómo se veía (Richard, 17 sep 2026):** al pegar el enlace de la nota de Trump y Canadá en
+  WhatsApp, la vista previa mostraba el **logo de losupe** en vez de la foto. Sin foto en la vista
+  previa, casi nadie toca el enlace.
+- **La causa, medida:** la foto de esa nota pesaba **2,67 MB y era PNG** (con extensión `.jpg`), y
+  su miniatura 480 KB, también PNG. **WhatsApp no descarga vistas previas de más de unos 300 KB**:
+  se rinde y pone el icono del sitio. Dos fallos juntos:
+  1. A Pexels se le pedía `auto=compress`, que **conserva el formato original**: una foto subida en
+     PNG llega en PNG. Medido con la misma foto: PNG 1600 px = 2,29 MB · JPEG 1600 px = 182 KB ·
+     JPEG 640 px = 43 KB.
+  2. La tarjeta social apuntaba a la foto **grande**.
+- **El arreglo:**
+  - `aMedida()` pide siempre `fm=jpg&q=72` (o `q=70` para la miniatura).
+  - `imagenSocial()` (`src/lib/imagen-social.ts`) comparte la **miniatura** (640 px, 20–70 KB):
+    por encima de los 600 px que piden Facebook y LinkedIn para la tarjeta grande, y siempre por
+    debajo del límite de WhatsApp.
+  - `rehacerImagenesPesadas()` revisa en cada corrida las fotos de los últimos 30 días y rehace las
+    que estén en PNG o pasen de `TOPE_IMAGEN_SOCIAL` (280 KB), **con otro nombre de archivo**: las
+    imágenes se sirven con caché inmutable de un año y sobrescribir el mismo archivo no serviría.
+- **Ojo, y hay que decirlo:** WhatsApp guarda en caché la vista previa de cada enlace unos días. Un
+  enlace ya compartido puede seguir saliendo con el logo en ese chat; los nuevos salen bien.
+- **Candados:** `tests/unit/imagen-social.test.ts` (12 pruebas: el `fm=jpg`, que se comparte la
+  miniatura, qué cuenta como pesada, que la rehecha cambia de nombre) y una e2e que exige que el
+  `og:image` sea `-sm.jpg` y pese menos de 280 KB. Comprobado en rojo el 17 sep 2026 quitando el
+  `fm=jpg` y devolviendo la foto grande.
+- **Qué NO tocar:** el `fm=jpg` de `aMedida`; que la tarjeta social apunte a la miniatura; y que la
+  foto rehecha se guarde con nombre nuevo.
+
+## 52. Guion para creadores y «¿Sabías qué?»
+
+- **Qué es (idea de Richard, 17 sep 2026):** cada nota trae un **guion para leer en el teleprompter
+  del celular** y grabar un Reel, Short o TikTok, con un botón de **Copiar guion**, un tutorial de
+  tres pasos y permiso para monetizarlo diciendo dónde se leyó. Y, cuando la nota lo tiene, un
+  bloque **«¿Sabías qué?»** con uno o dos datos curiosos.
+- **Cómo funciona:** `src/lib/robot/guion.ts`. El guion NO se escribe junto con la nota: se genera
+  **después**, en una llamada aparte (`gemini-2.5-flash`, menos de un centavo por nota, dentro del
+  tope diario), por `rescatarGuiones()` al final de cada corrida — hasta 4 por corrida, las más
+  recientes primero. Así una nota nunca se queda sin publicar por culpa del guion, y las notas que
+  ya existían también reciben el suyo. Se guarda por idioma en `article_i18n.guion` y
+  `article_i18n.sabias_que_json`.
+- **LA REGLA QUE PROTEGE AL DIARIO: no se inventa nada.** Un creador va a repetir esto delante de
+  miles de personas; un dato inventado ahí es una mentira multiplicada con nuestro nombre al final.
+  - Las instrucciones lo dicen con todas las letras y exigen nombrar la fuente original.
+  - **Las cifras de cada «¿Sabías qué?» se comprueban contra el texto de la nota.** El dato que traiga
+    un número que no está en la nota se tira (`filtrarSabiasQue`).
+  - Si no hay dato curioso de verdad, el bloque no aparece. Mejor ninguno que uno forzado.
+- **Otras garantías:** el guion se limpia para el teleprompter (sin enlaces, asteriscos ni emojis),
+  **siempre termina con «Lo leí en losupe.com»** aunque el modelo se lo salte, y se descarta si queda
+  fuera de 110–480 palabras. En la página en inglés sale el guion en inglés, nunca el español.
+- **El botón de copiar** prueba el portapapeles moderno, luego el método clásico (hay navegadores
+  internos de redes sociales que no dejan el moderno) y, si nada funciona, **lo dice** y deja el texto
+  seleccionado.
+- **Candados:** `tests/unit/guion.test.ts` (16), `tests/unit/para-creadores.test.tsx` (7) y dos e2e
+  (el bloque se ve, el botón copia; en inglés sale el guion en inglés). Comprobado en rojo el 17 sep
+  2026 quitando el filtro de cifras y el cierre de losupe.
+- **Qué NO tocar:** el filtro de cifras del «¿Sabías qué?»; que el guion se genere aparte y después
+  de publicar; y el cierre «Lo leí en losupe.com».

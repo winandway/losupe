@@ -6,8 +6,10 @@ import { Container } from "@/components/Container";
 import { Byline } from "@/components/Byline";
 import { JsonLd } from "@/components/JsonLd";
 import { getSponsorForArticle } from "@/lib/robot/publish";
+import { ParaCreadores } from "@/components/ParaCreadores";
 import { Prose } from "@/components/Prose";
 import { ReadMore } from "@/components/ReadMore";
+import { SabiasQue } from "@/components/SabiasQue";
 import { SectionBadge } from "@/components/SectionBadge";
 import { SectionHeading } from "@/components/SectionHeading";
 import { ShareLinks } from "@/components/ShareLinks";
@@ -15,6 +17,8 @@ import { getDict, otherLang, type Lang } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { formatDate } from "@/lib/dates";
 import { getDb } from "@/lib/db";
+import { imagenSocial } from "@/lib/imagen-social";
+import { duracionLegible } from "@/lib/robot/guion";
 import { AuthorCard } from "@/components/AuthorCard";
 import { splitAfterParagraph } from "@/lib/html";
 import { getArticleBySlug, getAuthor, listRelated, type ArticleFull } from "@/lib/queries";
@@ -79,20 +83,6 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       images: [imagenSocial(article)],
     },
   };
-}
-
-/**
- * La imagen que se ve al compartir el enlace.
- *
- * Si la nota tiene foto, esa. Si no, la tarjeta de su sección, en PNG.
- *
- * Y tiene que ser PNG, no el SVG que dibujamos para el sitio: **WhatsApp, Facebook y X no pintan
- * SVG** en la vista previa de un enlace. Antes aquí iba `undefined` cuando no había foto, así que
- * una nota sin imagen se compartía como un renglón de texto gris que nadie toca — y por WhatsApp
- * es justo por donde llega la gente. Las tarjetas se generan con `node scripts/generar-og.mjs`.
- */
-function imagenSocial(article: { imageUrl: string | null; sectionId: string }): string {
-  return article.imageUrl ?? `/og/${article.sectionId}.png`;
 }
 
 export default async function ArticlePage({ params }: Props) {
@@ -227,6 +217,16 @@ export default async function ArticlePage({ params }: Props) {
               <Prose html={article.contentHtml} />
             )}
           </div>
+
+          <SabiasQue datos={article.sabiasQue} titulo={dict.article.sabiasQue} />
+
+          {article.guion ? (
+            <ParaCreadores
+              guion={article.guion}
+              duracion={duracionLegible(article.guion, lang)}
+              textos={dict.article.creadores}
+            />
+          ) : null}
 
           {article.sources.length > 0 ? (
             <section className="mt-10 rounded-2xl bg-paper p-5" aria-label={dict.article.sources}>

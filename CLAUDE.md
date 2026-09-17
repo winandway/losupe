@@ -32,6 +32,8 @@
 - Publicar = `git push` a `main` → Action → `yapanel-build`. Un solo push por bloque, con
   `npm run verify` y `npm run test:e2e` en verde y capturas en móvil (375 px) antes.
 - Documentación al día en `README.md` y `docs/` con cada cambio.
+- **Pendientes:** [`PENDIENTES.md`](PENDIENTES.md) — la fila de la IA (🤖) y lo que espera por Richard
+  (👤). Se ejecuta la fila sin que la pidan y se recuerdan los 👤 al final de cada respuesta.
 - **Candados:** lo que se rompió y se arregló vive en [`docs/candados.md`](docs/candados.md) (causa,
   arreglo, prueba que lo fija, qué no tocar). Se lee ANTES de cualquier rollback/revert/actualización
   grande y se añade una entrada cada vez que algo roto vuelve a funcionar.

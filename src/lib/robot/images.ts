@@ -47,11 +47,34 @@ export const FAL_ENDPOINT = `https://fal.run/${FAL_SEEDREAM_MODEL}`;
 export const ANCHO_GRANDE = 1600;
 export const ANCHO_TARJETA = 640;
 
-/** Añade a una dirección de Pexels el ancho y la compresión. Si no es de Pexels, la deja igual. */
+/**
+ * Añade a una dirección de Pexels el ancho, la compresión y **el formato JPEG**. Si no es de Pexels,
+ * la deja igual.
+ *
+ * El `fm=jpg` es lo que importa. `auto=compress` solo comprime y **conserva el formato original**:
+ * si la foto está subida en PNG, llega en PNG. Así se guardó el 17 sep 2026 una foto de 2,67 MB —y
+ * su miniatura de 480 KB— para la nota de Trump y Canadá. WhatsApp no descarga vistas previas de
+ * más de unos 300 KB, así que al compartir la nota salía el logo en vez de la foto.
+ *
+ * Medido con la misma foto: PNG 1600 px = 2,29 MB · JPEG 1600 px q72 = 182 KB · JPEG 640 px = 43 KB.
+ */
 export function aMedida(url: string, ancho: number): string {
   if (!/images\.pexels\.com/i.test(url)) return url;
   const base = url.split("?")[0];
-  return `${base}?auto=compress&cs=tinysrgb&fit=crop&w=${ancho}`;
+  const calidad = ancho >= 1000 ? 72 : 70;
+  return `${base}?auto=compress&cs=tinysrgb&fit=crop&w=${ancho}&fm=jpg&q=${calidad}`;
+}
+
+/**
+ * Tope de peso de la imagen que se comparte. WhatsApp deja de mostrar la vista previa por encima de
+ * unos 300 KB y pone el icono del sitio; se deja margen.
+ */
+export const TOPE_IMAGEN_SOCIAL = 280_000;
+
+/** ¿Esta imagen guardada no sirve para compartir? PNG o demasiado pesada. */
+export function esImagenPesada(obj: { size: number; contentType?: string | null }): boolean {
+  const tipo = (obj.contentType ?? "").toLowerCase();
+  return obj.size > TOPE_IMAGEN_SOCIAL || tipo.includes("png");
 }
 
 /** El nombre de la versión pequeña de una imagen guardada. */

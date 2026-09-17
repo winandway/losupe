@@ -46,8 +46,9 @@ describe("peso de las imágenes", () => {
     const { aMedida, ANCHO_GRANDE, ANCHO_TARJETA } = await import("@/lib/robot/images");
     const original = "https://images.pexels.com/photos/123/foto.jpeg?auto=compress&w=99999";
     // El 29 ago 2026 se descargaba una foto de 1880 px y 427 KB para pintarla a 142 px.
+    // Y siempre en JPEG: `auto=compress` a secas conserva el PNG original (candado 51).
     expect(aMedida(original, ANCHO_GRANDE)).toBe(
-      "https://images.pexels.com/photos/123/foto.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1600",
+      "https://images.pexels.com/photos/123/foto.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1600&fm=jpg&q=72",
     );
     expect(aMedida(original, ANCHO_TARJETA)).toContain("w=640");
     expect(ANCHO_TARJETA).toBeLessThan(ANCHO_GRANDE);

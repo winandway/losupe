@@ -41,6 +41,22 @@ export const es = {
       "Economía, ventas, tecnología e IA, cripto y tendencias. Notas claras y guías que sirven hoy y dentro de un año.",
   },
   article: {
+    sabiasQue: "¿Sabías qué?",
+    creadores: {
+      titulo: "Guion para tu video",
+      intro:
+        "¿Haces videos cortos? Este guion resume la noticia para leerlo en tu teleprompter y grabar un Reel, un Short o un TikTok.",
+      duracion: "Dura unos",
+      copiar: "Copiar guion",
+      copiado: "¡Copiado! Pégalo en tu teleprompter",
+      error: "No se pudo copiar. Selecciona el texto y cópialo a mano.",
+      comoTitulo: "Cómo usarlo",
+      paso1: "Toca «Copiar guion».",
+      paso2: "Pégalo en la app de teleprompter de tu celular, o léelo desde la pantalla.",
+      paso3: "Graba en vertical y publícalo en Reels, Shorts o TikTok.",
+      permiso:
+        "Puedes usarlo gratis y monetizar tu video. Solo te pedimos que digas dónde lo leíste: el guion ya termina con «Lo leí en losupe.com».",
+    },
     by: "Por",
     published: "Publicado",
     updated: "Actualizado",

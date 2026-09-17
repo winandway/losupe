@@ -43,6 +43,22 @@ export const en: Dict = {
       "Economy, sales, tech and AI, crypto, and trends. Clear stories and guides that are useful today and a year from now.",
   },
   article: {
+    sabiasQue: "Did you know?",
+    creadores: {
+      titulo: "Script for your video",
+      intro:
+        "Make short videos? This script sums up the story so you can read it off your teleprompter and record a Reel, a Short, or a TikTok.",
+      duracion: "Runs about",
+      copiar: "Copy script",
+      copiado: "Copied! Paste it into your teleprompter",
+      error: "Couldn't copy it. Select the text and copy it manually.",
+      comoTitulo: "How to use it",
+      paso1: "Tap “Copy script.”",
+      paso2: "Paste it into the teleprompter app on your phone, or read it off the screen.",
+      paso3: "Record vertically and post it to Reels, Shorts, or TikTok.",
+      permiso:
+        "It's free to use, and you can monetize your video. We only ask that you say where you read it: the script already ends with “I read it on losupe.com.”",
+    },
     by: "By",
     published: "Published",
     updated: "Updated",

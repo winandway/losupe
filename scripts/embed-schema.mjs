@@ -77,7 +77,7 @@ if (existsSync(contentDir)) {
     );
     for (const [lang, t] of Object.entries(note.i18n)) {
       statements.push(
-        `INSERT OR REPLACE INTO article_i18n (article_id, lang, slug, title, excerpt, content_html, meta_title, meta_description, tags_json, machine_translated) VALUES (${q(a.id)}, ${q(lang)}, ${q(t.slug)}, ${q(t.title)}, ${q(t.excerpt ?? "")}, ${q(t.content_html.trim())}, ${q(t.meta_title ?? null)}, ${q(t.meta_description ?? null)}, ${q(JSON.stringify(t.tags ?? []))}, ${t.machine_translated ? 1 : 0})`,
+        `INSERT OR REPLACE INTO article_i18n (article_id, lang, slug, title, excerpt, content_html, meta_title, meta_description, tags_json, machine_translated, guion, sabias_que_json) VALUES (${q(a.id)}, ${q(lang)}, ${q(t.slug)}, ${q(t.title)}, ${q(t.excerpt ?? "")}, ${q(t.content_html.trim())}, ${q(t.meta_title ?? null)}, ${q(t.meta_description ?? null)}, ${q(JSON.stringify(t.tags ?? []))}, ${t.machine_translated ? 1 : 0}, ${q(t.guion?.trim() || null)}, ${q(t.sabias_que?.length ? JSON.stringify(t.sabias_que) : null)})`,
       );
     }
     const fingerprint = hash(statements.join("\n"));

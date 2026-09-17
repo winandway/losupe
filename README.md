@@ -120,6 +120,15 @@ entorno. La red sin llaves se salta sin molestar; el estado de cada una se ve en
 
 Cómo se saca cada llave, paso a paso: [docs/redes-sociales.md](docs/redes-sociales.md).
 
+## Guion para creadores
+
+Cada nota trae un **guion para grabar un video corto** (Reels, Shorts, TikTok) con botón de copiar y
+un tutorial de tres pasos, y un bloque **«¿Sabías qué?»** cuando la nota tiene un dato curioso de
+verdad. Se genera después de publicar, sin inventar nada: las cifras se comprueban contra la nota.
+Detalle en el candado 52 de [docs/candados.md](docs/candados.md).
+
+Lo que falta y depende de Richard: [PENDIENTES.md](PENDIENTES.md).
+
 ## Imágenes
 
 Ninguna nota se publica con el hueco de la imagen vacío. El orden es: imagen propia generada

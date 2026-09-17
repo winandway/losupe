@@ -41,6 +41,25 @@ export default {
   i18n: {
     es: {
       slug: "casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica",
+      // Guion para creadores y «¿Sabías qué?», escritos a mano y solo con lo que dice esta nota.
+      guion: `¿Compras en Amazon y te dicen «no enviamos a tu país»? Hay una salida, y se llama casillero.
+
+Un casillero es una dirección tuya en Miami, con un número propio. Compras donde quieras, pones esa dirección al pagar, y el paquete llega a una bodega. De ahí te lo mandan a tu país.
+
+Mercatren acaba de abrir el suyo. Crearlo es gratis y sirve para Amazon, Walmart, eBay, SHEIN o Temu.
+
+Pero hay errores que hacen que un paquete se pierda.
+
+El primero: olvidar el número de casillero. Va pegado a tu nombre y otra vez en la línea dos de la dirección. Sin él, nadie sabe de quién es la caja.
+
+El segundo: mandar cada compra por separado. Junta tus paquetes y envíalos en una sola caja. Es lo que más dinero ahorra.
+
+El tercero: el peso. En avión te cobran por el tamaño de la caja, no solo por lo que pesa. Algo grande y liviano sale caro.
+
+Y un consejo final: haz la primera compra pequeña, para ver cuánto tarda y cuánto te cobran.
+
+Lo leí en losupe.com`,
+      sabias_que: ["¿Sabías que en un envío por avión una almohada puede costar como si pesara mucho? Se cobra por el peso volumétrico: el espacio que ocupa la caja, no solo lo que marca la balanza."],
       title:
         "Casillero en Miami: la guía para comprar en Estados Unidos y que te llegue a Sudamérica sin sorpresas",
       excerpt:
@@ -134,6 +153,24 @@ export default {
     },
     en: {
       slug: "miami-mailbox-how-to-shop-in-the-us-and-receive-it-in-south-america",
+      guion: `Ever shop on Amazon and hit "we don't ship to your country"? There's a way around it, and it's called a mailbox.
+
+A mailbox is your own address in Miami, with your own number. You shop anywhere, enter that address at checkout, and the package lands at a warehouse. From there, it ships to your country.
+
+Mercatren just opened its own. Signing up is free, and it works with Amazon, Walmart, eBay, SHEIN, or Temu.
+
+But a few mistakes can get a package lost.
+
+Number one: forgetting your mailbox number. It goes right next to your name, and again on address line two. Without it, nobody knows whose box it is.
+
+Number two: shipping every order separately. Group your packages into one box. That's the biggest money-saver.
+
+Number three: weight. Air freight charges for the size of the box, not just how heavy it is. Something big and light gets expensive.
+
+One last tip: make your first order a small one, so you see how long it takes and what it costs.
+
+I read it on losupe.com`,
+      sabias_que: ["Did you know a pillow can cost as much to fly as something heavy? Air freight charges by volumetric weight: the space the box takes up, not just what the scale says."],
       title:
         "A Miami mailbox: the guide to shopping in the U.S. and getting it to South America without surprises",
       excerpt:

@@ -353,6 +353,11 @@ ALTER TABLE sponsors ADD COLUMN claim_en TEXT;
 ALTER TABLE visitas ADD COLUMN segundos INTEGER NOT NULL DEFAULT 0;
 ALTER TABLE visitas ADD COLUMN origen TEXT;
 
+-- Guion para creadores de videos cortos y datos del «¿Sabias que?», por idioma (17 sep 2026). Los
+-- escribe el robot DESPUES de publicar la nota, en una llamada aparte: nunca frenan una publicacion.
+ALTER TABLE article_i18n ADD COLUMN guion TEXT;
+ALTER TABLE article_i18n ADD COLUMN sabias_que_json TEXT;
+
 
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.

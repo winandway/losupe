@@ -1093,3 +1093,52 @@ test("al compartir una nota sin foto SÍ sale imagen (WhatsApp no pinta SVG)", a
   expect(url).toMatch(/\.png$/);
   expect((await page.request.get(url)).status()).toBe(200);
 });
+
+test("guion para creadores: se ve, dura lo que dice y el botón copia el guion entero", async ({
+  page,
+  context,
+  browserName,
+}) => {
+  if (browserName === "chromium") {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  }
+  await page.goto(
+    "/es/ventas/casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica",
+  );
+  await expect(page.getByRole("heading", { name: "¿Sabías qué?" })).toBeVisible();
+  const bloque = page.locator("section", {
+    has: page.getByRole("heading", { name: "Guion para tu video" }),
+  });
+  await expect(bloque).toBeVisible();
+  await expect(bloque.getByText(/Dura unos \d/)).toBeVisible();
+  const guion = (await bloque.locator("[data-guion]").textContent()) ?? "";
+  expect(guion.trim().endsWith("Lo leí en losupe.com")).toBe(true);
+  await bloque.getByRole("button", { name: "Copiar guion" }).click();
+  await expect(bloque.getByRole("button", { name: /Copiado/ })).toBeVisible();
+});
+
+test("en inglés sale el guion en inglés, nunca el español", async ({ page }) => {
+  await page.goto("/en/sales/miami-mailbox-how-to-shop-in-the-us-and-receive-it-in-south-america");
+  const bloque = page.locator("section", {
+    has: page.getByRole("heading", { name: "Script for your video" }),
+  });
+  await expect(bloque).toBeVisible();
+  const guion = (await bloque.locator("[data-guion]").textContent()) ?? "";
+  expect(guion).toContain("I read it on losupe.com");
+  expect(guion).not.toContain("Lo leí en losupe.com");
+});
+
+test("al compartir una nota con foto, la vista previa usa la miniatura ligera", async ({
+  page,
+  request,
+}) => {
+  await page.goto(
+    "/es/ventas/un-venezolano-lanza-mercatren-tienda-en-linea-1-3-millones-de-productos-estados-unidos",
+  );
+  const og = (await page.locator('meta[property="og:image"]').getAttribute("content")) ?? "";
+  // WhatsApp no descarga vistas previas de más de ~300 KB y pone el logo: va la miniatura.
+  expect(og).toMatch(/-sm\.jpg$/);
+  const res = await request.get(og);
+  expect(res.status()).toBe(200);
+  expect((await res.body()).byteLength).toBeLessThan(280_000);
+});

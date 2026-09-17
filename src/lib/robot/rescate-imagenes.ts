@@ -1,6 +1,6 @@
 import { SQL_NOW } from "@/lib/sql-time";
 import { generateJson } from "./gemini";
-import { illustrate, type ImageEnv } from "./images";
+import { esImagenPesada, illustrate, type ImageEnv } from "./images";
 
 /**
  * EL RESCATE: ninguna nota se queda sin foto.
@@ -342,6 +342,112 @@ export async function rescatarImagenes(
           .bind(nota.id, image.url, image.credit)
           .run();
         out.ilustradas += 1;
+      } catch (error) {
+        out.errores.push(`${nota.slug}: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  } catch (error) {
+    out.errores.push(error instanceof Error ? error.message : String(error));
+  }
+  return out;
+}
+
+/* ───────────────────────── Fotos que no se pueden compartir ───────────────────────── */
+
+export type ResultadoPesadas = {
+  /** Notas recientes cuya imagen para compartir se revisó. */
+  revisadas: number;
+  /** Cuántas estaban en PNG o pesaban de más. */
+  pesadas: number;
+  /** Cuántas quedaron rehechas en JPEG ligero. */
+  rehechas: number;
+  errores: string[];
+};
+
+/** De `/media/notas/abc.jpg` a la clave del archivo en R2 (`notas/abc.jpg`). */
+export function claveR2(url: string): string | null {
+  return url.startsWith("/media/") ? decodeURIComponent(url.slice("/media/".length)) : null;
+}
+
+/**
+ * Rehace la foto de las notas RECIENTES que no se pueden compartir: guardadas en PNG o tan pesadas
+ * que WhatsApp no las descarga.
+ *
+ * Hace falta porque el arreglo de `aMedida` (pedir JPEG) solo vale para lo que se descargue de aquí
+ * en adelante; las fotos que ya estaban guardadas en PNG seguirían saliendo como un logo al
+ * compartirlas. Se mira la MINIATURA, que es la que se comparte (`imagen-social.ts`).
+ *
+ * La foto nueva se guarda con OTRO nombre, a propósito: las imágenes se sirven con caché inmutable de
+ * un año, así que sobrescribir el mismo archivo dejaría a navegadores y mensajeros viendo el viejo.
+ *
+ * Solo los últimos días, que es lo que la gente comparte, y pocas por corrida. Nunca lanza.
+ */
+export async function rehacerImagenesPesadas(
+  db: D1Database,
+  env: ImageEnv & { GEMINI_API_KEY?: string },
+  opts: { limite?: number; dias?: number; fetchImpl?: typeof fetch; ahora?: Date } = {},
+): Promise<ResultadoPesadas> {
+  const out: ResultadoPesadas = { revisadas: 0, pesadas: 0, rehechas: 0, errores: [] };
+  if (!env.BUCKET) return out;
+  try {
+    const desde = new Date(
+      (opts.ahora ?? new Date()).getTime() - (opts.dias ?? 30) * 86_400_000,
+    ).toISOString();
+    const { results } = await db
+      .prepare(
+        `SELECT a.id, a.image_url,
+                es.slug AS slug, es.title AS title, es.excerpt AS excerpt,
+                (SELECT title FROM article_i18n WHERE article_id = a.id AND lang = 'en') AS title_en
+           FROM articles a
+           JOIN article_i18n es ON es.article_id = a.id AND es.lang = 'es'
+          WHERE a.status = 'published' AND a.image_url LIKE '/media/%' AND a.published_at >= ?1
+          ORDER BY a.published_at DESC
+          LIMIT 40`,
+      )
+      .bind(desde)
+      .all<FilaSinImagen & { image_url: string }>();
+
+    for (const nota of results ?? []) {
+      if (out.rehechas >= (opts.limite ?? 5)) break;
+      const grande = claveR2(nota.image_url);
+      if (!grande) continue;
+      out.revisadas += 1;
+      const pequena = grande.replace(/\.(jpg|jpeg|png|webp)$/i, "-sm.$1");
+      // La que se comparte es la miniatura; si no existe, el worker sirve la grande.
+      const obj = (await env.BUCKET.head(pequena)) ?? (await env.BUCKET.head(grande));
+      if (!obj) continue;
+      if (!esImagenPesada({ size: obj.size, contentType: obj.httpMetadata?.contentType })) continue;
+      out.pesadas += 1;
+      try {
+        const keywords =
+          (await preguntarQueFoto({
+            apiKey: env.GEMINI_API_KEY,
+            titulo: nota.title,
+            entradilla: nota.excerpt,
+            fetchImpl: opts.fetchImpl,
+          })) ?? palabrasParaFoto(nota.title, nota.title_en);
+        const base = grande.replace(/^notas\//, "").replace(/\.(jpg|jpeg|png|webp)$/i, "");
+        const { image, errors } = await illustrate({
+          env,
+          db,
+          prompt: nota.title_en || nota.title,
+          keywords,
+          slug: `${base}-j${Date.now().toString(36)}`,
+          fetchImpl: opts.fetchImpl,
+        });
+        if (!image) {
+          out.errores.push(
+            `${nota.slug}: sin foto nueva${errors.length ? ` (${errors.join("; ")})` : ""}`,
+          );
+          continue;
+        }
+        await db
+          .prepare(
+            `UPDATE articles SET image_url = ?2, image_credit = ?3, updated_at = ${SQL_NOW} WHERE id = ?1`,
+          )
+          .bind(nota.id, image.url, image.credit)
+          .run();
+        out.rehechas += 1;
       } catch (error) {
         out.errores.push(`${nota.slug}: ${error instanceof Error ? error.message : String(error)}`);
       }
