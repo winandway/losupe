@@ -1,5 +1,6 @@
 import { headers } from "next/headers";
 import { env } from "@/env";
+import { origenCanonico } from "./dominio";
 
 const FALLBACK = "https://losupe.com";
 
@@ -17,7 +18,9 @@ export function baseUrlFromHeaders(h: Headers): string {
   const proto =
     h.get("x-forwarded-proto") ??
     (host.startsWith("localhost") || host.startsWith("127.0.0.1") ? "http" : "https");
-  return `${proto}://${host}`;
+  // Un dominio nuestro (http, www, sitios.dev) se nombra SIEMPRE como https://losupe.com. Si no,
+  // el diario se declaraba canónico en cuatro direcciones distintas (ver `dominio.ts`).
+  return origenCanonico(host, proto);
 }
 
 export function baseUrlFromRequest(request: Request): string {

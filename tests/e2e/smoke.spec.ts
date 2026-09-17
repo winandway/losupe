@@ -1142,3 +1142,71 @@ test("al compartir una nota con foto, la vista previa usa la miniatura ligera", 
   expect(res.status()).toBe(200);
   expect((await res.body()).byteLength).toBeLessThan(280_000);
 });
+
+// ── Candado 53: auditoría SEO del 17 sep 2026 ─────────────────────────────────────────────────────
+
+test("SEO: la página 2 de una sección es su propia canónica, no una copia de la 1", async ({
+  page,
+}) => {
+  await page.goto("/es/cripto");
+  const siguiente = page.locator('a[href*="page=2"]').first();
+  await expect(siguiente).toHaveCount(1);
+  await page.goto("/es/cripto?page=2");
+  const canonical = await page.locator('link[rel="canonical"]').getAttribute("href");
+  expect(canonical).toMatch(/\/es\/cripto\?page=2$/);
+  // Y el título no repite el de la página 1 (Google lo marcaba como título duplicado).
+  expect(await page.title()).toMatch(/2/);
+});
+
+test("SEO: las notas piden a Google la imagen grande (Discover)", async ({ page }) => {
+  await page.goto(
+    "/es/ventas/casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica",
+  );
+  const robots = await page.locator('meta[name="robots"]').first().getAttribute("content");
+  expect(robots).toContain("max-image-preview:large");
+  expect(robots).not.toContain("noindex");
+});
+
+test("SEO: cada página se nombra a sí misma al compartir y todas llevan imagen", async ({
+  page,
+}) => {
+  await page.goto("/es");
+  expect(await page.locator('meta[property="og:image"]').count()).toBeGreaterThan(0);
+  await page.goto("/es/acerca");
+  // Antes TODAS las páginas decían ser la portada al compartirse.
+  expect(await page.locator('meta[property="og:url"]').getAttribute("content")).toMatch(
+    /\/es\/acerca$/,
+  );
+  expect(await page.locator('meta[property="og:image"]').count()).toBeGreaterThan(0);
+  await page.goto("/es/cripto");
+  expect(await page.locator('meta[property="og:image"]').first().getAttribute("content")).toMatch(
+    /\/og\/cripto\.png$/,
+  );
+  await page.goto("/es/autor/kevin-rondon");
+  const desc = (await page.locator('meta[name="description"]').getAttribute("content")) ?? "";
+  expect(desc.length).toBeGreaterThan(0);
+  expect(desc.length).toBeLessThanOrEqual(160);
+});
+
+test("SEO: la palabra del otro idioma redirige para siempre a la buena (308)", async ({
+  request,
+}) => {
+  const res = await request.get("/es/about", { maxRedirects: 0 });
+  expect(res.status()).toBe(308);
+  expect(res.headers().location).toMatch(/\/es\/acerca$/);
+  const autor = await request.get("/en/autor/kevin-rondon", { maxRedirects: 0 });
+  expect(autor.status()).toBe(308);
+  expect(autor.headers().location).toMatch(/\/en\/author\/kevin-rondon$/);
+});
+
+test("velocidad: la foto grande de la portada se pide primero (LCP)", async ({ request }) => {
+  const res = await request.get("/es");
+  const html = await res.text();
+  // React la anuncia en la cabecera Link (o, si no cabe, en una etiqueta). El worker la pisaba.
+  const enCabecera = (res.headers().link ?? "").includes("hero-v2-poster.jpg");
+  const enEtiqueta = /<link[^>]+rel="preload"[^>]+hero-v2-poster\.jpg/.test(html);
+  expect(enCabecera || enEtiqueta).toBe(true);
+  // Y nuestros enlaces para agentes siguen ahí.
+  expect(res.headers().link ?? "").toContain("llms.txt");
+  expect(html).not.toMatch(/hero-v2-poster\.jpg"[^>]*fetchPriority="low"/i);
+});

@@ -1,4 +1,3 @@
-import { SQL_NOW } from "@/lib/sql-time";
 import { generateJson } from "./gemini";
 import { esImagenPesada, illustrate, type ImageEnv } from "./images";
 
@@ -336,7 +335,7 @@ export async function rescatarImagenes(
         await db
           .prepare(
             `UPDATE articles
-                SET image_url = ?2, image_credit = ?3, updated_at = ${SQL_NOW}
+                SET image_url = ?2, image_credit = ?3
               WHERE id = ?1`,
           )
           .bind(nota.id, image.url, image.credit)
@@ -443,7 +442,8 @@ export async function rehacerImagenesPesadas(
         }
         await db
           .prepare(
-            `UPDATE articles SET image_url = ?2, image_credit = ?3, updated_at = ${SQL_NOW} WHERE id = ?1`,
+            // Sin `updated_at`: cambiar la foto no es actualizar la noticia (ver guion.ts).
+            `UPDATE articles SET image_url = ?2, image_credit = ?3 WHERE id = ?1`,
           )
           .bind(nota.id, image.url, image.credit)
           .run();

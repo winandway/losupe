@@ -1,3 +1,4 @@
+import { preload } from "react-dom";
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { formatDate, nowIso } from "@/lib/dates";
@@ -10,6 +11,10 @@ export const HERO_POSTER = "/video/hero-v2-poster.jpg";
 
 /** Franja de video a todo lo ancho con la promesa del medio y el buscador grande. */
 export function HeroBanner({ lang, dict }: { lang: Lang; dict: Dict }) {
+  // Esta foto es lo más grande que se ve al abrir la portada en el celular: Google la mide como el
+  // «elemento principal» (LCP). Iba con prioridad BAJA y el navegador la dejaba para el final: 9,4 s
+  // en la medición de Lighthouse del 17 sep 2026, cuando Google pide menos de 2,5. Se pide primero.
+  preload(HERO_POSTER, { as: "image", fetchPriority: "high" });
   return (
     <section
       aria-label={dict.hero.title}
@@ -22,7 +27,9 @@ export function HeroBanner({ lang, dict }: { lang: Lang; dict: Dict }) {
           alt=""
           width={1280}
           height={427}
-          fetchPriority="low"
+          fetchPriority="high"
+          loading="eager"
+          decoding="async"
           className="absolute inset-0 h-full w-full object-cover"
         />
         <HeroVideo

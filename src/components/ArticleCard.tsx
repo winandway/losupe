@@ -36,6 +36,10 @@ export function ArticleCard({
           : undefined
       }
       sizes={variant === "hero" ? "(max-width: 768px) 100vw, 800px" : undefined}
+      // Medidas explícitas: el navegador reserva el hueco antes de que baje la foto y la página no
+      // salta al cargar (lo mide Google en Core Web Vitals como CLS).
+      width={variant === "hero" ? 1600 : 640}
+      height={variant === "hero" ? 900 : 360}
       alt={article.imageAlt}
       loading={priority ? "eager" : "lazy"}
       fetchPriority={priority ? "high" : "auto"}
@@ -50,6 +54,8 @@ export function ArticleCard({
       // El hero es grande y la imagen se ve entera: ahí cabe la portada con su titular. En las
       // tarjetas pequeñas va solo el símbolo, porque el titular ya está escrito al lado.
       src={rutaPortada(article.id, variant !== "hero")}
+      width={variant === "hero" ? 1200 : 640}
+      height={variant === "hero" ? 630 : 360}
       alt={article.imageAlt || article.title}
       loading={priority ? "eager" : "lazy"}
       decoding="async"

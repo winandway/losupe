@@ -49,6 +49,26 @@ export function staticPath(key: RouteKey, lang: Lang): string {
   return `/${lang}/${ROUTE_WORDS[key][lang]}`;
 }
 
+/**
+ * `/es/about` → `/es/acerca`, `/en/autor/x` → `/en/author/x`. `null` si la ruta ya está bien.
+ *
+ * La auditoría SEO del 17 sep 2026 encontró que cada página fija respondía en DOS direcciones —con
+ * la palabra de su idioma y con la del otro— y las dos con código 200. La canónica ya apuntaba a la
+ * buena, pero una redirección permanente es la señal clara: una sola dirección por página.
+ */
+export function rutaConPalabraDelIdioma(pathname: string): string | null {
+  const partes = pathname.split("/");
+  const lang = partes[1];
+  const palabra = partes[2];
+  if (!lang || !isLang(lang) || !palabra) return null;
+  const key = routeKeyForWord(palabra);
+  if (!key) return null;
+  const correcta = ROUTE_WORDS[key][lang];
+  if (correcta === palabra) return null;
+  partes[2] = correcta;
+  return partes.join("/");
+}
+
 export function rssPath(lang: Lang): string {
   return `/${lang}/rss.xml`;
 }

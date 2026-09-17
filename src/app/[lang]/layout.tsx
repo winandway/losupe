@@ -1,3 +1,4 @@
+import { imagenOg, ROBOTS_INDEXABLE } from "@/lib/seo";
 import type { Metadata, Viewport } from "next";
 import { Inter, Newsreader, Space_Grotesk } from "next/font/google";
 import "../globals.css";
@@ -71,17 +72,20 @@ export async function generateMetadata({ params }: Pick<Props, "params">): Promi
       languages: { es: homePath("es"), en: homePath("en"), "x-default": homePath("es") },
       types: { "application/rss+xml": rssPath(lang) },
     },
+    // Sin `url`, `title` ni `description` a propósito: esto lo HEREDAN todas las páginas que no
+    // declaran lo suyo (acerca, contacto, autores, legales…), y con esos campos todas le decían a
+    // Facebook y a LinkedIn que eran la portada — al compartirlas salía la portada (auditoría SEO,
+    // 17 sep 2026). Sin ellos, cada red toma el título y la dirección de la propia página.
     openGraph: {
       type: "website",
       siteName: dict.brand.name,
       locale: dict.ogLocale,
       alternateLocale: lang === "es" ? ["en_US"] : ["es_US"],
-      url: homePath(lang),
-      title,
-      description: dict.brand.description,
+      // Y con imagen: la portada, las secciones y los autores se compartían SIN foto.
+      images: [{ ...imagenOg(), alt: dict.brand.name }],
     },
-    twitter: { card: "summary_large_image", title, description: dict.brand.description },
-    robots: { index: true, follow: true },
+    twitter: { card: "summary_large_image", images: [imagenOg().url] },
+    robots: ROBOTS_INDEXABLE,
   };
 }
 

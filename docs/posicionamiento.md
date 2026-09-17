@@ -50,6 +50,30 @@ noticia nuestra**. Detalle completo en el candado 47 de [`candados.md`](candados
 
 Desde hoy, toda nota de actualidad se declara como noticia. Es el cambio que abre esa puerta.
 
+## Auditoría del código del 17 de septiembre
+
+Revisión completa pedida por Richard. Se encontraron **diez errores** y se arreglaron todos; el
+detalle (causa, arreglo y prueba) está en el candado 53 de [`candados.md`](candados.md). Los tres que
+más pesaban:
+
+1. **El diario existía en cuatro direcciones** (`http`, `https`, `www` y `losupe.sitios.dev`). Ahora
+   todo apunta a `https://losupe.com` y las demás redirigen.
+2. **En el celular la foto de la portada tardaba 9,4 s** en verse. Google usa ese tiempo (LCP) para
+   ordenar resultados y pide menos de 2,5 s.
+3. **Casi ninguna página tenía imagen al compartirse**, y las fijas decían ser la portada.
+
+Mediciones de ese día:
+
+| Herramienta                                                         | Resultado                                                         |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| Lighthouse en celular (antes del arreglo)                           | Rendimiento 70 · Accesibilidad 93 · Buenas prácticas 100 · SEO 92 |
+| Escáner de agentes de IA de Cloudflare `https://isitagentready.com` | **Nivel 4 de 5, «Agent-Integrated»**                              |
+| Mapa del sitio                                                      | 237 direcciones, todas 200 y con su canónica                      |
+
+Para repetir el escáner de IA: abrir `https://isitagentready.com`, escribir `losupe.com` y pulsar
+escanear. Lo que marca en rojo (OAuth, MCP, A2A, auth.md, DNS-AID) es para servicios con cuentas o API;
+a un diario no le aplica.
+
 ## Lo que falta, en orden
 
 ### 1. Verificar Search Console — lo hace Richard, 5 minutos

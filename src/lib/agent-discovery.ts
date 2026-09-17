@@ -148,6 +148,18 @@ export function buildApiCatalog(base: string) {
   };
 }
 
+/**
+ * Suma nuestros enlaces a la cabecera Link que ya traiga la respuesta, SIN borrarla.
+ *
+ * React y Next escriben ahí qué pedir primero (la foto principal, las fuentes). El worker hacía
+ * `headers.set("Link", …)` y lo pisaba: el navegador descubría la foto grande de la portada al final
+ * y en el celular tardaba 9,4 s en verse (Lighthouse, 17 sep 2026).
+ */
+export function unirLink(previa: string | null, nuestra: string): string {
+  const antes = previa?.trim();
+  return antes ? `${antes}, ${nuestra}` : nuestra;
+}
+
 /** Cabecera Link (RFC 8288) para respuestas HTML: sitemap, llms.txt, feed y versión Markdown. */
 export function buildLinkHeader(base: string, pathname: string, lang: Lang | null): string {
   const origin = base.replace(/\/$/, "");

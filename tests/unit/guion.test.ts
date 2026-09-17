@@ -219,6 +219,9 @@ describe("rescatarGuiones", () => {
     const guardados = db.calls.filter((c) => c.sql.startsWith("UPDATE article_i18n SET guion"));
     expect(guardados.map((g) => g.params[1])).toEqual(["es", "en"]);
     expect(db.calls.some((c) => c.sql.startsWith("INSERT INTO spend_log"))).toBe(true);
+    // Añadir el guion NO es actualizar la noticia: la fecha de modificación no se mueve (si se
+    // moviera, Google vería la nota «actualizada» sin que cambiara una palabra).
+    expect(db.calls.some((c) => /updated_at/.test(c.sql))).toBe(false);
   });
 
   it("sin llave de Gemini no toca la base", async () => {

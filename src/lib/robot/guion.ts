@@ -1,5 +1,4 @@
 import { stripHtml } from "@/lib/html";
-import { SQL_NOW } from "@/lib/sql-time";
 import { assertBudget, BudgetExceededError, recordSpend } from "./budget";
 import { filtrarSabiasQue } from "@/lib/sabias-que";
 import { generateJson } from "./gemini";
@@ -239,10 +238,9 @@ export async function rescatarGuiones(
             .run();
         await guardar("es", r.guion.guion_es, r.guion.sabias_que_es);
         if (nota.tiene_en) await guardar("en", r.guion.guion_en, r.guion.sabias_que_en);
-        await db
-          .prepare(`UPDATE articles SET updated_at = ${SQL_NOW} WHERE id = ?1`)
-          .bind(nota.id)
-          .run();
+        // NO se toca `updated_at`: añadir el guion no cambia la noticia. Moverlo hacía que Google
+        // viera la nota «actualizada» horas después sin que cambiara una palabra, y al lector le
+        // salía «Actualizado» sin motivo (auditoría SEO, 17 sep 2026).
         out.hechas += 1;
       } catch (error) {
         out.errores.push(`${nota.id}: ${error instanceof Error ? error.message : String(error)}`);

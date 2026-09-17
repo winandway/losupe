@@ -1,3 +1,4 @@
+import { conPagina, imagenOg } from "@/lib/seo";
 import { Container } from "@/components/Container";
 import { JsonLd } from "@/components/JsonLd";
 import type { Metadata } from "next";
@@ -27,19 +28,40 @@ function parsePage(value: string | string[] | undefined): number {
   return Number.isFinite(n) && n > 0 ? Math.min(n, 10_000) : 1;
 }
 
-export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const lang = await requireLang(params);
   const { section: slug } = await params;
   const section = sectionBySlug(lang, slug);
   if (!section) return {};
+  const page = parsePage((await searchParams).page);
+  const dict = getDict(lang);
+  // La página 2 en adelante es su propia canónica (antes todas apuntaban a la 1).
+  const canonical = conPagina(sectionPath(lang, section.id), page);
+  // Y su propio título: si no, las páginas 1, 2 y 3 comparten título y Google las lee como copias.
+  const titulo =
+    page > 1 ? `${section.name[lang]} · ${dict.section.page(page)}` : section.name[lang];
   return {
-    title: section.name[lang],
+    title: titulo,
     description: section.description[lang],
     alternates: {
-      canonical: sectionPath(lang, section.id),
-      languages: sectionAlternates(section.id),
+      canonical,
+      languages: Object.fromEntries(
+        Object.entries(sectionAlternates(section.id)).map(([l, ruta]) => [
+          l,
+          conPagina(ruta, page),
+        ]),
+      ),
     },
-    openGraph: { title: section.name[lang], description: section.description[lang] },
+    openGraph: {
+      type: "website",
+      siteName: dict.brand.name,
+      locale: dict.ogLocale,
+      url: canonical,
+      title: section.name[lang],
+      description: section.description[lang],
+      images: [{ ...imagenOg(section.id), alt: section.name[lang] }],
+    },
+    twitter: { card: "summary_large_image", images: [imagenOg(section.id).url] },
   };
 }
 

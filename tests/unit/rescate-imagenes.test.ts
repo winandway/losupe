@@ -180,6 +180,8 @@ describe("el rescate en marcha", () => {
     const guardado = db.calls.find((c) => c.sql.startsWith("UPDATE articles"));
     expect(guardado).toBeDefined();
     expect(String(guardado!.params.join(" "))).toContain("Ana Ruiz");
+    // Poner la foto no es actualizar la noticia: la fecha de modificación se queda como estaba.
+    expect(guardado!.sql).not.toContain("updated_at");
   });
 
   it("SI NO HAY FOTO, LA NOTA SIGUE EN PIE y el fallo queda escrito", async () => {

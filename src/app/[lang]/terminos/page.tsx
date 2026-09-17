@@ -1,3 +1,4 @@
+import { descripcionMeta, tarjetaSocial } from "@/lib/seo";
 import type { Metadata } from "next";
 import { LegalPage } from "@/components/LegalPage";
 import { getDict } from "@/i18n";
@@ -11,7 +12,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const dict = getDict(lang);
   return {
     title: dict.legal.terms.title,
-    description: dict.legal.terms.intro,
+    description: descripcionMeta(dict.legal.terms.intro),
+    ...tarjetaSocial(dict, {
+      path: staticPath("terms", lang),
+      title: dict.legal.terms.title,
+      description: descripcionMeta(dict.legal.terms.intro),
+    }),
     alternates: {
       canonical: staticPath("terms", lang),
       languages: {

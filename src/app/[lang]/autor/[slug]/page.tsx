@@ -1,3 +1,4 @@
+import { conPagina, descripcionMeta, imagenOg } from "@/lib/seo";
 import { Container } from "@/components/Container";
 import { JsonLd } from "@/components/JsonLd";
 import { personJsonLd } from "@/lib/seo";
@@ -17,18 +18,37 @@ type Props = {
   searchParams: Promise<{ page?: string | string[] }>;
 };
 
-export async function generateMetadata({ params }: Pick<Props, "params">): Promise<Metadata> {
+export async function generateMetadata({ params, searchParams }: Props): Promise<Metadata> {
   const lang = await requireLang(params);
   const { slug } = await params;
   const db = await getDb();
   const author = await getAuthor(db, slug, lang);
   if (!author) return {};
+  const raw = (await searchParams).page;
+  const page = Math.max(1, Number.parseInt((Array.isArray(raw) ? raw[0] : raw) ?? "1", 10) || 1);
+  const canonical = conPagina(authorPath(lang, author.id), page);
   return {
-    title: author.name,
-    description: author.bio ?? undefined,
+    title: page > 1 ? `${author.name} · ${getDict(lang).section.page(page)}` : author.name,
+    // La biografía entera pasaba de 270 caracteres; Google corta a unos 160.
+    description: descripcionMeta(author.bio),
     alternates: {
-      canonical: authorPath(lang, author.id),
-      languages: { es: authorPath("es", author.id), en: authorPath("en", author.id) },
+      canonical,
+      languages: {
+        es: conPagina(authorPath("es", author.id), page),
+        en: conPagina(authorPath("en", author.id), page),
+        "x-default": conPagina(authorPath("es", author.id), page),
+      },
+    },
+    openGraph: {
+      type: "profile",
+      siteName: getDict(lang).brand.name,
+      locale: getDict(lang).ogLocale,
+      url: canonical,
+      title: author.name,
+      description: descripcionMeta(author.bio),
+      images: author.avatarUrl
+        ? [{ url: author.avatarUrl, alt: author.name }]
+        : [{ ...imagenOg(), alt: author.name }],
     },
   };
 }

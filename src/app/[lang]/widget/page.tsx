@@ -1,3 +1,4 @@
+import { descripcionMeta, tarjetaSocial } from "@/lib/seo";
 import type { Metadata } from "next";
 import { Container } from "@/components/Container";
 import { VistaPreviaWidget } from "@/components/VistaPreviaWidget";
@@ -14,7 +15,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const d = getDict(lang).widget;
   return {
     title: d.title,
-    description: d.intro,
+    description: descripcionMeta(d.intro),
+    ...tarjetaSocial(getDict(lang), {
+      path: staticPath("widget", lang),
+      title: d.title,
+      description: descripcionMeta(d.intro),
+    }),
     alternates: {
       canonical: staticPath("widget", lang),
       languages: {

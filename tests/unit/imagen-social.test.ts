@@ -124,6 +124,7 @@ describe("las fotos recientes que ya estaban guardadas se rehacen", () => {
     expect(r.rehechas).toBe(1);
     const actualizada = db.calls.find((c) => c.sql.startsWith("UPDATE articles"));
     expect(actualizada?.params[0]).toBe("pesada");
+    expect(actualizada?.sql).not.toContain("updated_at");
     // Nombre NUEVO: las fotos van con caché inmutable de un año, sobrescribir no serviría.
     expect(String(actualizada?.params[1])).not.toBe("/media/notas/trump.jpg");
     expect(String(actualizada?.params[1])).toMatch(/^\/media\/notas\/trump-j/);

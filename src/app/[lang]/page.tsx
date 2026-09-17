@@ -1,3 +1,5 @@
+import { imagenOg } from "@/lib/seo";
+import { homePath } from "@/lib/urls";
 import type { Metadata } from "next";
 import { ArticleCard } from "@/components/ArticleCard";
 import { Container } from "@/components/Container";
@@ -23,9 +25,19 @@ type Props = {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const lang = await requireLang(params);
   const dict = getDict(lang);
+  const title = `${dict.brand.name} — ${dict.brand.tagline}`;
   return {
-    title: { absolute: `${dict.brand.name} — ${dict.brand.tagline}` },
+    title: { absolute: title },
     description: dict.brand.description,
+    openGraph: {
+      type: "website",
+      siteName: dict.brand.name,
+      locale: dict.ogLocale,
+      url: homePath(lang),
+      title,
+      description: dict.brand.description,
+      images: [{ ...imagenOg(), alt: dict.brand.name }],
+    },
   };
 }
 

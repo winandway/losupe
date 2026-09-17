@@ -23,3 +23,8 @@
 
 - [x] 🤖 Vista previa de WhatsApp con la foto, no con el logo (17 sep 2026, candado 51).
 - [x] 🤖 Guion para creadores y «¿Sabías qué?» en cada nota (17 sep 2026, candado 52).
+- [x] 🤖 Auditoría SEO del código: un solo dominio, foto de portada rápida en celular, imagen y
+      dirección propia al compartir, página 2 canónica, descripciones cortas (17 sep 2026, candado 53).
+- [ ] 🤖 (bajo) Página 404 vacía desde el servidor: se pinta con JavaScript. Status 404 correcto.
+- [ ] 🤖 (bajo) Contraste de las etiquetas de sección y tamaño táctil de los nombres de autor
+      (accesibilidad). Proponer tonos a Richard con captura antes de tocar colores de marca.

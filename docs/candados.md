@@ -1629,3 +1629,50 @@ en voz alta, y el modelo lo aplicó también al «¿Sabías qué?», que se lee 
 - **Qué NO tocar:** el filtro de cifras y el de letras del «¿Sabías qué?»; que se aplique al guardar
   Y al mostrar; que el guion se genere aparte y después de publicar; y el cierre «Lo leí en
   losupe.com».
+
+## 53. Auditoría SEO del 17 sep 2026: cuatro diarios, la foto que llegaba última y otros ocho
+
+Richard pidió revisar el código entero buscando errores de posicionamiento. Se midió en producción:
+las 237 direcciones del mapa del sitio, las etiquetas de cada tipo de página, Lighthouse en celular y
+el escáner de Cloudflare para agentes de IA (`https://isitagentready.com`, nivel 4 «Agent-Integrated»).
+Lo que salió mal, en orden de gravedad:
+
+| #   | Qué se veía                                                                                                                           | Causa                                                                                                        | Arreglo                                                                                                                                                                               |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | El diario respondía completo en **4 direcciones** (`https://`, `http://`, `www.`, `losupe.sitios.dev`), cada una canónica de sí misma | La dirección pública se armaba con el dominio por el que entraba la visita                                   | `src/lib/dominio.ts`: toda dirección propia usa `https://losupe.com` (`origenCanonico`) y `http`/`www` redirigen **301** (`redireccionCanonica`, al principio del `fetch` del worker) |
+| 2   | En el celular la foto de la portada tardaba **9,4 s** en verse (Google pide < 2,5 s)                                                  | Iba con `fetchPriority="low"`, y además el worker **pisaba la cabecera `Link`** donde React pide precargarla | La foto va con prioridad alta y `preload()` (`HeroBanner.tsx`), y el worker **suma** sus enlaces a los de React con `unirLink` en vez de `headers.set`                                |
+| 3   | La portada, las secciones, los autores y las páginas fijas se compartían **sin imagen**                                               | Solo las notas declaraban imagen                                                                             | `imagenOg()` en el layout; las secciones usan su `/og/<id>.png`; los autores su foto                                                                                                  |
+| 4   | Todas las páginas fijas decían **ser la portada** al compartirse (`og:url` y título de la portada)                                    | El layout declaraba `url`/`title` y Next reemplaza el `openGraph` entero, no lo mezcla                       | El layout ya no declara `url` ni `title`; cada página lleva su tarjeta completa con `tarjetaSocial()`                                                                                 |
+| 5   | Ninguna página pedía la **imagen grande** a Google (Discover no muestra notas sin eso)                                                | No había etiqueta `robots`                                                                                   | `ROBOTS_INDEXABLE` (`max-image-preview:large`) en el layout y en las notas; las notas de respaldo en otro idioma, `noindex`                                                           |
+| 6   | La **página 2** de secciones y autores tenía de canónica la página 1                                                                  | La canónica no llevaba el número de página                                                                   | `conPagina()`: cada página es su propia canónica y su título dice «Página N»                                                                                                          |
+| 7   | `/es/about`, `/en/autor/…` respondían **200** (la misma página en dos direcciones)                                                    | Las rutas aceptaban la palabra de los dos idiomas                                                            | `rutaConPalabraDelIdioma()` + **308** en el worker. (Las secciones ya redirigían.)                                                                                                    |
+| 8   | Descripciones de **168 a 275** caracteres (Google corta en ~160)                                                                      | Se usaba el párrafo de introducción entero                                                                   | `descripcionMeta()`: máximo 158, cortando por frases y si no, por palabras                                                                                                            |
+| 9   | Las notas salían **«actualizadas»** horas después sin cambiar una palabra                                                             | Poner la foto o el guion movía `updated_at` (y con él `dateModified`)                                        | `rescatarImagenes`, `rehacerImagenesPesadas` y `rescatarGuiones` ya no tocan `updated_at`                                                                                             |
+| 10  | Las fotos de las tarjetas sin medidas                                                                                                 | Faltaban `width`/`height`                                                                                    | Puestas en `ArticleCard.tsx` (CSS sigue mandando con `h-full w-full`)                                                                                                                 |
+
+- **Candados:** `tests/unit/auditoria-seo.test.ts` (dominio, redirecciones, etiquetas, tarjeta, cabecera
+  Link, palabra del idioma); en `guion.test.ts`, `rescate-imagenes.test.ts` e `imagen-social.test.ts`
+  la comprobación de que no se escribe `updated_at`; y cinco e2e con el prefijo «SEO:» y «velocidad:»
+  en `tests/e2e/smoke.spec.ts`. **Las doce mutaciones se comprobaron en rojo el 17 sep 2026**
+  (quitar cada arreglo y ver fallar su prueba).
+- **Cómo se comprueba en vivo:**
+  - `curl -sI http://losupe.com/es` y `curl -sI https://www.losupe.com/es` → `301` a `https://losupe.com/es`.
+  - `curl -s https://losupe.sitios.dev/es | grep canonical` → `https://losupe.com/es`.
+  - `curl -sI https://losupe.com/es/about` → `308` a `/es/acerca`.
+  - `curl -sI https://losupe.com/es | grep -i link` → trae la foto `hero-v2-poster.jpg` **y** `llms.txt`.
+- **Lo que NO es un error aunque lo marque una herramienta:**
+  - Lighthouse marca 19 veces «Unknown directive» en `robots.txt` por `Content-Signal:`. Es la señal de
+    Cloudflare para decir «se puede citar, no entrenar»; Google ignora las líneas que no conoce y el
+    escáner de agentes la cuenta a favor. Se repite en cada grupo porque cada robot lee solo el suyo.
+  - En `https://isitagentready.com` fallan OAuth, MCP, A2A, auth.md y DNS-AID: son para servicios con
+    cuentas o API, no para un diario.
+- **Qué quedó anotado y sin arreglar (bajo impacto):**
+  - La página 404 llega **vacía desde el servidor** (`<html id="__next_error__">`) y se pinta con
+    JavaScript. El código de estado 404 es correcto, así que Google no la indexa; solo lo nota quien no
+    tenga JavaScript. Es cómo renderiza Next 16 un `notFound()` con el layout raíz en `[lang]`.
+  - Contraste de las etiquetas de sección (blanco sobre coral `#FF5A5F` y azul `#3B82F6`, 3,0 y 3,7
+    sobre 4,5) y el tamaño táctil de los nombres de autor. Es accesibilidad, no posicionamiento;
+    cambiar los colores de marca se decide viéndolo.
+- **Qué NO tocar:** `redireccionCanonica` nunca redirige `/__*` (el reloj y `/__health`) ni
+  `losupe.sitios.dev`; `unirLink` en vez de `headers.set("Link")`; la tarjeta social completa en cada
+  página; y que los rescates no escriban `updated_at`.

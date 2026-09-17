@@ -12,7 +12,7 @@
 import { default as nextHandler } from "./.open-next/worker.js";
 import { SCHEMA_SQL } from "./src/lib/schema-sql";
 import { CONTENT_SEEDS } from "./src/lib/seed-content";
-import { buildLinkHeader } from "./src/lib/agent-discovery";
+import { buildLinkHeader, unirLink } from "./src/lib/agent-discovery";
 import { renderMarkdown, wantsMarkdown } from "./src/lib/agent-markdown";
 import {
   buildAiCatalog,
@@ -21,6 +21,7 @@ import {
   buildSkillsIndex,
   SKILL_NAME,
 } from "./src/lib/agent-manifests";
+import { esquemaDe, origenCanonico, redireccionCanonica } from "./src/lib/dominio";
 import { buildHealthReport } from "./src/lib/health";
 import { portadaDeNota } from "./src/lib/portadas-server";
 import { estadoDeRedes } from "./src/lib/redes";
@@ -28,6 +29,7 @@ import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow"
 import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { legacyRedirectTarget } from "./src/lib/legacy-redirects";
+import { rutaConPalabraDelIdioma } from "./src/lib/urls";
 import { claimTick, closeStaleRuns, getTickToken } from "./src/lib/robot/heartbeat";
 import { robotStatus } from "./src/lib/robot/pipeline";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
@@ -68,13 +70,23 @@ function text(body: string, contentType = "text/plain; charset=utf-8"): Response
 function originOf(request: Request): string {
   const url = new URL(request.url);
   const host = request.headers.get("x-forwarded-host") ?? url.host;
-  const proto = request.headers.get("x-forwarded-proto") ?? url.protocol.replace(":", "");
-  return `${proto}://${host}`;
+  return origenCanonico(host, esquemaDe(url, request.headers));
 }
 
 export default {
   async fetch(request: Request, env: CloudflareEnv, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
+    // http:// y www. se van a https://losupe.com con 301, antes de hacer nada más: un solo diario
+    // para Google, no cuatro copias (auditoría SEO del 17 sep 2026, ver `src/lib/dominio.ts`).
+    const destino = redireccionCanonica(url, request.headers);
+    if (destino) {
+      const leer = request.method === "GET" || request.method === "HEAD";
+      return new Response(null, {
+        // 308 para formularios: conserva el método y el cuerpo, que un 301 convertiría en GET.
+        status: leer ? 301 : 308,
+        headers: { Location: destino, "Cache-Control": "public, max-age=3600" },
+      });
+    }
     const { pathname } = url;
     const base = originOf(request);
     const isHealth = pathname === "/__health";
@@ -170,6 +182,15 @@ export default {
     }
 
     // URLs viejas de notas que cambiaron de slug → 301 a la nueva.
+    // `/es/about` → `/es/acerca`: una sola dirección por página (auditoría SEO, 17 sep 2026).
+    const palabraBuena = rutaConPalabraDelIdioma(pathname);
+    if (palabraBuena) {
+      return new Response(null, {
+        status: 308,
+        headers: { Location: palabraBuena + url.search, "Cache-Control": "public, max-age=86400" },
+      });
+    }
+
     const legacy = legacyRedirectTarget(pathname);
     if (legacy) {
       return new Response(null, {
@@ -241,7 +262,7 @@ export default {
 
     const headers = new Headers(response.headers);
     if (isHtml) {
-      headers.set("Link", buildLinkHeader(base, pathname, lang));
+      headers.set("Link", unirLink(headers.get("Link"), buildLinkHeader(base, pathname, lang)));
       const vary = headers.get("Vary");
       if (lang) headers.set("Vary", vary ? `${vary}, Accept` : "Accept");
     }

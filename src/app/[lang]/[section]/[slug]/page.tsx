@@ -1,3 +1,4 @@
+import { ROBOTS_INDEXABLE } from "@/lib/seo";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -61,7 +62,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     description,
     alternates: { canonical: canonicalUrl, languages },
     // Sin traducción todavía: la página en el otro idioma muestra el español y no se indexa aparte.
-    robots: article.fallback ? { index: false, follow: true } : undefined,
+    // `undefined` aquí BORRABA el robots heredado: las notas salían sin ninguna etiqueta y sin el
+    // `max-image-preview: large` que Discover necesita para la foto grande (auditoría, 17 sep 2026).
+    robots: article.fallback ? { index: false, follow: true } : ROBOTS_INDEXABLE,
     openGraph: {
       type: "article",
       title: article.title,

@@ -10,6 +10,92 @@ function countWords(html: string): number {
 }
 
 /** JSON.stringify seguro para incrustar en <script type="application/ld+json">. */
+/**
+ * Lo que se le dice a los buscadores de toda página indexable.
+ *
+ * `max-image-preview: large` es lo que deja a Google Discover y a Noticias mostrar la foto GRANDE de
+ * la nota. Sin esta etiqueta Google usa, como mucho, una miniatura — y en Discover la foto grande es
+ * lo que hace que alguien toque la tarjeta. Ninguna página del sitio la llevaba (auditoría SEO,
+ * 17 sep 2026). `max-snippet: -1` y `max-video-preview: -1` quitan los límites al extracto y al video.
+ */
+export const ROBOTS_INDEXABLE = {
+  index: true,
+  follow: true,
+  "max-image-preview": "large",
+  "max-snippet": -1,
+  "max-video-preview": -1,
+} as const;
+
+/** La imagen para compartir de una página sin foto propia: la de su sección o la de la marca. */
+export function imagenOg(sectionId?: string) {
+  return {
+    url: sectionId ? `/og/${sectionId}.png` : "/brand/og.png",
+    width: 1200,
+    height: 630,
+  };
+}
+
+/**
+ * La tarjeta para compartir de una página (Facebook, WhatsApp, LinkedIn, X), completa.
+ *
+ * Va entera a propósito: Next NO mezcla el `openGraph` de una página con el del layout — si la página
+ * declara uno, reemplaza el del layout completo. Y sin declararlo, la página salía sin dirección
+ * propia al compartirse (antes, peor: decía ser la portada). Auditoría SEO, 17 sep 2026.
+ */
+export function tarjetaSocial(
+  dict: { brand: { name: string }; ogLocale: string },
+  pagina: { path: string; title: string; description?: string; sectionId?: string },
+) {
+  const imagen = imagenOg(pagina.sectionId);
+  return {
+    openGraph: {
+      type: "website" as const,
+      siteName: dict.brand.name,
+      locale: dict.ogLocale,
+      url: pagina.path,
+      title: pagina.title,
+      description: pagina.description,
+      images: [{ ...imagen, alt: pagina.title }],
+    },
+    twitter: {
+      card: "summary_large_image" as const,
+      title: pagina.title,
+      description: pagina.description,
+      images: [imagen.url],
+    },
+  };
+}
+
+/**
+ * Descripción para buscadores, de 160 caracteres como mucho. Google corta las más largas con unos
+ * puntos suspensivos donde le toque; aquí se corta por frases completas y, si la primera ya no cabe,
+ * por palabras. Varias páginas pasaban de 250 (auditoría SEO, 17 sep 2026).
+ */
+export function descripcionMeta(texto: string | null | undefined, max = 158): string | undefined {
+  const limpio = (texto ?? "").replace(/\s+/g, " ").trim();
+  if (!limpio) return undefined;
+  if (limpio.length <= max) return limpio;
+  const frases = limpio.match(/[^.!?]+[.!?]+/g) ?? [];
+  let salida = "";
+  for (const f of frases) {
+    const siguiente = (salida + f).trim();
+    if (siguiente.length > max) break;
+    salida = siguiente + " ";
+  }
+  if (salida.trim().length >= 70) return salida.trim();
+  const corte = limpio.slice(0, max - 1);
+  return `${corte.slice(0, corte.lastIndexOf(" ")).replace(/[\s,;:.]+$/, "")}…`;
+}
+
+/**
+ * La dirección de una página de un listado. La página 2 en adelante es SU PROPIA canónica: si
+ * apuntara a la 1 —como pasaba—, Google la trata como copia y deja sin descubrir las notas que solo
+ * se enlazan desde ahí.
+ */
+export function conPagina(path: string, page: number): string {
+  return page > 1 ? `${path}?page=${page}` : path;
+}
+
 export function safeJsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");
 }

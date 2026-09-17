@@ -6,7 +6,7 @@ import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { getSetting } from "@/lib/robot/budget";
 import { crearPase } from "@/lib/anti-bots";
-import { safeJsonLd } from "@/lib/seo";
+import { descripcionMeta, safeJsonLd, tarjetaSocial } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
 import { absoluteUrl, contactPath, staticPath } from "@/lib/urls";
 
@@ -26,7 +26,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const dict = getDict(lang);
   return {
     title: dict.contact.title,
-    description: dict.contact.intro,
+    description: descripcionMeta(dict.contact.intro),
+    ...tarjetaSocial(dict, {
+      path: contactPath(lang),
+      title: dict.contact.title,
+      description: descripcionMeta(dict.contact.intro),
+    }),
     alternates: {
       canonical: contactPath(lang),
       languages: {

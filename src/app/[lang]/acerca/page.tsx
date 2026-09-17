@@ -1,3 +1,4 @@
+import { descripcionMeta, tarjetaSocial } from "@/lib/seo";
 import Link from "next/link";
 import { Container } from "@/components/Container";
 import type { Metadata } from "next";
@@ -14,7 +15,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const dict = getDict(lang);
   return {
     title: dict.about.title,
-    description: dict.about.intro,
+    description: descripcionMeta(dict.about.intro),
+    ...tarjetaSocial(dict, {
+      path: aboutPath(lang),
+      title: dict.about.title,
+      description: descripcionMeta(dict.about.intro),
+    }),
     alternates: {
       canonical: aboutPath(lang),
       languages: { es: aboutPath("es"), en: aboutPath("en"), "x-default": aboutPath("es") },

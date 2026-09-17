@@ -1,3 +1,4 @@
+import { descripcionMeta } from "@/lib/seo";
 import type { Metadata } from "next";
 import { PublishPage } from "@/components/PublishPage";
 import { getDict } from "@/i18n";
@@ -14,7 +15,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const dict = getDict(lang);
   return {
     title: dict.publish.title,
-    description: dict.publish.subtitle,
+    description: descripcionMeta(dict.publish.subtitle),
     alternates: {
       canonical: staticPath("publish", lang),
       languages: { es: staticPath("publish", "es"), en: staticPath("publish", "en") },
