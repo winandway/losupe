@@ -170,6 +170,11 @@ export function limpiarGuion(texto: string, lang: "es" | "en"): string {
     .replace(/[*_#`>|]/g, "")
     .replace(/\p{Extended_Pictographic}/gu, "")
     .replace(WIKIPEDIA_SOBRA, "")
+    // Los paréntesis no se leen en voz alta: «(INDOTEL)» se dice entre comas. Lo pidió Richard el
+    // 1 de octubre de 2026 con la nota de República Dominicana delante.
+    .replace(/\s*\(([^()]{1,60})\)/g, ", $1,")
+    .replace(/,\s*,/g, ",")
+    .replace(/,\s*([.!?])/g, "$1")
     // «por segundo.Este avance» → «por segundo. Este avance». Un teleprompter lo lee todo seguido.
     .replace(/([.!?])(?=[A-ZÁÉÍÓÚÑ¿¡])/g, "$1 ")
     .replace(/[ \t]+/g, " ")

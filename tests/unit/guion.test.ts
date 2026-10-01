@@ -181,6 +181,15 @@ describe("el guion de un minuto es DE UN MINUTO", () => {
     );
   });
 
+  it("los paréntesis se dicen entre comas: no se leen en voz alta", () => {
+    const g = limpiarGuion(
+      "El Instituto Dominicano de las Telecomunicaciones (INDOTEL) subió el mínimo.",
+      "es",
+    );
+    expect(g).not.toContain("(");
+    expect(g).toContain("Telecomunicaciones, INDOTEL, subió");
+  });
+
   it("el título del video cabe en una miniatura", () => {
     expect(limpiarTituloVideo("a".repeat(90)).length).toBeLessThanOrEqual(TITULO_VIDEO_MAX);
     expect(limpiarTituloVideo('  "Internet más rápido"  ')).toBe("Internet más rápido");
