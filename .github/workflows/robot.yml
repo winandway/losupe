@@ -29,13 +29,16 @@ concurrency:
 jobs:
   publicar:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 20
     steps:
       - name: Escribir la nota del turno
         run: |
           set -o pipefail
           echo "Hora UTC: $(date -u +%H:%M)"
-          RESP=$(curl -sS -m 300 \
+          # 600 s: escribir una nota en dos idiomas, con su foto, puede pasar de cinco minutos
+          # cuando el proveedor va lento. Con 300 el reloj cortaba la corrida a media faena
+          # (1 oct 2026).
+          RESP=$(curl -sS -m 600 \
             -H "x-yad-cron: github-actions" \
             ${CRON_SECRET:+--url-query "key=$CRON_SECRET"} \
             "https://losupe.com/__scheduled?wait=1")
