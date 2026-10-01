@@ -220,6 +220,11 @@ describe("piloto automático por franjas", () => {
           bind: (...params: unknown[]) => ({
             first: async () => {
               calls.push({ sql, params });
+              // Tres notas publicadas hoy: con la escaleta nueva, el turno pendiente a las 12:30
+              // del Este es el del mediodía (el cuarto del día).
+              if (sql.includes("published_at < ?2")) return { n: 3 };
+              // Y ninguna acabada de salir, para que el turno se pueda reclamar.
+              if (sql.includes("COUNT(*) AS n FROM articles")) return { n: 0 };
               return { value: "" };
             },
             run: async () => {
@@ -370,6 +375,8 @@ describe("una corrida cortada no se lleva la nota del turno", () => {
           bind: (...params: unknown[]) => ({
             first: async () => {
               calls.push({ sql, params });
+              if (sql.includes("published_at < ?2")) return { n: 3 };
+              if (sql.includes("COUNT(*) AS n FROM articles")) return { n: 0 };
               return { value: marca };
             },
             run: async () => {

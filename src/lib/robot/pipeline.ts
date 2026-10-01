@@ -49,6 +49,7 @@ import {
   NOMBRE_SUBGENERO,
   partesEnZona,
   ZONA,
+  franjaPendiente,
 } from "./franjas";
 import { TICK_KEY } from "./heartbeat";
 import { encargoDelTurno, reglasDeLaMesa } from "./mesa";
@@ -699,7 +700,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
     // El turno de la escaleta manda: si este es el de Tecnología, se busca una noticia de
     // tecnología; si es el de Artistas, de artistas. Antes la sección la decidía el cupo libre y
     // casi todo salía de Economía (1 oct 2026).
-    const franjaAhora = franjaActiva(now);
+    const franjaAhora = franjaPendiente(now, todayTotal);
     const [nextSponsored, nextCandidate] = await Promise.all([
       nextQueuedAssignment(db, now),
       pickCandidate(db, now, archivo, { seccion: franjaAhora?.seccion }),

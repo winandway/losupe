@@ -212,6 +212,9 @@ export default {
       request.method === "GET" &&
       !pathname.startsWith("/panel") &&
       !pathname.startsWith("/datos/") &&
+      // Las rutas internas (/__health, /__scheduled) NO despiertan al robot: mirar el diagnóstico
+      // gastaba los intentos del turno y dejaba al diario sin nota (1 oct 2026).
+      !pathname.startsWith("/__") &&
       !STATIC_PREFIXES.some((p) => pathname.startsWith(p)) &&
       !FEED_PATHS.has(pathname)
     ) {

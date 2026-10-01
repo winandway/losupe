@@ -1837,3 +1837,30 @@ los dos de verdad:
 
 Candados en `tests/unit/noticias-del-dia.test.ts`: el 503 se reintenta, el 400 de ubicación se
 distingue y **no** se reintenta. Los dos comprobados en rojo.
+
+### Y el hallazgo gordo: NINGÚN reloj dispara a su hora
+
+Midiendo en producción esa misma tarde salió lo que explicaba el resto:
+
+- **El reloj de la plataforma** sigue disparando a sus horas viejas: el cambio de `yadominios.json`
+  a cada hora **no lo tomó**. Comprobado: no hubo corrida a las 20:00 UTC.
+- **El reloj de GitHub** (`.github/workflows/robot.yml`, programado cada hora) dispara en realidad
+  **cuatro o cinco veces al día**, con horas de desfase. Es GitHub, que recorta los `schedule` de
+  los repos públicos.
+- **Las corridas que arranca una visita al sitio se mueren antes de terminar.** El trabajo de fondo
+  de una visita dura segundos; escribir una nota lleva minutos. Por eso el estado quedaba en
+  «running» media hora y el guardia las marcaba «se cortó antes de terminar». La única nota del día
+  salió de un disparo del reloj, que sí tiene permiso para correr largo.
+
+Con relojes así, una escaleta de horas fijas se queda medio vacía. **La escaleta pasa a ser una
+lista de pendientes del día** (`franjaPendiente`): cuando llega un despertar —venga de donde venga—
+se atiende **el turno más atrasado que ya tenga su hora y todavía no se haya publicado**. Nunca se
+adelanta un turno, nunca se publica después de las diez de la noche, y dos notas no pueden salir
+pegadas (hay veinte minutos de separación, `MINUTOS_ENTRE_NOTAS`).
+
+También: `/__health` y las rutas internas **ya no despiertan al robot**. Mirar el diagnóstico gastaba
+los intentos del turno, que es exactamente lo contrario de lo que debe hacer un diagnóstico.
+
+Candados en `tests/unit/franjas.test.ts`: el despertar tardío atiende el turno atrasado, no se
+adelanta ninguno, de madrugada no se publica, y con el día al día no se escribe de más. Comprobados
+en rojo.

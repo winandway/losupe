@@ -241,3 +241,34 @@ export const NOMBRE_SUBGENERO: Record<"curiosidades" | "ranking", { es: string; 
   curiosidades: { es: "Curiosidades", en: "Trivia" },
   ranking: { es: "Rankings y récords", en: "Rankings & records" },
 };
+
+/** A partir de esta hora local ya no se publica nada: la madrugada es sagrada. */
+export const HORA_CIERRE = 22;
+
+/**
+ * EL TURNO QUE TOCA AHORA, con relojes que llegan tarde.
+ *
+ * Medido el 1 de octubre de 2026, y es el dato que lo cambia todo: **ningún reloj dispara a su
+ * hora**. El de la plataforma llega a sus horas viejas y no tomó el horario nuevo; el de GitHub
+ * dispara cuatro o cinco veces al día en vez de cada hora; y las corridas que arranca una visita al
+ * sitio se mueren antes de terminar, porque el trabajo de fondo de una visita dura segundos y
+ * escribir una nota lleva minutos. Con una ventana por turno, un diario así se queda medio vacío:
+ * ese día salió UNA nota de diez.
+ *
+ * Entonces la escaleta deja de ser un horario rígido y pasa a ser una LISTA DE PENDIENTES del día:
+ * cuando llega un despertar, se atiende el turno más antiguo que ya tenga su hora y todavía no se
+ * haya publicado. Si el reloj llega a las cuatro de la tarde y faltan tres notas, se escribe la más
+ * atrasada; el siguiente despertar escribirá la siguiente.
+ *
+ * Nunca se adelanta un turno (no se publica a las 8 lo de las 9) y nunca se publica de madrugada.
+ */
+export function franjaPendiente(
+  now: Date,
+  notasHoy: number,
+  franjas: readonly Franja[] = FRANJAS,
+): Franja | null {
+  const { hh } = partesEnZona(now);
+  if (hh >= HORA_CIERRE) return null;
+  const cumplidas = franjas.filter((f) => f.hour <= hh);
+  return cumplidas[Math.max(0, notasHoy)] ?? null;
+}

@@ -17,7 +17,7 @@
  */
 
 import { SQL_NOW } from "../sql-time";
-import { franjaActiva, inicioDeFranja, marcaDeFranja, type Franja } from "./franjas";
+import { franjaPendiente, marcaDeFranja, rangoDelDiaLocal, type Franja } from "./franjas";
 
 export const TICK_KEY = "robot_last_tick";
 export const TICK_TOKEN_KEY = "robot_tick_token";
@@ -34,6 +34,12 @@ export const TICK_TOKEN_KEY = "robot_tick_token";
  * intentos no pueden producir dos notas.
  */
 export const MAX_INTENTOS_POR_FRANJA = 8;
+
+/**
+ * Cuánto tiene que pasar entre dos notas. Con los relojes llegando tarde y a destiempo, dos
+ * despertares seguidos podrían escribir dos notas pegadas; esto las separa sin perder ninguna.
+ */
+export const MINUTOS_ENTRE_NOTAS = 20;
 
 export type TickDecision =
   | { run: false; reason: "paused" | "fuera_de_horario" | "turno_hecho" | "no_db" | "error" }
@@ -57,8 +63,34 @@ export async function claimTick(
       .first<{ value: string }>();
     if (!paused || paused.value !== "0") return { run: false, reason: "paused" };
 
-    const franja = franjaActiva(now);
+    // Cuántas notas lleva el robot hoy: es lo que dice qué turno toca (ver `franjaPendiente`).
+    const { desde, hasta } = rangoDelDiaLocal(now);
+    const hoy = await db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM articles
+          WHERE status = 'published' AND origin IN ('robot', 'sponsored')
+            AND published_at >= ?1 AND published_at < ?2`,
+      )
+      .bind(desde, hasta)
+      .first<{ n: number }>()
+      .catch(() => null);
+    const notasHoy = Number(hoy?.n ?? 0);
+    const franja = franjaPendiente(now, notasHoy);
     if (!franja) return { run: false, reason: "fuera_de_horario" };
+
+    // ¿ACABA DE SALIR UNA NOTA? Entonces este despertar no escribe otra encima. (Una nota
+    // publicada no miente; el estado de una corrida sí: una corrida que tarda más que el guardia
+    // se marca «error» aunque haya publicado, y antes eso hacía pagar la misma nota cuatro veces.)
+    const reciente = await db
+      .prepare(
+        `SELECT COUNT(*) AS n FROM articles
+          WHERE status = 'published' AND origin = 'robot' AND published_at >= ?1`,
+      )
+      .bind(new Date(now.getTime() - MINUTOS_ENTRE_NOTAS * 60_000).toISOString())
+      .first<{ n: number }>()
+      .catch(() => null);
+    if (Number(reciente?.n ?? 0) > 0) return { run: false, reason: "turno_hecho" };
+
     const base = marcaDeFranja(now, franja);
 
     // Primera vez: si la marca no existe, se crea vacía para que el turno pueda reclamarse.
@@ -87,15 +119,6 @@ export async function claimTick(
       // que el guardia de corridas colgadas se marca «error» aunque haya publicado, y entonces el
       // turno se reintentaba cuatro veces más. Cada reintento es una llamada de pago a la IA por
       // una nota que ya estaba en la portada. **Una nota publicada no miente; un estado sí.**
-      const yaSalio = await db
-        .prepare(
-          `SELECT COUNT(*) AS n FROM articles
-            WHERE status = 'published' AND origin = 'robot' AND published_at >= ?1`,
-        )
-        .bind(inicioDeFranja(now, franja))
-        .first<{ n: number }>()
-        .catch(() => null);
-      if (Number(yaSalio?.n ?? 0) > 0) return { run: false, reason: "turno_hecho" };
       const ultima = await db
         .prepare(`SELECT status FROM runs ORDER BY started_at DESC LIMIT 1`)
         .first<{ status: string }>();

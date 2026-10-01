@@ -185,7 +185,9 @@ test("panel: se puede escribir una nota a mano y los avisos por correo se config
       "Esto es una prueba con texto suficiente para pasar la validación mínima del formulario.",
     );
   await page.getByRole("button", { name: "Crear la nota" }).click();
-  await expect(page.getByRole("alert")).toContainText(/GEMINI_API_KEY/);
+  // `.first()`: Next pone su propio elemento con rol «alert» (el que anuncia los cambios de página)
+  // y el selector a secas casa con los dos.
+  await expect(page.getByRole("alert").first()).toContainText(/GEMINI_API_KEY/);
 
   // Los correos de aviso se guardan y no se muestran en el sitio público
   await page.goto("/panel");

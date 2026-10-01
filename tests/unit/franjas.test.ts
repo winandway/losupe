@@ -269,3 +269,46 @@ describe("el reintento no vuelve a pagar por una nota que ya salió (28 ago 2026
     );
   });
 });
+
+/**
+ * LOS RELOJES LLEGAN TARDE (medido el 1 de octubre de 2026). El de la plataforma dispara a sus
+ * horas viejas, el de GitHub cuatro o cinco veces al día en vez de cada hora, y las corridas que
+ * arranca una visita al sitio se mueren antes de terminar. Con una ventana rígida por turno, ese
+ * día salió UNA nota de diez. La escaleta pasa a ser una lista de pendientes.
+ */
+describe("la escaleta se adapta a relojes que llegan tarde", () => {
+  it("un despertar tardío atiende el turno más atrasado del día, no el de esa hora", async () => {
+    const { franjaPendiente, FRANJAS } = await import("@/lib/robot/franjas");
+    // 4 de la tarde del Este, con UNA nota publicada en todo el día.
+    const tarde = new Date("2026-10-01T20:30:00Z");
+    const toca = franjaPendiente(tarde, 1);
+    // El segundo turno del día (9:00, artistas), que se quedó sin escribir.
+    expect(toca?.key).toBe("manana-2");
+    expect(toca?.seccion).toBe("artistas");
+    // Y con cero notas, el primero de todos.
+    expect(franjaPendiente(tarde, 0)?.key).toBe(FRANJAS[0]!.key);
+  });
+
+  it("nunca se adelanta un turno que todavía no tiene hora", async () => {
+    const { franjaPendiente } = await import("@/lib/robot/franjas");
+    // 8 de la mañana con una nota ya publicada: el turno de las 9 aún no toca.
+    expect(franjaPendiente(new Date("2026-10-01T12:00:00Z"), 1)).toBeNull();
+  });
+
+  it("y de madrugada no se publica, por muchas notas que falten", async () => {
+    const { franjaPendiente } = await import("@/lib/robot/franjas");
+    // 11 de la noche y 2 de la mañana del Este, con el día entero sin publicar.
+    expect(franjaPendiente(new Date("2026-10-02T03:00:00Z"), 0)).toBeNull();
+    expect(franjaPendiente(new Date("2026-10-02T06:00:00Z"), 0)).toBeNull();
+  });
+
+  it("con el día al día, no se escribe de más", async () => {
+    const { franjaPendiente, FRANJAS } = await import("@/lib/robot/franjas");
+    expect(franjaPendiente(new Date("2026-10-02T01:30:00Z"), FRANJAS.length)).toBeNull();
+  });
+
+  it("dos despertares seguidos no publican dos notas pegadas", async () => {
+    const { MINUTOS_ENTRE_NOTAS } = await import("@/lib/robot/heartbeat");
+    expect(MINUTOS_ENTRE_NOTAS).toBeGreaterThanOrEqual(15);
+  });
+});
