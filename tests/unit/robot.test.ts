@@ -109,9 +109,14 @@ describe("¿quién dispara las corridas? (medido el 29 ago 2026)", () => {
     const db = new FakeD1((sql) => {
       if (sql.includes("FROM runs\n") || sql.includes("started_at, trigger"))
         return [
-          { started_at: "2026-08-29T01:49:00Z", trigger: "manual", status: "error" },
-          { started_at: "2026-08-28T21:00:00Z", trigger: "cron", status: "ok" },
-          { started_at: "2026-08-28T20:27:00Z", trigger: "manual", status: "ok" },
+          {
+            started_at: "2026-08-29T01:49:00Z",
+            trigger: "manual",
+            status: "error",
+            error: "sin candidatos frescos",
+          },
+          { started_at: "2026-08-28T21:00:00Z", trigger: "cron", status: "ok", error: null },
+          { started_at: "2026-08-28T20:27:00Z", trigger: "manual", status: "ok", error: null },
         ];
       return [{ n: 5 }];
     });
@@ -120,6 +125,9 @@ describe("¿quién dispara las corridas? (medido el 29 ago 2026)", () => {
     // costó dos tardes enteras.
     expect(r.relojes).toMatchObject({ cron: 1, manual: 2 });
     expect(r.relojes!.ultimas[0]).toMatchObject({ trigger: "manual", status: "error" });
+    // Y DICE POR QUÉ falló. Sin el motivo, un día sin publicar se convierte en una tarde de
+    // adivinanzas (1 oct 2026).
+    expect(r.relojes!.fallos[0]).toMatchObject({ error: "sin candidatos frescos" });
   });
 
   it("sin base no inventa números: dice que no sabe", async () => {

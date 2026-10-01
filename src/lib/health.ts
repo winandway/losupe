@@ -18,6 +18,12 @@ export type HealthReport = {
     cron: number;
     manual: number;
     ultimas: { t: string; trigger: string; status: string }[];
+    /**
+     * EL MOTIVO de las últimas corridas que fallaron. Sin esto solo se veía «error» y había que
+     * adivinar: el 1 de octubre de 2026 el diario pasó un día entero sin publicar y el porqué estaba
+     * escrito en la base, pero no se podía leer desde fuera.
+     */
+    fallos: { t: string; error: string }[];
   } | null;
   db: {
     binding: boolean;
@@ -64,10 +70,10 @@ export async function buildHealthReport(
       db.prepare(`SELECT COUNT(*) AS n FROM runs`).first<{ n: number }>(),
       db
         .prepare(
-          `SELECT started_at, trigger, status FROM runs
+          `SELECT started_at, trigger, status, error FROM runs
             WHERE started_at > datetime('now', '-2 days') ORDER BY started_at DESC LIMIT 40`,
         )
-        .all<{ started_at: string; trigger: string; status: string }>()
+        .all<{ started_at: string; trigger: string; status: string; error: string | null }>()
         .catch(() => ({ results: [] })),
     ]);
     const filas = relojes.results ?? [];
@@ -80,6 +86,10 @@ export async function buildHealthReport(
         ultimas: filas
           .slice(0, 12)
           .map((r) => ({ t: r.started_at, trigger: r.trigger, status: r.status })),
+        fallos: filas
+          .filter((r) => r.status === "error" && r.error)
+          .slice(0, 5)
+          .map((r) => ({ t: r.started_at, error: String(r.error).slice(0, 300) })),
       },
       db: {
         binding: true,
