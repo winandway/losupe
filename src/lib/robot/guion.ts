@@ -271,6 +271,14 @@ export function limpiarTituloVideo(texto: string): string {
 
 export type ResultadoGuion = { guion: Guion; costUsd: number } | null;
 
+/** El guion no pasó la revisión. Lleva los motivos para que se vean en el resumen de la corrida. */
+export class GuionRechazado extends Error {
+  constructor(public motivos: string[]) {
+    super(`guion rechazado: ${motivos.join("; ") || "sin respuesta del modelo"}`);
+    this.name = "GuionRechazado";
+  }
+}
+
 /**
  * Pide el guion al modelo y lo valida. Devuelve `null` si no hay llave, si falla, o si el guion no
  * sirve (demasiado corto o largo): un guion malo es peor que ninguno.
@@ -311,8 +319,12 @@ ${cuerpo}`,
       return problemasDelGuion(listo, medida, lang).length === 0 ? listo : null;
     };
     const guion_1m_es = bueno(r.data.guion_1m_es, "1m", "es");
-    // Sin el de un minuto en español no hay bloque: es el principal.
-    if (!guion_1m_es) return null;
+    // Sin el de un minuto en español no hay bloque: es el principal. Y se dice POR QUÉ se rechazó,
+    // que si no, el rescate solo sabe decir «no válido» y hay que adivinar (1 oct 2026).
+    if (!guion_1m_es) {
+      const motivos = problemasDelGuion(preparar(r.data.guion_1m_es ?? "", "1m", "es"), "1m", "es");
+      throw new GuionRechazado(motivos);
+    }
     const guiones = {
       guion_1m_es,
       guion_1m_en: bueno(r.data.guion_1m_en, "1m", "en"),
@@ -332,7 +344,10 @@ ${cuerpo}`,
       },
       costUsd: r.costUsd,
     };
-  } catch {
+  } catch (e) {
+    // El rechazo SÍ sube: es información, no un fallo de red. Lo demás (sin red, modelo caído) se
+    // traga y la nota se queda sin guion hasta la próxima corrida.
+    if (e instanceof GuionRechazado) throw e;
     return null;
   }
 }
@@ -400,7 +415,7 @@ export async function rescatarGuiones(
           fetchImpl: opts.fetchImpl,
         });
         if (!r) {
-          out.errores.push(`${nota.id}: guion no válido o sin respuesta`);
+          out.errores.push(`${nota.id}: sin respuesta del modelo`);
           continue;
         }
         await recordSpend(db, {

@@ -232,8 +232,8 @@ describe("generarGuion", () => {
     expect(r!.costUsd).toBeLessThan(0.01);
   });
 
-  it("UN GUION DEMASIADO CORTO NO SE PUBLICA: mejor ninguno que uno malo", async () => {
-    const r = await generarGuion({
+  it("UN GUION DEMASIADO CORTO NO SE PUBLICA, y se dice por qué", async () => {
+    const intento = generarGuion({
       apiKey: "k",
       titulo: "x",
       cuerpoHtml: CUERPO,
@@ -248,7 +248,8 @@ describe("generarGuion", () => {
         sabias_que_en: [],
       }) as unknown as typeof fetch,
     });
-    expect(r).toBeNull();
+    // El motivo sube: antes el rescate solo sabía decir «no válido» y había que adivinar.
+    await expect(intento).rejects.toThrow(/demasiado corto/);
   });
 
   it("sin llave, o con una nota sin cuerpo, no llama a nadie", async () => {
