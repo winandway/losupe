@@ -1819,3 +1819,21 @@ las notas: duraba 2 minutos 45, decía «según Wikipedia» tres veces, los pár
 - La ventana de una hora por turno (con diez turnos, una ventana larga se come el turno anterior).
 - El cierre exacto del guion y el rango de 140 palabras del de 1 minuto.
 - Antes de añadir un feed, probarlo con `curl`: tiene que responder 200 y traer items de hoy.
+
+### Lo que apareció al mirar en vivo: dos fallos del proveedor, no del diario
+
+Con el motivo ya visible en `/__health` (ver el candado 55), el 1 de octubre de 2026 aparecieron
+los dos de verdad:
+
+1. **«Gemini respondió 503: high demand».** Un mal minuto del proveedor tumbaba la corrida entera y
+   esa franja se quedaba sin nota. Ahora `generateJson` **reintenta** los fallos pasajeros (429,
+   500, 502, 503, 504) hasta dos veces, con una espera corta.
+2. **«User location is not supported for the API use» (400).** El robot corre dentro del worker, y
+   el worker corre en el centro de datos de Cloudflare más cercano a quien visitó el sitio. Si esa
+   visita llega desde un país donde Google no da servicio, Gemini rechaza la petición **aunque todo
+   lo nuestro esté bien**. Reintentar ahí no sirve: el centro de datos es el mismo. Ahora se lanza
+   `GeminiUbicacionError`, la corrida termina **saltada** (no «error»), y **el tema vuelve a la cola
+   sin gastar intento**, para que la siguiente visita —desde otro sitio— lo escriba.
+
+Candados en `tests/unit/noticias-del-dia.test.ts`: el 503 se reintenta, el 400 de ubicación se
+distingue y **no** se reintenta. Los dos comprobados en rojo.

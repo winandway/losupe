@@ -1,4 +1,5 @@
 import { pingIndexNow } from "@/lib/indexnow";
+import { GeminiUbicacionError } from "./gemini";
 import type { SectionId } from "@/lib/sections";
 import { slugify } from "@/lib/slug";
 import { absoluteUrl, articlePath } from "@/lib/urls";
@@ -691,6 +692,9 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   // 5) Notas, alternando
   for (let i = 0; i < maxNotes; i++) {
     const itemId = crypto.randomUUID();
+    // Fuera del `try` para poder devolver el tema a la cola si la corrida se cae por algo que no es
+    // culpa del tema (ver el error de ubicación de Gemini, más abajo).
+    let candidatoUsado: Awaited<ReturnType<typeof pickCandidate>> = null;
     const archivo = await archivoDelDiario(db);
     // El turno de la escaleta manda: si este es el de Tecnología, se busca una noticia de
     // tecnología; si es el de Artistas, de artistas. Antes la sección la decidía el cupo libre y
@@ -910,7 +914,6 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
         let docs: SourceDoc[];
         let prompt: string;
         let noteKind: "news" | "evergreen";
-        let candidatoUsado: typeof nextCandidate = null;
 
         if (encargo.genero === "actualidad") {
           if (!nextCandidate) throw new Error("No hay actualidad ni pieza propia que escribir");
@@ -1166,6 +1169,20 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
       if (e instanceof BudgetExceededError) {
         notes.push(result);
         return done("done", "budget", "daily_budget_reached");
+      }
+      // Gemini no atiende desde el centro de datos en el que cayó esta corrida (depende de dónde
+      // esté quien visitó el sitio). No es un fallo del diario: el tema vuelve a la cola sin gastar
+      // intento y la corrida termina SALTADA, para que la siguiente visita lo escriba.
+      if (e instanceof GeminiUbicacionError) {
+        if (candidatoUsado) {
+          await db
+            .prepare(`UPDATE candidates SET attempts = MAX(0, attempts - 1) WHERE id = ?1`)
+            .bind(candidatoUsado.id)
+            .run()
+            .catch(() => undefined);
+        }
+        notes.push(result);
+        return done("skipped", "write", "gemini_sin_servicio_en_esta_region", message);
       }
       // Si Gemini rechazó la llave (401/403), no tiene sentido seguir.
       if (/respondió 40[13]/.test(message) || /GEMINI_API_KEY/.test(message)) {

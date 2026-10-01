@@ -119,3 +119,61 @@ describe("la escaleta del día cubre a los dos canales", () => {
     }
   });
 });
+
+/**
+ * Los dos fallos que vimos en producción el 1 de octubre de 2026, con el diario entero sin publicar
+ * y el motivo por fin a la vista en `/__health`.
+ */
+describe("un mal minuto del proveedor no puede dejar al diario sin nota", () => {
+  it("si Gemini dice «está muy ocupado» (503), se vuelve a intentar", async () => {
+    const { generateJson, REINTENTOS_GEMINI } = await import("@/lib/robot/gemini");
+    let llamadas = 0;
+    const fetchImpl = (async () => {
+      llamadas += 1;
+      if (llamadas === 1) return new Response("high demand", { status: 503 });
+      return Response.json({
+        candidates: [{ content: { parts: [{ text: '{"ok":true}' }] } }],
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 10 },
+      });
+    }) as unknown as typeof fetch;
+    const r = await generateJson<{ ok: boolean }>({
+      apiKey: "k",
+      model: "gemini-2.5-flash",
+      system: "s",
+      prompt: "p",
+      fetchImpl,
+    });
+    expect(r.data.ok).toBe(true);
+    expect(llamadas).toBe(2);
+    expect(REINTENTOS_GEMINI).toBeGreaterThanOrEqual(1);
+  });
+
+  it("«tu país no está soportado» se marca aparte: no es un fallo del diario", async () => {
+    const { generateJson, GeminiUbicacionError } = await import("@/lib/robot/gemini");
+    const fetchImpl = (async () =>
+      new Response(JSON.stringify({ error: { message: "User location is not supported" } }), {
+        status: 400,
+      })) as unknown as typeof fetch;
+    await expect(
+      generateJson({ apiKey: "k", model: "gemini-2.5-flash", system: "s", prompt: "p", fetchImpl }),
+    ).rejects.toBeInstanceOf(GeminiUbicacionError);
+  });
+
+  it("y ese 400 NO se reintenta en el momento: el centro de datos sería el mismo", async () => {
+    const { generateJson } = await import("@/lib/robot/gemini");
+    let llamadas = 0;
+    const fetchImpl = (async () => {
+      llamadas += 1;
+      return new Response(
+        JSON.stringify({ error: { message: "User location is not supported" } }),
+        {
+          status: 400,
+        },
+      );
+    }) as unknown as typeof fetch;
+    await expect(
+      generateJson({ apiKey: "k", model: "gemini-2.5-flash", system: "s", prompt: "p", fetchImpl }),
+    ).rejects.toThrow(/centro de datos/);
+    expect(llamadas).toBe(1);
+  });
+});

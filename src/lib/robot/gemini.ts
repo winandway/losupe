@@ -25,6 +25,30 @@ export class GeminiError extends Error {
   }
 }
 
+/**
+ * EL FALLO QUE NO ES NUESTRO: «User location is not supported for the API use».
+ *
+ * El robot corre dentro del worker, y el worker corre en el centro de datos de Cloudflare más
+ * cercano a quien entró al sitio. Si esa visita llega desde un país donde Google no da servicio,
+ * Gemini responde 400 y la corrida muere — aunque la llave esté bien y el diario esté perfecto.
+ * Medido en producción el 1 de octubre de 2026.
+ *
+ * No se arregla reintentando en el momento (el centro de datos es el mismo): se marca aparte para
+ * que la corrida termine como SALTADA y no como error, y para que el tema vuelva a la cola intacto.
+ * La siguiente visita, desde otro sitio, lo escribe.
+ */
+export class GeminiUbicacionError extends GeminiError {
+  constructor(detalle: string) {
+    super(`Gemini no atiende desde este centro de datos: ${detalle}`, 400);
+    this.name = "GeminiUbicacionError";
+  }
+}
+
+/** Fallos pasajeros del proveedor: aquí sí vale la pena volver a intentarlo. */
+const REINTENTABLES = new Set([429, 500, 502, 503, 504]);
+/** Dos reintentos como mucho, con una espera corta. Más sería hacer esperar a la corrida entera. */
+export const REINTENTOS_GEMINI = 2;
+
 export type GeminiOptions = {
   apiKey: string;
   model: TextModel;
@@ -97,23 +121,34 @@ export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonRe
   assertTextModelAllowed(opts.model);
   if (!opts.apiKey) throw new GeminiError("Falta GEMINI_API_KEY");
   const fetchImpl = opts.fetchImpl ?? fetch;
-  const res = await fetchImpl(`${GEMINI_ENDPOINT}/${opts.model}:generateContent`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
-    body: JSON.stringify({
-      systemInstruction: { parts: [{ text: opts.system }] },
-      contents: [{ role: "user", parts: [{ text: opts.prompt }] }],
-      generationConfig: {
-        responseMimeType: "application/json",
-        ...(opts.responseSchema ? { responseSchema: opts.responseSchema } : {}),
-        temperature: opts.temperature ?? 0.7,
-        maxOutputTokens: opts.maxOutputTokens ?? 8192,
-      },
-    }),
-    signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),
-  });
+  const pedir = () =>
+    fetchImpl(`${GEMINI_ENDPOINT}/${opts.model}:generateContent`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "x-goog-api-key": opts.apiKey },
+      body: JSON.stringify({
+        systemInstruction: { parts: [{ text: opts.system }] },
+        contents: [{ role: "user", parts: [{ text: opts.prompt }] }],
+        generationConfig: {
+          responseMimeType: "application/json",
+          ...(opts.responseSchema ? { responseSchema: opts.responseSchema } : {}),
+          temperature: opts.temperature ?? 0.7,
+          maxOutputTokens: opts.maxOutputTokens ?? 8192,
+        },
+      }),
+      signal: AbortSignal.timeout(opts.timeoutMs ?? 90_000),
+    });
+  let res = await pedir();
+  // «Está muy ocupado» no es un fallo del diario: es un mal minuto del proveedor. Antes tumbaba la
+  // corrida entera y la nota de esa franja no salía (1 oct 2026).
+  for (let intento = 0; intento < REINTENTOS_GEMINI && REINTENTABLES.has(res.status); intento++) {
+    await new Promise((listo) => setTimeout(listo, 1500 * (intento + 1)));
+    res = await pedir();
+  }
   if (!res.ok) {
     const detail = (await res.text().catch(() => "")).slice(0, 300);
+    if (res.status === 400 && /location is not supported/i.test(detail)) {
+      throw new GeminiUbicacionError(detail);
+    }
     throw new GeminiError(`Gemini respondió ${res.status}: ${detail}`, res.status);
   }
   const body = (await res.json()) as {
