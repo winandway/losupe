@@ -1864,3 +1864,28 @@ los intentos del turno, que es exactamente lo contrario de lo que debe hacer un 
 Candados en `tests/unit/franjas.test.ts`: el despertar tardío atiende el turno atrasado, no se
 adelanta ninguno, de madrugada no se publica, y con el día al día no se escribe de más. Comprobados
 en rojo.
+
+### Cómo se publica AHORA MISMO (y por qué hace falta saberlo)
+
+Richard lo pidió el 1 de octubre de 2026: _«necesito que se publiquen ahora mismo»_. Con los relojes
+llegando tarde, la forma de forzar una publicación sin esperar es:
+
+```bash
+cd /Users/windocellc/losupe.com && gh workflow run robot.yml
+```
+
+Eso dispara el reloj de GitHub (`workflow_dispatch`), que llama a `/__scheduled?wait=1` con el
+secreto guardado en el repositorio y **espera a que la nota termine de escribirse**. Cada disparo
+escribe UNA nota (la del turno pendiente más atrasado) y, al final, regenera hasta seis guiones.
+También se puede desde el panel del diario con «Ejecutar ahora», que pide la contraseña de Richard.
+
+Con cinco disparos esa tarde salieron cinco notas, dos de Tecnología y una de Artistas entre ellas.
+El `curl` del reloj espera **600 s**: con 300 cortaba la corrida a media faena.
+
+### Lo que quedó pendiente de vigilar
+
+- **El rescate de guiones falla a ratos con «sin respuesta del modelo»** (Gemini 503 o la ubicación).
+  Se reintenta en la corrida siguiente y acaba saliendo, pero hay que medir cuántos quedan sin guion
+  al final del día.
+- El reloj de la plataforma no tomó el horario nuevo de `yadominios.json`. Mientras siga así, el
+  reloj bueno es el de GitHub más los disparos a mano.
