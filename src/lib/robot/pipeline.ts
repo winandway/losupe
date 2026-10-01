@@ -502,6 +502,35 @@ function leerFuentes(json: string | null): string[] {
   }
 }
 
+/** Temas de pieza propia que se quedaron sin material. La mesa los salta. */
+const IDEAS_SIN_MATERIAL = "ideas_sin_material";
+
+async function ideasSinMaterial(db: D1Database): Promise<string[]> {
+  const row = await db
+    .prepare(`SELECT value FROM settings WHERE key = ?1`)
+    .bind(IDEAS_SIN_MATERIAL)
+    .first<{ value: string }>()
+    .catch(() => null);
+  try {
+    const v = JSON.parse(row?.value ?? "[]") as unknown;
+    return Array.isArray(v) ? v.filter((t): t is string => typeof t === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+async function anotarIdeaSinMaterial(db: D1Database, tema: string): Promise<void> {
+  const previas = await ideasSinMaterial(db);
+  if (previas.includes(tema)) return;
+  // Se guardan las últimas 20: ni la lista crece sin fin ni se olvida lo de ayer.
+  const lista = [tema, ...previas].slice(0, 20);
+  await db
+    .prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, ${SQL_NOW})`)
+    .bind(IDEAS_SIN_MATERIAL, JSON.stringify(lista))
+    .run()
+    .catch(() => undefined);
+}
+
 /** Titulares publicados en los últimos meses: la mesa los usa para no repetir tema. */
 async function titularesRecientes(db: D1Database, limite = 120): Promise<string[]> {
   try {
@@ -906,6 +935,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           hayActualidad: Boolean(nextCandidate),
           titularesRecientes: await titularesRecientes(db),
           seccionesConCupo: await seccionesConCupo(db, now),
+          ideasSinMaterial: await ideasSinMaterial(db),
           ahora: now,
           fetchImpl,
         }).catch(() => ({ genero: "actualidad" as const }));
@@ -1032,6 +1062,10 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
               : (await buscarArticulos(propio.buscar, 3, fetchImpl)).map((a) => a.url);
           docs = await leerPaginas(encontrados, fetchImpl);
           if (docs.length === 0) {
+            // Se apunta para que la mesa no vuelva a proponerlo: un tema sin fuentes bloqueaba el
+            // turno en cada corrida, y con la escaleta como lista de pendientes eso frenaba el día
+            // entero (1 oct 2026).
+            await anotarIdeaSinMaterial(db, tema);
             throw new Error(`No se encontró material para documentar «${tema}»`);
           }
           noteKind = "evergreen";

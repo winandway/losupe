@@ -110,6 +110,8 @@ export async function encargoDelTurno(
     hayActualidad: boolean;
     titularesRecientes: readonly string[];
     seccionesConCupo: readonly SectionId[];
+    /** Temas de pieza propia que ya se intentaron y no tienen con qué documentarse. */
+    ideasSinMaterial?: readonly string[];
     /** La franja de este turno. Si no se pasa, se deduce del reloj. */
     franja?: Franja | null;
     ahora?: Date;
@@ -162,7 +164,9 @@ export async function encargoDelTurno(
       // La franja dice qué clase de pieza toca: curiosidades al mediodía, rankings por la noche.
       const idea = siguienteIdea(
         seccion,
-        opts.titularesRecientes,
+        // Las que se quedaron sin material cuentan como «ya usadas»: si no, el mismo tema sin
+        // fuentes bloquea el turno corrida tras corrida (1 oct 2026, «billeteras digitales»).
+        [...opts.titularesRecientes, ...(opts.ideasSinMaterial ?? [])],
         opts.notasHoy,
         franja?.subgenero,
       );

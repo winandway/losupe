@@ -28,6 +28,8 @@ export type RunResult = {
   /** Guiones para creadores escritos en esta corrida, y los que fallaron. */
   guionesNuevos?: number;
   guionesFallidos?: number;
+  /** El primer motivo del rechazo, para no tener que adivinar por qué falta un guion. */
+  guionPorQue?: string | null;
 };
 
 export { isRobotPaused } from "./pipeline";
@@ -89,7 +91,11 @@ export async function runScheduled(
         }
       : {}),
     ...(guiones.encontradas > 0
-      ? { guionesNuevos: guiones.hechas, guionesFallidos: guiones.encontradas - guiones.hechas }
+      ? {
+          guionesNuevos: guiones.hechas,
+          guionesFallidos: guiones.encontradas - guiones.hechas,
+          guionPorQue: guiones.errores[0]?.slice(0, 160) ?? null,
+        }
       : {}),
     ...(pesadas.pesadas > 0
       ? { fotosPesadas: pesadas.pesadas, fotosRehechas: pesadas.rehechas }
