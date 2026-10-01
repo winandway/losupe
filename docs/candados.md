@@ -1735,3 +1735,87 @@ seguir marcando en verde la tarjeta MCP y el `auth.md`.
 **DNS-AID**: dos registros `SVCB` bajo `_agents.losupe.com` y DNSSEC. Los crea quien administra la
 zona (hoy en Cloudflare, con los nameservers de la plataforma); el panel de YaDominios solo crea A,
 CNAME, MX y TXT. Valores exactos en [`PENDIENTES.md`](../PENDIENTES.md).
+
+## 55. Tres noticias nuevas al día en Tecnología y en Artistas, y el guion en dos medidas
+
+Richard saca de losupe el texto de los videos de sus dos canales: **Full Código** (tecnología e
+inteligencia artificial) y **Caprichoso TV** (artistas y música latina). El 1 de octubre de 2026 la
+portada de Tecnología mostraba notas del 24, del 9 y del 8 de septiembre, dos de ellas efemérides, y
+el guion de una nota duraba 2 minutos 45 cuando para un Short hace falta uno.
+
+### Parte A — por qué esas dos secciones estaban viejas
+
+Cuatro causas, todas a la vez:
+
+1. **Los feeds estaban muertos o secos.** Comprobado uno por uno ese día: Cointelegraph respondía
+   **410**, CoinDesk y Entrepreneur redirigían, y los dos feeds de Bing traían **una sola noticia**
+   — el de artistas, del **14 de noviembre de 2025**. Un feed roto no da error: simplemente deja de
+   traer temas, y la sección se queda vieja sin que salte nada.
+2. **La sección la elegía el cupo libre.** Economía tenía el doble de cupo, así que casi todo salía
+   de ahí.
+3. **Las efemérides gastaban el cupo de noticias.** Dos piezas propias al día caían en esas mismas
+   secciones y las dejaban «llenas».
+4. **Solo había cuatro turnos al día**, y dos eran de piezas propias: como mucho dos noticias
+   diarias para cinco secciones.
+
+**Lo que se hizo:**
+
+- **Fuentes nuevas y vivas** (`schema.sql`): TechCrunch, Ars Technica, Xataka, los anuncios de
+  OpenAI y Google Noticias de IA para Tecnología; Billboard Latin, Rolling Stone Latin y Google
+  Noticias de música latina para Artistas. Los dos feeds de Bing pasaron a Google Noticias con
+  `when:2d` (solo lo de las últimas 48 horas) y se arreglaron las direcciones de CoinDesk y
+  Cointelegraph. **Los feeds se prueban con `curl` antes de añadirlos**: 200 y con items de hoy.
+- **Escaleta de diez turnos** (`franjas.ts`), con la sección puesta de antemano en seis: tecnología
+  a las 7, 14 y 19; artistas a las 9, 16 y 20; dos turnos libres (10 y 17) para Economía, Ventas y
+  Cripto; y las dos piezas propias donde estaban (12 y 21). La ventana de cada turno baja de 3 horas
+  a 1: con turnos cada hora, una ventana larga hacía que el turno de más tarde tapara al anterior.
+- **El turno manda la sección** (`pickCandidate(..., { seccion })`), y dentro de ella se exige que
+  la noticia tenga **menos de 48 horas**. Si no hay nada fresco en ninguna sección, se admite lo que
+  haya antes que dejar el turno vacío.
+- **El cupo de noticias se cuenta solo con noticias** (`robotNotesToday(db, now, { soloNoticias })`):
+  una efeméride ya no se come el cupo del canal.
+- Cupo diario: tecnología y artistas a **3**; el tope del día entero, a **10**.
+- El reloj de la plataforma pasa a **cada hora** dentro del horario de publicación
+  (`yadominios.json`), para que ningún turno se pierda por falta de visitas.
+
+### Parte B — el guion, en dos medidas y para el oído
+
+El guion de la nota de República Dominicana traía los cuatro defectos que se arreglan para TODAS
+las notas: duraba 2 minutos 45, decía «según Wikipedia» tres veces, los párrafos salían pegados
+(«por segundo.Este avance») y las cifras eran impronunciables («cuarenta y cinco punto veinticinco»).
+
+- **Dos versiones por nota**: **1 minuto** (115–140 palabras, la principal) y **2 minutos**
+  (225–270). Cada una con su botón de copiar y su duración a la vista. Y encima, un **título para el
+  video** de 60 letras como mucho, con su propio botón.
+- **Estructura fija**: gancho en 15 palabras o menos, tres hechos como mucho, por qué importa, y el
+  cierre en su línea: «La nota completa está en losupe.com».
+- **Escrito para el oído**: frases de 18 palabras o menos, cifras en números y redondeadas, la
+  fuente original nombrada una sola vez, y **prohibido nombrar a Wikipedia**.
+- `limpiarGuion` arregla lo que se puede (el espacio después del punto, la mención a Wikipedia
+  cuando se puede quitar sin romper la frase, el cierre viejo) y `recortarGuion` quita frases del
+  final —nunca el gancho ni el cierre— cuando se pasa de largo. Lo que queda mal, no se publica:
+  `problemasDelGuion` lo rechaza.
+- Columnas nuevas: `article_i18n.guion_1m`, `guion_2m` y `titulo_video`. `guion` se queda con la
+  versión de 1 minuto para que las notas viejas no se queden en blanco mientras se regeneran.
+- El rescate regenera **primero las notas de Tecnología y Artistas de los últimos 14 días**, seis
+  por corrida.
+
+### Candados
+
+- `tests/unit/noticias-del-dia.test.ts` (8): el turno manda la sección, la frescura de 48 horas con
+  su respaldo, el cupo contado solo con noticias, y los tres turnos de cada canal.
+- `tests/unit/guion.test.ts`: un guion de 1 minuto de más de 140 palabras **no se publica**, la
+  palabra «Wikipedia» lo tumba, sin el cierre no vale, un punto pegado a la palabra se canta, y el
+  recorte respeta gancho y cierre. También la semilla del casillero, que trae sus dos versiones.
+- `tests/unit/para-creadores.test.tsx` (11) y dos e2e: abre en 1 minuto, copia esa, cambia a 2
+  minutos y copia la larga, y el título del video se copia aparte.
+- `tests/unit/franjas.test.ts` y `mesa.test.ts`, actualizados a la escaleta de diez turnos.
+- **Nueve mutaciones comprobadas en rojo el 1 de octubre de 2026.**
+
+### Lo que NO hay que tocar
+
+- Las dos vueltas de `pickCandidate`: primero lo fresco, y solo si no hay nada, lo que haya.
+- Que el cupo de noticias se cuente con `kind = 'news'`.
+- La ventana de una hora por turno (con diez turnos, una ventana larga se come el turno anterior).
+- El cierre exacto del guion y el rango de 140 palabras del de 1 minuto.
+- Antes de añadir un feed, probarlo con `curl`: tiene que responder 200 y traer items de hoy.

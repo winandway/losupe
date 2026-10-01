@@ -300,9 +300,9 @@ CREATE INDEX IF NOT EXISTS idx_social_posts_fecha ON social_posts(created_at DES
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('economia', 1, 2),
   ('ventas', 2, 1),
-  ('tecnologia', 3, 1),
+  ('tecnologia', 3, 3),
   ('cripto', 4, 1),
-  ('artistas', 5, 1);
+  ('artistas', 5, 3);
 
 INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en) VALUES
   ('equipo-losupe', 'Equipo editorial de losupe', 'newsroom',
@@ -357,6 +357,11 @@ ALTER TABLE visitas ADD COLUMN origen TEXT;
 -- escribe el robot DESPUES de publicar la nota, en una llamada aparte: nunca frenan una publicacion.
 ALTER TABLE article_i18n ADD COLUMN guion TEXT;
 ALTER TABLE article_i18n ADD COLUMN sabias_que_json TEXT;
+-- Las dos medidas del guion y el título del video (Richard, 1 oct 2026). `guion` se queda con la
+-- versión de 1 minuto para que las notas viejas sigan mostrando algo mientras se regeneran.
+ALTER TABLE article_i18n ADD COLUMN guion_1m TEXT;
+ALTER TABLE article_i18n ADD COLUMN guion_2m TEXT;
+ALTER TABLE article_i18n ADD COLUMN titulo_video TEXT;
 
 
 
@@ -426,7 +431,35 @@ INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VA
   ('billboard', 'artistas', 'Billboard', 'https://www.billboard.com/feed/', 'rss', 'en', 1),
   ('bing-artistas-es', 'artistas', 'Bing Noticias: artistas y música (ES)', 'https://www.bing.com/news/search?q=artistas+m%C3%BAsica+estrenos&format=rss&setlang=es', 'rss', 'es', 2),
   ('google-trends-us-es', 'artistas', 'Google Trends: lo más buscado hoy en EE. UU. (ES)', 'https://trends.google.com/trending/rss?geo=US&hl=es-419', 'trends', 'es', 3),
-  ('google-trends-us-en', 'artistas', 'Google Trends: top searches today in the U.S. (EN)', 'https://trends.google.com/trending/rss?geo=US&hl=en-US', 'trends', 'en', 3);
+  ('google-trends-us-en', 'artistas', 'Google Trends: top searches today in the U.S. (EN)', 'https://trends.google.com/trending/rss?geo=US&hl=en-US', 'trends', 'en', 3),
+  -- Fuentes de actualidad para los dos canales de video (1 oct 2026). Richard pidió al menos tres
+  -- noticias NUEVAS al día en Tecnología e IA y otras tres en Artistas y tendencias, y el motivo por
+  -- el que no las había era este: los feeds de Bing traían UNA sola noticia (el de artistas, del 14
+  -- de noviembre de 2025), Cointelegraph respondía 410 y CoinDesk y Entrepreneur redirigían.
+  ('techcrunch', 'tecnologia', 'TechCrunch', 'https://techcrunch.com/feed/', 'rss', 'en', 2),
+  ('arstechnica', 'tecnologia', 'Ars Technica', 'https://feeds.arstechnica.com/arstechnica/index', 'rss', 'en', 1),
+  ('xataka', 'tecnologia', 'Xataka', 'https://www.xataka.com/index.xml', 'rss', 'es', 2),
+  ('openai-news', 'tecnologia', 'OpenAI (anuncios)', 'https://openai.com/news/rss.xml', 'rss', 'en', 3),
+  ('gnews-ia-en', 'tecnologia', 'Google News: AI companies (EN)', 'https://news.google.com/rss/search?q=OpenAI+OR+Anthropic+OR+Nvidia+OR+AI+regulation+when:2d&hl=en-US&gl=US&ceid=US:en', 'rss', 'en', 3),
+  ('billboard-latin', 'artistas', 'Billboard Latin', 'https://www.billboard.com/c/latin/feed/', 'rss', 'en', 3),
+  ('rollingstone-latin', 'artistas', 'Rolling Stone Latin', 'https://www.rollingstone.com/music/music-latin/feed/', 'rss', 'en', 1),
+  ('gnews-musica-en', 'artistas', 'Google News: Latin music (EN)', 'https://news.google.com/rss/search?q=latin+music+OR+reggaeton+OR+Bad+Bunny+OR+Shakira+when:2d&hl=en-US&gl=US&ceid=US:en', 'rss', 'en', 2);
+
+-- Feeds que se murieron o se quedaron secos. Se arreglan en su sitio en vez de dejar filas muertas:
+-- un feed roto no da error, simplemente deja de traer noticias, y la sección se queda vieja.
+UPDATE sources SET name = 'Google Noticias: inteligencia artificial (ES)', url = 'https://news.google.com/rss/search?q=inteligencia+artificial+when:2d&hl=es-419&gl=US&ceid=US:es', weight = 3 WHERE id = 'bing-ia-es';
+UPDATE sources SET name = 'Google Noticias: música y artistas (ES)', url = 'https://news.google.com/rss/search?q=m%C3%BAsica+latina+OR+reggaet%C3%B3n+OR+concierto+OR+premios+when:2d&hl=es-419&gl=US&ceid=US:es', weight = 3 WHERE id = 'bing-artistas-es';
+UPDATE sources SET name = 'Cointelegraph', url = 'https://cointelegraph.com/rss', lang = 'en' WHERE id = 'cointelegraph-es';
+UPDATE sources SET url = 'https://www.coindesk.com/arc/outboundfeeds/rss' WHERE id = 'coindesk';
+UPDATE sources SET url = 'https://blog.google/innovation-and-ai/technology/ai/rss/' WHERE id = 'google-ai-blog';
+
+-- El cupo diario de las dos secciones que alimentan los canales de video: tres noticias nuevas cada
+-- una. Las efemérides y las piezas atemporales NO gastan este cupo (solo cuentan las de actualidad).
+UPDATE sections SET notes_per_day = 3 WHERE id IN ('tecnologia', 'artistas');
+
+-- Y el tope del día entero: diez notas (seis de los dos canales, dos libres y las dos piezas
+-- propias). Estaba en cuatro, que es lo que había cuando la escaleta tenía cuatro turnos.
+UPDATE settings SET value = '10' WHERE key = 'notes_per_day' AND CAST(value AS INTEGER) < 10;
 
 -- Primer patrocinador real: YaDominios (la plataforma donde vive losupe). Sirve de ejemplo vivo
 -- del módulo de encargos. Se puede editar o cancelar desde el panel sin tocar este archivo.

@@ -253,17 +253,27 @@ type CandidateRow = {
   score: number;
 };
 
-/** Notas del robot publicadas hoy por sección (para respetar el cupo). */
+/**
+ * Notas del robot publicadas hoy por sección (para respetar el cupo).
+ *
+ * Con `soloNoticias` cuenta SOLO las de actualidad. Hace falta para el cupo de noticias nuevas de
+ * Tecnología e IA y de Artistas: una efeméride o una lista de curiosidades no es una noticia del
+ * día, y si gastara el cupo, el canal se quedaría sin material (Richard, 1 oct 2026).
+ */
 export async function robotNotesToday(
   db: D1Database,
   now = new Date(),
+  opts: { soloNoticias?: boolean } = {},
 ): Promise<Record<string, number>> {
   // «Hoy» es el día del Este de EE. UU., no el día UTC. El día UTC cambia a las 8 de la noche hora
   // de Michigan: contando así, la cuota se abría de noche y las tres notas salían de madrugada.
   const { desde, hasta } = rangoDelDiaLocal(now);
   const { results } = await db
     .prepare(
-      `SELECT section_id, COUNT(*) AS n FROM articles WHERE origin IN ('robot', 'sponsored') AND created_at >= ?1 AND created_at < ?2 GROUP BY section_id`,
+      `SELECT section_id, COUNT(*) AS n FROM articles
+        WHERE origin IN ('robot', 'sponsored') AND created_at >= ?1 AND created_at < ?2
+          ${opts.soloNoticias ? "AND kind = 'news'" : ""}
+        GROUP BY section_id`,
     )
     .bind(desde, hasta)
     .all<{ section_id: string; n: number }>();
@@ -309,6 +319,22 @@ export async function limpiarCandidatosFueraDeTema(db: D1Database): Promise<numb
  */
 export const CANDIDATOS_A_MIRAR = 8;
 
+/**
+ * Cuántas horas puede tener una noticia para seguir siendo noticia. Richard pide notas de las
+ * últimas 24 a 48 horas: pasado eso, ya no sirve para grabar un video de actualidad.
+ */
+export const HORAS_FRESCA = 48;
+
+export type OpcionesCandidato = {
+  /**
+   * La sección que pide el turno de la escaleta. Se busca ahí primero; si esa sección no tiene nada
+   * fresco, se sigue con las demás antes que dejar el turno vacío.
+   */
+  seccion?: SectionId;
+  /** Cuántas horas atrás se admite la noticia. `0` quita el filtro. */
+  horasFresca?: number;
+};
+
 export async function pickCandidate(
   db: D1Database,
   now = new Date(),
@@ -317,16 +343,23 @@ export async function pickCandidate(
    * comprobación que faltaba y que dejó salir dos notas del mismo asunto (29 ago 2026).
    */
   archivo: readonly NotaDelArchivo[] = [],
+  opciones: OpcionesCandidato = {},
 ): Promise<Candidate | null> {
   const [{ results: quotas }, today] = await Promise.all([
     db
       .prepare(`SELECT id, notes_per_day FROM sections WHERE active = 1 ORDER BY sort_order`)
       .all<{ id: string; notes_per_day: number }>(),
-    robotNotesToday(db, now),
+    // El cupo de noticias se mide con NOTICIAS. Las efemérides y las curiosidades no lo gastan.
+    robotNotesToday(db, now, { soloNoticias: true }),
   ]);
+  const horas = opciones.horasFresca ?? HORAS_FRESCA;
+  const desdeFresca = new Date(now.getTime() - horas * 3_600_000).toISOString();
   const order = [...quotas]
     .map((q) => ({ id: q.id, free: Number(q.notes_per_day) - (today[q.id] ?? 0) }))
-    .sort((a, b) => b.free - a.free);
+    // La sección que pide la escaleta va primero; el resto, por cupo libre.
+    .sort((a, b) =>
+      a.id === opciones.seccion ? -1 : b.id === opciones.seccion ? 1 : b.free - a.free,
+    );
 
   /** Un tema que ya contamos y no aporta nada: fuera de la cola para siempre, con su motivo. */
   const descartar = async (id: string, motivo: string) => {
@@ -337,52 +370,64 @@ export async function pickCandidate(
       .catch(() => undefined);
   };
 
-  for (const sec of order) {
-    if (sec.free <= 0) continue;
-    const { results } = await db
-      .prepare(
-        `SELECT id, section_id, url, title, summary, lang, published_at, score FROM candidates
+  // Dos vueltas: primero SOLO lo fresco (es lo que pide un diario), y si no hay nada fresco en
+  // ninguna sección, se admite lo que haya antes de dejar el turno vacío.
+  for (const soloFrescas of horas > 0 ? [true, false] : [false]) {
+    for (const sec of order) {
+      if (sec.free <= 0) continue;
+      const { results } = await db
+        .prepare(
+          `SELECT id, section_id, url, title, summary, lang, published_at, score FROM candidates
          WHERE status = 'new' AND section_id = ?1 AND attempts < ?2
+         ${soloFrescas ? "AND published_at IS NOT NULL AND published_at >= ?4" : ""}
          ORDER BY score DESC, published_at DESC LIMIT ?3`,
-      )
-      .bind(sec.id, MAX_INTENTOS_CANDIDATO, CANDIDATOS_A_MIRAR)
-      .all<CandidateRow>();
+        )
+        .bind(
+          ...(soloFrescas
+            ? [sec.id, MAX_INTENTOS_CANDIDATO, CANDIDATOS_A_MIRAR, desdeFresca]
+            : [sec.id, MAX_INTENTOS_CANDIDATO, CANDIDATOS_A_MIRAR]),
+        )
+        .all<CandidateRow>();
 
-    for (const row of results ?? []) {
-      const veredicto = revisarArchivo(
-        { titulo: row.title, resumen: row.summary, fuentes: [row.url] },
-        archivo,
-        now,
-      );
-      // Ya lo contamos y no admite duda: se aparta y se prueba con el siguiente tema. Hay
-      // demasiadas cosas de las que hablar en el mundo como para contar dos veces la misma.
-      // Lo dudoso (certeza «media») NO se tira aquí: pasa marcado y lo decide la mesa, que sabe
-      // leer. Una regla de palabras no distingue un capítulo nuevo de una repetición.
-      if (veredicto.repite && !veredicto.seguimiento && veredicto.certeza === "alta") {
-        await descartar(row.id, `ya lo contamos: ${veredicto.motivo} («${veredicto.parecidoCon}»)`);
-        continue;
+      for (const row of results ?? []) {
+        const veredicto = revisarArchivo(
+          { titulo: row.title, resumen: row.summary, fuentes: [row.url] },
+          archivo,
+          now,
+        );
+        // Ya lo contamos y no admite duda: se aparta y se prueba con el siguiente tema. Hay
+        // demasiadas cosas de las que hablar en el mundo como para contar dos veces la misma.
+        // Lo dudoso (certeza «media») NO se tira aquí: pasa marcado y lo decide la mesa, que sabe
+        // leer. Una regla de palabras no distingue un capítulo nuevo de una repetición.
+        if (veredicto.repite && !veredicto.seguimiento && veredicto.certeza === "alta") {
+          await descartar(
+            row.id,
+            `ya lo contamos: ${veredicto.motivo} («${veredicto.parecidoCon}»)`,
+          );
+          continue;
+        }
+        // Se apunta el intento ANTES de trabajar. Si la corrida se muere a media escritura, el intento
+        // queda contado igual: sin esto, un tema que falla se vuelve a elegir en cada corrida y
+        // paraliza el diario entero. Pasó el 24 ago 2026 con un fichaje de la NFL.
+        await db
+          .prepare(`UPDATE candidates SET attempts = attempts + 1 WHERE id = ?1`)
+          .bind(row.id)
+          .run()
+          .catch(() => undefined);
+        return {
+          id: row.id,
+          sectionId: row.section_id as SectionId,
+          url: row.url,
+          title: row.title,
+          summary: row.summary,
+          lang: row.lang === "en" ? "en" : "es",
+          publishedAt: row.published_at,
+          score: Number(row.score),
+          ...(veredicto.repite && veredicto.seguimiento
+            ? { seguimiento: { de: veredicto.parecidoCon, novedades: veredicto.novedades } }
+            : {}),
+        };
       }
-      // Se apunta el intento ANTES de trabajar. Si la corrida se muere a media escritura, el intento
-      // queda contado igual: sin esto, un tema que falla se vuelve a elegir en cada corrida y
-      // paraliza el diario entero. Pasó el 24 ago 2026 con un fichaje de la NFL.
-      await db
-        .prepare(`UPDATE candidates SET attempts = attempts + 1 WHERE id = ?1`)
-        .bind(row.id)
-        .run()
-        .catch(() => undefined);
-      return {
-        id: row.id,
-        sectionId: row.section_id as SectionId,
-        url: row.url,
-        title: row.title,
-        summary: row.summary,
-        lang: row.lang === "en" ? "en" : "es",
-        publishedAt: row.published_at,
-        score: Number(row.score),
-        ...(veredicto.repite && veredicto.seguimiento
-          ? { seguimiento: { de: veredicto.parecidoCon, novedades: veredicto.novedades } }
-          : {}),
-      };
     }
   }
   // Sin cupo libre en ninguna sección: no hay nota universal hoy.

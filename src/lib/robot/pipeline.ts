@@ -692,9 +692,13 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   for (let i = 0; i < maxNotes; i++) {
     const itemId = crypto.randomUUID();
     const archivo = await archivoDelDiario(db);
+    // El turno de la escaleta manda: si este es el de Tecnología, se busca una noticia de
+    // tecnología; si es el de Artistas, de artistas. Antes la sección la decidía el cupo libre y
+    // casi todo salía de Economía (1 oct 2026).
+    const franjaAhora = franjaActiva(now);
     const [nextSponsored, nextCandidate] = await Promise.all([
       nextQueuedAssignment(db, now),
-      pickCandidate(db, now, archivo),
+      pickCandidate(db, now, archivo, { seccion: franjaAhora?.seccion }),
     ]);
     const kind = await decideNextKind(db, {
       sponsoredAvailable: Boolean(nextSponsored),
@@ -892,7 +896,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
         const encargo = await encargoDelTurno(db, {
           // La franja de este momento decide el género (la escaleta). Si la corrida es a mano y
           // estamos fuera de horario, `encargoDelTurno` alterna por posición del día.
-          franja: franjaActiva(now),
+          franja: franjaAhora,
           notasHoy: todayTotal,
           hayActualidad: Boolean(nextCandidate),
           titularesRecientes: await titularesRecientes(db),

@@ -19,7 +19,7 @@ import { requireLang } from "@/lib/params";
 import { formatDate } from "@/lib/dates";
 import { getDb } from "@/lib/db";
 import { imagenSocial } from "@/lib/imagen-social";
-import { duracionLegible } from "@/lib/robot/guion";
+import { duracionLegible, MEDIDAS } from "@/lib/robot/guion";
 import { AuthorCard } from "@/components/AuthorCard";
 import { splitAfterParagraph } from "@/lib/html";
 import { getArticleBySlug, getAuthor, listRelated, type ArticleFull } from "@/lib/queries";
@@ -225,8 +225,27 @@ export default async function ArticlePage({ params }: Props) {
 
           {article.guion ? (
             <ParaCreadores
-              guion={article.guion}
-              duracion={duracionLegible(article.guion, lang)}
+              // La de 1 minuto va primero: es la que se usa para un Short. La de 2 minutos solo
+              // aparece cuando la nota ya trae las dos (las viejas se regeneran solas).
+              versiones={[
+                {
+                  medida: "1m",
+                  etiqueta: MEDIDAS["1m"].etiqueta[lang],
+                  texto: article.guion,
+                  duracion: duracionLegible(article.guion, lang),
+                },
+                ...(article.guionLargo
+                  ? [
+                      {
+                        medida: "2m",
+                        etiqueta: MEDIDAS["2m"].etiqueta[lang],
+                        texto: article.guionLargo,
+                        duracion: duracionLegible(article.guionLargo, lang),
+                      },
+                    ]
+                  : []),
+              ]}
+              tituloVideo={article.tituloVideo}
               textos={dict.article.creadores}
             />
           ) : null}

@@ -1112,10 +1112,31 @@ test("guion para creadores: se ve, dura lo que dice y el botón copia el guion e
   });
   await expect(bloque).toBeVisible();
   await expect(bloque.getByText(/Dura unos \d/)).toBeVisible();
+  // Arranca en la versión de 1 minuto, que es la de un Short.
+  await expect(bloque.getByRole("tab", { name: "1 minuto" })).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
   const guion = (await bloque.locator("[data-guion]").textContent()) ?? "";
-  expect(guion.trim().endsWith("Lo leí en losupe.com")).toBe(true);
-  await bloque.getByRole("button", { name: "Copiar guion" }).click();
+  expect(guion.trim().endsWith("La nota completa está en losupe.com")).toBe(true);
+  const palabras = guion.trim().split(/\s+/).length;
+  expect(palabras, "el guion de 1 minuto no puede pasar de 140 palabras").toBeLessThanOrEqual(140);
+  expect(guion).not.toMatch(/Wikipedia/i);
+  // Y los párrafos no salen pegados: nada de «por segundo.Este avance».
+  expect(guion).not.toMatch(/[.!?][A-ZÁÉÍÓÚÑ]/);
+  await bloque.getByRole("button", { name: /Copiar guion/ }).click();
   await expect(bloque.getByRole("button", { name: /Copiado/ })).toBeVisible();
+
+  // Y la de 2 minutos está a un toque, con su propio texto más largo.
+  await bloque.getByRole("tab", { name: "2 minutos" }).click();
+  const largo = (await bloque.locator("[data-guion]").textContent()) ?? "";
+  expect(largo.trim().split(/\s+/).length).toBeGreaterThan(palabras);
+  expect(largo.trim().endsWith("La nota completa está en losupe.com")).toBe(true);
+
+  // El título para el video, con su botón aparte.
+  const titulo = (await bloque.locator("[data-titulo-video]").textContent()) ?? "";
+  expect(titulo.length).toBeGreaterThan(0);
+  expect(titulo.length).toBeLessThanOrEqual(60);
 });
 
 test("en inglés sale el guion en inglés, nunca el español", async ({ page }) => {
@@ -1125,8 +1146,8 @@ test("en inglés sale el guion en inglés, nunca el español", async ({ page }) 
   });
   await expect(bloque).toBeVisible();
   const guion = (await bloque.locator("[data-guion]").textContent()) ?? "";
-  expect(guion).toContain("I read it on losupe.com");
-  expect(guion).not.toContain("Lo leí en losupe.com");
+  expect(guion).toContain("The full story is on losupe.com");
+  expect(guion).not.toContain("La nota completa está en losupe.com");
 });
 
 test("al compartir una nota con foto, la vista previa usa la miniatura ligera", async ({

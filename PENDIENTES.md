@@ -28,11 +28,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
 
@@ -45,3 +45,9 @@
       (accesibilidad). Proponer tonos a Richard con captura antes de tocar colores de marca.
 - [x] 🤖 Servidor MCP público, tarjeta de descubrimiento y auth.md para asistentes de IA
       (17 sep 2026, candado 54).
+- [x] 🤖 Tres noticias nuevas al día en Tecnología e IA y en Artistas y tendencias: fuentes vivas,
+      escaleta de diez turnos y cupo que no se comen las efemérides (1 oct 2026, candado 55).
+- [x] 🤖 Guion para creadores en dos medidas (1 y 2 minutos), con título para el video, sin
+      Wikipedia y escrito para el oído (1 oct 2026, candado 55).
+- [ ] 🤖 Vigilar por qué algunas corridas de la mañana «se cortan antes de terminar»: ya se ve el
+      motivo en /__health. Con diez turnos y el reloj cada hora hay margen, pero hay que medirlo.

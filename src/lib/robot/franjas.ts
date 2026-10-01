@@ -29,9 +29,21 @@
 /** La zona que manda. Todo el ritmo del diario se piensa en esta hora, no en UTC. */
 export const ZONA = "America/New_York";
 
+import type { SectionId } from "@/lib/sections";
+
 export type Franja = {
   /** Identificador interno; se guarda en la base para saber qué turno ya salió. */
-  key: "manana" | "mediodia" | "tarde" | "noche";
+  key:
+    | "manana"
+    | "manana-2"
+    | "manana-3"
+    | "mediodia"
+    | "tarde"
+    | "tarde-2"
+    | "tarde-3"
+    | "noche"
+    | "noche-2"
+    | "noche-3";
   /** Hora local de la zona (0-23). */
   hour: number;
   /**
@@ -52,29 +64,59 @@ export type Franja = {
    * el 28 ago 2026 al ver que las dos se repetían.
    */
   subgenero?: "curiosidades" | "ranking";
+  /**
+   * LA SECCIÓN QUE TIENE QUE SALIR EN ESTE TURNO.
+   *
+   * Richard saca de losupe el texto de los videos de sus dos canales: Full Código (tecnología e
+   * inteligencia artificial) y Caprichoso TV (artistas y música latina). Si esas dos secciones no
+   * traen noticias nuevas cada día, no hay qué grabar. El 1 de octubre de 2026 la portada de
+   * Tecnología mostraba notas del 24, del 9 y del 8 de septiembre, y dos eran efemérides.
+   *
+   * Antes la sección la elegía el cupo libre, y como Economía tenía el doble de cupo y los feeds de
+   * las otras dos estaban secos, casi todo salía de Economía. Ahora seis turnos del día tienen la
+   * sección puesta de antemano: tres de tecnología y tres de artistas. Los turnos sin sección
+   * (`undefined`) siguen funcionando como siempre y son los de Economía, Ventas y Cripto.
+   */
+  seccion?: SectionId;
 };
 
 /**
- * LA ESCALETA DEL DÍA: cuatro notas, dos de actualidad y dos de curiosidades.
+ * LA ESCALETA DEL DÍA: diez notas, ocho de actualidad y dos piezas propias.
  *
- * La actualidad abre la mañana y vuelve a la salida del trabajo, que es cuando la gente busca «qué
- * ha pasado». Las piezas propias van al mediodía y a la noche, que es cuando se lee con calma lo
- * que no caduca. Una franja = una nota = una firma distinta.
+ * Tres turnos son de Tecnología e IA (7:00, 14:00 y 19:00) y tres de Artistas y tendencias (9:00,
+ * 16:00 y 20:00): son las dos secciones de las que salen los videos, y por contrato interno tienen
+ * que traer tres noticias NUEVAS cada día. Dos turnos quedan libres (10:00 y 17:00) para Economía,
+ * Ventas y Cripto, que siguen funcionando igual que antes. Y las dos piezas propias se quedan donde
+ * estaban: curiosidades al mediodía y rankings a las nueve de la noche.
+ *
+ * Una franja = una nota = una firma distinta.
  */
 export const FRANJAS: readonly Franja[] = [
-  { key: "manana", hour: 7, genero: "actualidad" },
+  { key: "manana", hour: 7, genero: "actualidad", seccion: "tecnologia" },
+  { key: "manana-2", hour: 9, genero: "actualidad", seccion: "artistas" },
+  { key: "manana-3", hour: 10, genero: "actualidad" },
   { key: "mediodia", hour: 12, genero: "propia", subgenero: "curiosidades" },
-  { key: "tarde", hour: 17, genero: "actualidad" },
-  { key: "noche", hour: 21, genero: "propia", subgenero: "ranking" },
+  { key: "tarde", hour: 14, genero: "actualidad", seccion: "tecnologia" },
+  { key: "tarde-2", hour: 16, genero: "actualidad", seccion: "artistas" },
+  { key: "tarde-3", hour: 17, genero: "actualidad" },
+  { key: "noche", hour: 19, genero: "actualidad", seccion: "tecnologia" },
+  { key: "noche-2", hour: 20, genero: "actualidad", seccion: "artistas" },
+  { key: "noche-3", hour: 21, genero: "propia", subgenero: "ranking" },
 ];
 
 /**
  * Cuánto se admite llegar tarde a una franja. El robot no tiene un reloj propio: se despierta con
- * las visitas al sitio. Si a las 7:00 en punto no entró nadie, la nota sale cuando entre alguien,
- * dentro de estas horas. Pasada la ventana, ese turno se pierde — es a propósito: acumular turnos
- * es exactamente lo que hacía que salieran tres notas juntas de madrugada.
+ * el reloj de la plataforma y con las visitas al sitio. Si a las 7:00 en punto no entró nadie, la
+ * nota sale cuando entre alguien, dentro de esta ventana. Pasada la ventana, ese turno se pierde —
+ * es a propósito: acumular turnos es exactamente lo que hacía que salieran tres notas juntas de
+ * madrugada.
+ *
+ * Era de tres horas cuando había cuatro turnos muy separados. Con diez turnos, dos de ellos a una
+ * hora de distancia, una ventana larga hacía que el turno de más tarde tapara al de antes (se elige
+ * siempre el más reciente) y la sección de ese hueco se quedaba sin nota. Una hora exacta: cada
+ * turno tiene la suya y no pisa al siguiente.
  */
-export const VENTANA_HORAS = 3;
+export const VENTANA_HORAS = 1;
 
 type Partes = { y: number; m: number; d: number; hh: number; mm: number };
 
@@ -168,9 +210,15 @@ export function marcaDeFranja(now: Date, franja: Franja): string {
 /** Cómo se le dice a una persona, para el panel. */
 export const NOMBRE_FRANJA: Record<Franja["key"], { es: string; en: string }> = {
   manana: { es: "Mañana (7:00)", en: "Morning (7:00)" },
+  "manana-2": { es: "Mañana (9:00)", en: "Morning (9:00)" },
+  "manana-3": { es: "Media mañana (10:00)", en: "Mid-morning (10:00)" },
   mediodia: { es: "Mediodía (12:00)", en: "Midday (12:00)" },
-  tarde: { es: "Tarde (17:00)", en: "Afternoon (17:00)" },
-  noche: { es: "Noche (21:00)", en: "Evening (21:00)" },
+  tarde: { es: "Tarde (14:00)", en: "Afternoon (14:00)" },
+  "tarde-2": { es: "Tarde (16:00)", en: "Afternoon (16:00)" },
+  "tarde-3": { es: "Tarde (17:00)", en: "Afternoon (17:00)" },
+  noche: { es: "Noche (19:00)", en: "Evening (19:00)" },
+  "noche-2": { es: "Noche (20:00)", en: "Evening (20:00)" },
+  "noche-3": { es: "Noche (21:00)", en: "Evening (21:00)" },
 };
 
 /** Cómo se le dice a cada género en pantalla. */

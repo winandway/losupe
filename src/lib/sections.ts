@@ -49,7 +49,7 @@ export const SECTIONS: readonly Section[] = [
     },
     color: "#3B82F6",
     onColor: "#FFFFFF",
-    perDay: 1,
+    perDay: 3,
   },
   {
     id: "cripto",
@@ -73,7 +73,7 @@ export const SECTIONS: readonly Section[] = [
     },
     color: "#FF5A5F",
     onColor: "#FFFFFF",
-    perDay: 1,
+    perDay: 3,
   },
 ];
 

@@ -5,10 +5,13 @@ import {
   filtrarSabiasQue,
   generarGuion,
   limpiarGuion,
-  PALABRAS_MAX,
-  PALABRAS_MIN,
+  limpiarTituloVideo,
+  MEDIDAS,
+  problemasDelGuion,
+  recortarGuion,
   rescatarGuiones,
   SISTEMA_GUION,
+  TITULO_VIDEO_MAX,
 } from "@/lib/robot/guion";
 import { FakeD1 } from "./fake-d1";
 
@@ -78,12 +81,28 @@ describe("listo para un teleprompter", () => {
     expect(g).toContain("\n\n");
   });
 
-  it("siempre termina diciendo dónde se leyó, aunque el modelo se lo salte", () => {
-    expect(limpiarGuion("Texto del guion.", "es").endsWith("Lo leí en losupe.com")).toBe(true);
-    expect(limpiarGuion("Script text.", "en").endsWith("I read it on losupe.com")).toBe(true);
+  it("siempre termina diciendo dónde está la nota, aunque el modelo se lo salte", () => {
+    expect(
+      limpiarGuion("Texto del guion.", "es").endsWith("La nota completa está en losupe.com"),
+    ).toBe(true);
+    expect(limpiarGuion("Script text.", "en").endsWith("The full story is on losupe.com")).toBe(
+      true,
+    );
     // Y no lo repite si ya estaba.
-    const dos = limpiarGuion("Texto.\nLo leí en losupe.com", "es");
+    const dos = limpiarGuion("Texto.\nLa nota completa está en losupe.com", "es");
     expect(dos.match(/losupe\.com/g)).toHaveLength(1);
+    // Y si el modelo mete el cierre en medio, se mueve al final SIN aplanar los párrafos.
+    const enMedio = limpiarGuion(
+      "Primer párrafo.\n\nLa nota completa está en losupe.com\n\nSegundo párrafo.",
+      "es",
+    );
+    expect(enMedio.split("\n\n")).toHaveLength(3);
+    expect(enMedio.endsWith("La nota completa está en losupe.com")).toBe(true);
+    expect(enMedio.match(/losupe\.com/g)).toHaveLength(1);
+    // El cierre viejo se cambia por el nuevo: el modelo lo repite de memoria.
+    const viejo = limpiarGuion("Texto.\n\nLo leí en losupe.com", "es");
+    expect(viejo).not.toContain("Lo leí");
+    expect(viejo.endsWith("La nota completa está en losupe.com")).toBe(true);
   });
 
   it("la duración se calcula a ritmo de lectura en voz alta", () => {
@@ -93,9 +112,76 @@ describe("listo para un teleprompter", () => {
     expect(duracionLegible(palabras(60), "es")).toBe("24 s");
   });
 
-  it("el rango da de un minuto a unos tres", () => {
-    expect(PALABRAS_MIN).toBeGreaterThanOrEqual(100);
-    expect(PALABRAS_MAX).toBeLessThanOrEqual(500);
+  it("las dos medidas son las de un Short y las de un video corto", () => {
+    expect(MEDIDAS["1m"].max).toBeLessThanOrEqual(140);
+    expect(MEDIDAS["1m"].min).toBeGreaterThanOrEqual(110);
+    expect(MEDIDAS["2m"].min).toBeGreaterThanOrEqual(220);
+    expect(MEDIDAS["2m"].max).toBeLessThanOrEqual(280);
+  });
+});
+
+/**
+ * LOS CUATRO DEFECTOS DE LA PRIMERA VERSIÓN (Richard, 1 oct 2026), con la nota de República
+ * Dominicana delante: guion de 2 min 45 para un Short, párrafos pegados sin espacio después del
+ * punto, «según Wikipedia» tres veces, y cifras imposibles de leer en voz alta.
+ */
+describe("el guion de un minuto es DE UN MINUTO", () => {
+  const cierre = "La nota completa está en losupe.com";
+  const guion = (n: number) => `${palabras(n)}\n\n${cierre}`;
+
+  it("un guion de 1 minuto que pasa de 140 palabras NO se publica", () => {
+    expect(problemasDelGuion(guion(200), "1m")).toContainEqual(
+      expect.stringContaining("se pasa de largo"),
+    );
+    expect(problemasDelGuion(guion(130), "1m")).toEqual([]);
+  });
+
+  it("y si se pasa, se recorta por frases enteras sin tocar el gancho ni el cierre", () => {
+    const largo = `Gancho corto y fuerte.\n\n${palabras(200)}\n\n${cierre}`;
+    const corto = recortarGuion(largo, MEDIDAS["1m"].max, "es");
+    expect(contarPalabras(corto)).toBeLessThanOrEqual(MEDIDAS["1m"].max);
+    expect(corto.startsWith("Gancho corto y fuerte.")).toBe(true);
+    expect(corto.endsWith(cierre)).toBe(true);
+  });
+
+  it("NUNCA se nombra a Wikipedia en voz alta: se nombra la fuente original", () => {
+    expect(
+      problemasDelGuion(`El dato, según Wikipedia, es ese.\n\n${cierre}`, "1m"),
+    ).toContainEqual("nombra a Wikipedia en voz alta");
+    // Y la mención se quita sola cuando se puede, sin romper la frase.
+    const limpio = limpiarGuion("La velocidad llega a 45 megabits, según Wikipedia.", "es");
+    expect(limpio).not.toMatch(/wikipedia/i);
+    expect(limpio).toContain("45 megabits");
+  });
+
+  it("sin el cierre de losupe, el guion no vale", () => {
+    expect(problemasDelGuion(palabras(130), "1m")).toContainEqual(
+      "no termina con el cierre de losupe",
+    );
+  });
+
+  it("un punto pegado a la palabra siguiente se arregla y, si queda, se canta", () => {
+    expect(problemasDelGuion(`Uno.Dos tres.\n\n${cierre}`, "1m")).toContainEqual(
+      "hay un punto pegado a la palabra",
+    );
+    // «por segundo.Este avance» era literal en la nota de República Dominicana.
+    expect(limpiarGuion("por segundo.Este avance es grande.", "es")).toContain(
+      "por segundo. Este avance",
+    );
+  });
+
+  it("el título del video cabe en una miniatura", () => {
+    expect(limpiarTituloVideo("a".repeat(90)).length).toBeLessThanOrEqual(TITULO_VIDEO_MAX);
+    expect(limpiarTituloVideo('  "Internet más rápido"  ')).toBe("Internet más rápido");
+  });
+
+  it("las instrucciones piden las dos versiones, el gancho y el cierre exacto", () => {
+    expect(SISTEMA_GUION).toContain("1 MINUTO");
+    expect(SISTEMA_GUION).toContain("2 MINUTOS");
+    expect(SISTEMA_GUION).toContain("GANCHO");
+    expect(SISTEMA_GUION).toContain("La nota completa está en losupe.com");
+    expect(SISTEMA_GUION).toMatch(/PROHIBIDO nombrar a Wikipedia/);
+    expect(SISTEMA_GUION).toMatch(/REDONDEADAS/);
   });
 });
 
@@ -114,8 +200,12 @@ describe("generarGuion", () => {
       titulo: "El diésel toca récord",
       cuerpoHtml: CUERPO,
       fetchImpl: responder({
-        guion_es: palabras(200),
-        guion_en: palabras(200),
+        titulo_video_es: "El diésel toca récord",
+        titulo_video_en: "Diesel hits a record",
+        guion_1m_es: palabras(130),
+        guion_1m_en: palabras(130),
+        guion_2m_es: palabras(250),
+        guion_2m_en: palabras(250),
         sabias_que_es: [
           "¿Sabías que el diésel llegó a 5,85 dólares por galón?",
           "¿Sabías que en 1901 pasó algo inventado?",
@@ -124,7 +214,9 @@ describe("generarGuion", () => {
       }) as unknown as typeof fetch,
     });
     expect(r).not.toBeNull();
-    expect(r!.guion.guion_es.endsWith("Lo leí en losupe.com")).toBe(true);
+    expect(r!.guion.guion_1m_es.endsWith("La nota completa está en losupe.com")).toBe(true);
+    expect(r!.guion.guion_2m_es.endsWith("La nota completa está en losupe.com")).toBe(true);
+    expect(r!.guion.titulo_video_es).toBe("El diésel toca récord");
     expect(r!.guion.sabias_que_es).toHaveLength(1);
     expect(r!.costUsd).toBeLessThan(0.01);
   });
@@ -135,8 +227,12 @@ describe("generarGuion", () => {
       titulo: "x",
       cuerpoHtml: CUERPO,
       fetchImpl: responder({
-        guion_es: "Muy corto.",
-        guion_en: palabras(200),
+        titulo_video_es: "x",
+        titulo_video_en: "x",
+        guion_1m_es: "Muy corto.",
+        guion_1m_en: palabras(130),
+        guion_2m_es: palabras(250),
+        guion_2m_en: palabras(250),
         sabias_que_es: [],
         sabias_que_en: [],
       }) as unknown as typeof fetch,
@@ -189,7 +285,7 @@ describe("rescatarGuiones", () => {
 
   it("guarda el guion en los DOS idiomas y apunta el gasto", async () => {
     const db = new FakeD1((sql) => {
-      if (sql.includes("es.guion IS NULL")) return [fila];
+      if (sql.includes("es.guion_1m IS NULL")) return [fila];
       if (sql.includes("value FROM settings")) return [{ value: "5" }];
       if (sql.includes("SUM(cost_usd)")) return [{ total: 0 }];
       return [];
@@ -202,8 +298,12 @@ describe("rescatarGuiones", () => {
               parts: [
                 {
                   text: JSON.stringify({
-                    guion_es: palabras(200),
-                    guion_en: palabras(200),
+                    titulo_video_es: "Un título",
+                    titulo_video_en: "A title",
+                    guion_1m_es: palabras(130),
+                    guion_1m_en: palabras(130),
+                    guion_2m_es: palabras(250),
+                    guion_2m_en: palabras(250),
                     sabias_que_es: [],
                     sabias_que_en: [],
                   }),
@@ -218,6 +318,9 @@ describe("rescatarGuiones", () => {
     expect(r.hechas).toBe(1);
     const guardados = db.calls.filter((c) => c.sql.startsWith("UPDATE article_i18n SET guion"));
     expect(guardados.map((g) => g.params[1])).toEqual(["es", "en"]);
+    // Las dos medidas y el título del video se guardan juntos.
+    expect(guardados[0]!.sql).toContain("guion_2m");
+    expect(guardados[0]!.sql).toContain("titulo_video");
     expect(db.calls.some((c) => c.sql.startsWith("INSERT INTO spend_log"))).toBe(true);
     // Añadir el guion NO es actualizar la noticia: la fecha de modificación no se mueve (si se
     // moviera, Google vería la nota «actualizada» sin que cambiara una palabra).
@@ -249,15 +352,18 @@ describe("rescatarGuiones", () => {
 describe("la guía del casillero trae su guion de ejemplo", () => {
   it("dentro del rango, en los dos idiomas y cerrando con losupe", async () => {
     const semilla = (await import("../../seed/content/2026-09-09-casillero-miami.mjs")).default as {
-      i18n: Record<"es" | "en", { guion: string; sabias_que: string[] }>;
+      i18n: Record<
+        "es" | "en",
+        { guion_1m: string; guion_2m: string; titulo_video: string; sabias_que: string[] }
+      >;
     };
     for (const lang of ["es", "en"] as const) {
-      const g = semilla.i18n[lang].guion;
-      expect(contarPalabras(g)).toBeGreaterThanOrEqual(PALABRAS_MIN);
-      expect(contarPalabras(g)).toBeLessThanOrEqual(PALABRAS_MAX);
-      expect(
-        g.trim().endsWith(lang === "es" ? "Lo leí en losupe.com" : "I read it on losupe.com"),
-      ).toBe(true);
+      // Las dos medidas, cada una dentro de su rango y las dos cerrando con losupe.
+      for (const medida of ["1m", "2m"] as const) {
+        const g = medida === "1m" ? semilla.i18n[lang].guion_1m : semilla.i18n[lang].guion_2m;
+        expect(problemasDelGuion(g, medida, lang), `${lang} ${medida}`).toEqual([]);
+      }
+      expect(semilla.i18n[lang].titulo_video.length).toBeLessThanOrEqual(TITULO_VIDEO_MAX);
     }
   });
 });

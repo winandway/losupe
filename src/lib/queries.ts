@@ -44,6 +44,10 @@ export type ArticleFull = ArticleCard & {
    * mostrando: nunca se mezcla un guion en español dentro de la página en inglés.
    */
   guion: string | null;
+  /** La versión de 2 minutos, para un video más largo. `null` en las notas que aún no se regeneraron. */
+  guionLargo: string | null;
+  /** Título propuesto para el video, de 60 letras como mucho. */
+  tituloVideo: string | null;
   /** Hasta dos datos del «¿Sabías qué?». Vacío cuando la nota no tiene ninguno de verdad. */
   sabiasQue: string[];
 };
@@ -97,6 +101,9 @@ type FullRow = CardRow & {
   image_caption_en: string | null;
   machine_translated: number;
   guion: string | null;
+  guion_1m: string | null;
+  guion_2m: string | null;
+  titulo_video: string | null;
   sabias_que_json: string | null;
 };
 
@@ -118,6 +125,9 @@ const FULL_COLUMNS = `${CARD_COLUMNS},
   a.sources_json, a.image_credit, a.image_caption_es, a.image_caption_en,
   COALESCE(t.machine_translated, f.machine_translated, 0) AS machine_translated,
   CASE WHEN t.article_id IS NOT NULL THEN t.guion ELSE f.guion END AS guion,
+  CASE WHEN t.article_id IS NOT NULL THEN t.guion_1m ELSE f.guion_1m END AS guion_1m,
+  CASE WHEN t.article_id IS NOT NULL THEN t.guion_2m ELSE f.guion_2m END AS guion_2m,
+  CASE WHEN t.article_id IS NOT NULL THEN t.titulo_video ELSE f.titulo_video END AS titulo_video,
   CASE WHEN t.article_id IS NOT NULL THEN t.sabias_que_json ELSE f.sabias_que_json END AS sabias_que_json`;
 
 // ?1 = idioma pedido, ?2 = ahora (ISO). Siempre hay respaldo al español.
@@ -189,7 +199,11 @@ export function mapFull(
       null,
     machineTranslated: row.machine_translated === 1,
     translations,
-    guion: row.guion?.trim() || null,
+    // El guion de 1 minuto es el principal. Mientras una nota vieja no se haya regenerado, se
+    // muestra el guion único que tenía (candado 55).
+    guion: row.guion_1m?.trim() || row.guion?.trim() || null,
+    guionLargo: row.guion_2m?.trim() || null,
+    tituloVideo: row.titulo_video?.trim() || null,
     // Se filtra también AL MOSTRAR, contra el texto de la nota: un dato guardado antes de una regla
     // nueva no puede saltársela (candado 52).
     sabiasQue: filtrarSabiasQue(
