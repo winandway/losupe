@@ -155,6 +155,14 @@ describe("el guion de un minuto es DE UN MINUTO", () => {
     const limpio = limpiarGuion("La velocidad llega a 45 megabits, según Wikipedia.", "es");
     expect(limpio).not.toMatch(/wikipedia/i);
     expect(limpio).toContain("45 megabits");
+    // Y si queda de otra forma, se cae la frase entera y el resto del guion sigue en pie.
+    const suelta = limpiarGuion(
+      "La velocidad llega a 45 megabits. Esto lo menciona Wikipedia. El regulador subió el mínimo.",
+      "es",
+    );
+    expect(suelta).not.toMatch(/wikipedia/i);
+    expect(suelta).toContain("45 megabits");
+    expect(suelta).toContain("El regulador subió el mínimo");
   });
 
   it("sin el cierre de losupe, el guion no vale", () => {

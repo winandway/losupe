@@ -114,7 +114,7 @@ CÓMO SE ESCRIBE (es para el OÍDO, no para leer):
 - Español neutro, sin regionalismos.
 - Las cifras van EN NÚMEROS y REDONDEADAS: «45 megabits», no «cuarenta y cinco punto veinticinco». En el guion de 1 minuto, 4 cifras como mucho sin contar el año.
 - La fuente se nombra UNA sola vez cada una, y es la fuente ORIGINAL del dato (Ookla, el regulador, la Unión Internacional de Telecomunicaciones, Reuters, la empresa que lo anunció).
-- PROHIBIDO nombrar a Wikipedia. Nunca se dice «según Wikipedia» ni nada parecido: se nombra de dónde salió el dato de verdad.
+- PROHIBIDO nombrar a Wikipedia. Nunca se dice «según Wikipedia», «esto lo explica Wikipedia», «citado en Wikipedia» ni nada parecido. Si la nota cita Wikipedia, mira QUÉ ORGANISMO, EMPRESA O MEDIO está detrás del dato (Ookla, el regulador, la Unión Internacional de Telecomunicaciones, la CEPAL, Reuters) y nombra a ese. Si no se sabe de dónde sale, no se dice la fuente y punto.
 
 EL «¿SABÍAS QUÉ?»:
 - Solo datos curiosos, sorprendentes o poco conocidos QUE ESTÉN EN LA NOTA.
@@ -175,6 +175,20 @@ export function limpiarGuion(texto: string, lang: "es" | "en"): string {
     .replace(/[ \t]+/g, " ")
     .replace(/\s+([,.;:!?])/g, "$1");
   for (const viejo of CIERRES_VIEJOS) limpio = limpio.replace(viejo, "");
+  // Si todavía queda una mención a Wikipedia (hay notas que la citan en cada párrafo, como la de la
+  // República Dominicana), se cae LA FRASE ENTERA. Lo que queda ahí es atribución, no el dato: el
+  // dato se nombra con su fuente original. Y un guion con «según Wikipedia» no se publica.
+  if (/wikipedia/i.test(limpio)) {
+    limpio = limpio
+      .split("\n")
+      .map((parrafo) =>
+        (parrafo.match(/[^.!?]+[.!?]*/g) ?? [parrafo])
+          .filter((frase) => !/wikipedia/i.test(frase))
+          .join(" ")
+          .trim(),
+      )
+      .join("\n");
+  }
   limpio = limpio
     .split(/\n+/)
     .map((l) => l.trim())

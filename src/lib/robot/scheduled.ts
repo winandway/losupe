@@ -94,7 +94,7 @@ export async function runScheduled(
       ? {
           guionesNuevos: guiones.hechas,
           guionesFallidos: guiones.encontradas - guiones.hechas,
-          guionPorQue: guiones.errores[0]?.slice(0, 160) ?? null,
+          guionPorQue: guiones.errores.slice(0, 3).join(" | ").slice(0, 400) || null,
         }
       : {}),
     ...(pesadas.pesadas > 0
