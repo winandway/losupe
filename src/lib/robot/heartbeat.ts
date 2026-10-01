@@ -55,7 +55,9 @@ export type TickDecision =
 export async function claimTick(
   db: D1Database | undefined,
   now = new Date(),
+  opts: { saltar?: number } = {},
 ): Promise<TickDecision> {
+  const saltados = Math.min(opts.saltar ?? 0, 4);
   if (!db) return { run: false, reason: "no_db" };
   try {
     const paused = await db
@@ -75,7 +77,7 @@ export async function claimTick(
       .first<{ n: number }>()
       .catch(() => null);
     const notasHoy = Number(hoy?.n ?? 0);
-    const franja = franjaPendiente(now, notasHoy);
+    const franja = franjaPendiente(now, notasHoy + saltados);
     if (!franja) return { run: false, reason: "fuera_de_horario" };
 
     // ¿ACABA DE SALIR UNA NOTA? Entonces este despertar no escribe otra encima. (Una nota
@@ -113,7 +115,15 @@ export async function claimTick(
     let intento = 1;
     if (actual === base || actual.startsWith(`${base}#`)) {
       const previo = actual === base ? 1 : Number(actual.slice(base.length + 1)) || 1;
-      if (previo >= MAX_INTENTOS_POR_FRANJA) return { run: false, reason: "turno_hecho" };
+      // UN TURNO ATASCADO NO BLOQUEA EL DÍA. Si este ya gastó sus intentos (un tema sin material,
+      // por ejemplo), se pasa al siguiente turno pendiente en vez de quedarse ahí para siempre:
+      // con la escaleta como lista de pendientes, quedarse significaba no publicar nada más hoy.
+      if (previo >= MAX_INTENTOS_POR_FRANJA) {
+        const siguiente = franjaPendiente(now, notasHoy + 1);
+        if (!siguiente || siguiente.key === franja.key)
+          return { run: false, reason: "turno_hecho" };
+        return claimTick(db, now, { saltar: saltados + 1 });
+      }
       // ¿YA SALIÓ LA NOTA DE ESTE TURNO? Si la hay, el turno está hecho, diga lo que diga el
       // estado de la corrida. Esto es lo que se aprendió el 28 ago 2026: una corrida que tarda más
       // que el guardia de corridas colgadas se marca «error» aunque haya publicado, y entonces el

@@ -218,7 +218,7 @@ describe("generarGuion", () => {
     });
     expect(r).not.toBeNull();
     expect(r!.guion.guion_1m_es.endsWith("La nota completa está en losupe.com")).toBe(true);
-    expect(r!.guion.guion_2m_es.endsWith("La nota completa está en losupe.com")).toBe(true);
+    expect(r!.guion.guion_2m_es!.endsWith("La nota completa está en losupe.com")).toBe(true);
     expect(r!.guion.titulo_video_es).toBe("El diésel toca récord");
     expect(r!.guion.sabias_que_es).toHaveLength(1);
     expect(r!.costUsd).toBeLessThan(0.01);
@@ -424,5 +424,36 @@ describe("el filtro se aplica también AL MOSTRAR la nota", () => {
     expect(nota.sabiasQue).toEqual([
       "¿Sabías que incursionó en el doblaje en 2017, ya siendo actor?",
     ]);
+  });
+});
+
+describe("cada medida se comprueba sola (1 oct 2026)", () => {
+  it("si la de 2 minutos no cumple, se guarda igual la de 1 minuto", async () => {
+    const responder = (data: object) =>
+      vi.fn(async () =>
+        Response.json({
+          candidates: [{ content: { parts: [{ text: JSON.stringify(data) }] } }],
+          usageMetadata: { promptTokenCount: 2000, candidatesTokenCount: 800 },
+        }),
+      );
+    const r = await generarGuion({
+      apiKey: "k",
+      titulo: "El diésel toca récord",
+      cuerpoHtml: CUERPO,
+      fetchImpl: responder({
+        titulo_video_es: "Diésel en máximos",
+        titulo_video_en: "Diesel at a record",
+        guion_1m_es: palabras(130),
+        guion_1m_en: palabras(130),
+        // Esta se pasa de corta: antes tiraba las cuatro versiones y la nota se quedaba sin guion.
+        guion_2m_es: "Dos frases y ya.",
+        guion_2m_en: "Just two sentences.",
+        sabias_que_es: [],
+        sabias_que_en: [],
+      }) as unknown as typeof fetch,
+    });
+    expect(r).not.toBeNull();
+    expect(contarPalabras(r!.guion.guion_1m_es)).toBeGreaterThan(100);
+    expect(r!.guion.guion_2m_es).toBeNull();
   });
 });

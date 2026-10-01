@@ -54,9 +54,15 @@ export type Guion = {
   titulo_video_es: string;
   titulo_video_en: string;
   guion_1m_es: string;
-  guion_1m_en: string;
-  guion_2m_es: string;
-  guion_2m_en: string;
+  /**
+   * Las demás versiones pueden venir vacías: **cada una se comprueba por su cuenta**. Si la de dos
+   * minutos no cumple pero la de uno sí, se guarda la buena y la nota muestra una sola pestaña.
+   * Antes bastaba con que una de las cuatro fallara para quedarse sin guion, y en producción eso
+   * tiraba cuatro de cada seis (1 oct 2026).
+   */
+  guion_1m_en: string | null;
+  guion_2m_es: string | null;
+  guion_2m_en: string | null;
   sabias_que_es: string[];
   sabias_que_en: string[];
 };
@@ -285,19 +291,20 @@ ${cuerpo}`,
     // guarda: el creador lo lee delante de miles de personas.
     const preparar = (texto: string, medida: Medida, lang: "es" | "en") =>
       recortarGuion(limpiarGuion(texto ?? "", lang), MEDIDAS[medida].max, lang);
-    const guiones = {
-      guion_1m_es: preparar(r.data.guion_1m_es, "1m", "es"),
-      guion_1m_en: preparar(r.data.guion_1m_en, "1m", "en"),
-      guion_2m_es: preparar(r.data.guion_2m_es, "2m", "es"),
-      guion_2m_en: preparar(r.data.guion_2m_en, "2m", "en"),
+    /** Cada versión se comprueba sola: la que cumpla se guarda, la que no, se queda fuera. */
+    const bueno = (texto: string | null | undefined, medida: Medida, lang: "es" | "en") => {
+      const listo = preparar(texto ?? "", medida, lang);
+      return problemasDelGuion(listo, medida, lang).length === 0 ? listo : null;
     };
-    const problemas = [
-      ...problemasDelGuion(guiones.guion_1m_es, "1m", "es"),
-      ...problemasDelGuion(guiones.guion_1m_en, "1m", "en"),
-      ...problemasDelGuion(guiones.guion_2m_es, "2m", "es"),
-      ...problemasDelGuion(guiones.guion_2m_en, "2m", "en"),
-    ];
-    if (problemas.length > 0) return null;
+    const guion_1m_es = bueno(r.data.guion_1m_es, "1m", "es");
+    // Sin el de un minuto en español no hay bloque: es el principal.
+    if (!guion_1m_es) return null;
+    const guiones = {
+      guion_1m_es,
+      guion_1m_en: bueno(r.data.guion_1m_en, "1m", "en"),
+      guion_2m_es: bueno(r.data.guion_2m_es, "2m", "es"),
+      guion_2m_en: bueno(r.data.guion_2m_en, "2m", "en"),
+    };
     const titulo_video_es = limpiarTituloVideo(r.data.titulo_video_es ?? opts.titulo);
     const titulo_video_en = limpiarTituloVideo(r.data.titulo_video_en ?? opts.titulo);
     if (!titulo_video_es || !titulo_video_en) return null;
@@ -392,7 +399,7 @@ export async function rescatarGuiones(
         const guardar = (
           lang: "es" | "en",
           un: string,
-          dos: string,
+          dos: string | null,
           titulo: string,
           sabias: string[],
         ) =>
@@ -411,7 +418,7 @@ export async function rescatarGuiones(
           r.guion.titulo_video_es,
           r.guion.sabias_que_es,
         );
-        if (nota.tiene_en)
+        if (nota.tiene_en && r.guion.guion_1m_en)
           await guardar(
             "en",
             r.guion.guion_1m_en,
