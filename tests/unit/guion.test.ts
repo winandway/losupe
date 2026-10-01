@@ -113,10 +113,13 @@ describe("listo para un teleprompter", () => {
   });
 
   it("las dos medidas son las de un Short y las de un video corto", () => {
+    // El MÁXIMO es el que manda: un guion de 1 minuto que pasa de 140 palabras no es de 1 minuto.
     expect(MEDIDAS["1m"].max).toBeLessThanOrEqual(140);
-    expect(MEDIDAS["1m"].min).toBeGreaterThanOrEqual(110);
-    expect(MEDIDAS["2m"].min).toBeGreaterThanOrEqual(220);
     expect(MEDIDAS["2m"].max).toBeLessThanOrEqual(280);
+    // El mínimo es tolerante a propósito (ver el comentario de MEDIDAS), pero sin bajar de los 40
+    // segundos de lectura.
+    expect(MEDIDAS["1m"].min).toBeGreaterThanOrEqual(100);
+    expect(MEDIDAS["2m"].min).toBeGreaterThanOrEqual(180);
   });
 });
 

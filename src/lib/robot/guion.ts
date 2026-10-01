@@ -37,8 +37,12 @@ export const PALABRAS_POR_MINUTO = 150;
  * UNO. Ahora cada nota trae las dos versiones y él elige según dónde la publique.
  */
 export const MEDIDAS = {
-  "1m": { min: 115, max: 140, etiqueta: { es: "1 minuto", en: "1 minute" } },
-  "2m": { min: 225, max: 270, etiqueta: { es: "2 minutos", en: "2 minutes" } },
+  // El máximo manda (un Short es un Short). El mínimo es más tolerante a propósito: medido en
+  // producción el 1 oct 2026, con el mínimo en 115 el modelo fallaba cuatro de cada seis guiones, y
+  // un guion de 105 palabras dura 42 segundos y sirve igual. Mejor uno bueno y algo corto que
+  // ninguno.
+  "1m": { min: 100, max: 140, etiqueta: { es: "1 minuto", en: "1 minute" } },
+  "2m": { min: 190, max: 270, etiqueta: { es: "2 minutos", en: "2 minutes" } },
 } as const;
 
 export type Medida = keyof typeof MEDIDAS;
