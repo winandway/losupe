@@ -68,22 +68,24 @@ describe("franjas horarias del diario", () => {
     expect(franjaActiva(new Date("2026-08-24T10:59:00Z"))).toBeNull(); // 6:59 AM
   });
 
-  it("abre en cada turno y solo durante su hora", () => {
+  it("cada turno sigue pendiente hasta que empieza el siguiente", () => {
     const casos: [string, string | null][] = [
       ["2026-08-24T11:00:00Z", "manana"], // 7:00 AM en punto · tecnología
       ["2026-08-24T11:59:00Z", "manana"], // 7:59 AM, último minuto
-      ["2026-08-24T12:00:00Z", null], // 8:00 AM, hueco entre turnos
+      // 8:00 AM: el turno de las 7 sigue pendiente hasta que abre el de las 9. Sin esto, un turno
+      // sin visitas a su hora en punto se perdía (1 oct 2026).
+      ["2026-08-24T12:00:00Z", "manana"],
       ["2026-08-24T13:00:00Z", "manana-2"], // 9:00 AM · artistas
       ["2026-08-24T14:30:00Z", "manana-3"], // 10:30 AM · libre
       ["2026-08-24T16:00:00Z", "mediodia"], // 12:00 PM · curiosidades
-      ["2026-08-24T17:30:00Z", null], // 1:30 PM, hueco
+      ["2026-08-24T17:30:00Z", "mediodia"], // 1:30 PM: el turno del mediodía sigue abierto
       ["2026-08-24T18:00:00Z", "tarde"], // 2:00 PM · tecnología
       ["2026-08-24T20:00:00Z", "tarde-2"], // 4:00 PM · artistas
       ["2026-08-24T21:00:00Z", "tarde-3"], // 5:00 PM · libre
       ["2026-08-24T23:00:00Z", "noche"], // 7:00 PM · tecnología
       ["2026-08-25T00:00:00Z", "noche-2"], // 8:00 PM · artistas
       ["2026-08-25T01:00:00Z", "noche-3"], // 9:00 PM · rankings
-      ["2026-08-25T02:00:00Z", null], // 10:00 PM: se acabó el día
+      ["2026-08-25T02:00:00Z", null], // 10:00 PM: el último turno sí se cierra a la hora
       ["2026-08-25T04:00:00Z", null], // medianoche
     ];
     for (const [iso, esperado] of casos) {
@@ -149,11 +151,12 @@ describe("la configuración de la plataforma va con las franjas", () => {
 });
 
 describe("los intentos de una franja dan margen a un arreglo", () => {
-  it("cinco intentos por franja, no tres", async () => {
+  it("ocho intentos por franja, no tres", async () => {
     const { MAX_INTENTOS_POR_FRANJA } = await import("@/lib/robot/heartbeat");
     // El 24 ago 2026 un solo tema envenenado se comió los tres intentos de dos franjas seguidas y
-    // el diario se quedó sin publicar en todo el día.
-    expect(MAX_INTENTOS_POR_FRANJA).toBe(5);
+    // el diario se quedó sin publicar en todo el día. Y el 1 oct 2026, con cinco, los fallos del
+    // proveedor (503 y el centro de datos sin servicio) agotaron el turno de las dos de la tarde.
+    expect(MAX_INTENTOS_POR_FRANJA).toBeGreaterThanOrEqual(8);
   });
 });
 

@@ -27,8 +27,13 @@ export const TICK_TOKEN_KEY = "robot_tick_token";
  * se corta a media escritura (pasa: el worker tiene su presupuesto de tiempo) se llevaba por
  * delante la nota del turno, y nadie se enteraba hasta ver el hueco en la portada. Reintentar
  * dentro de la franja NO es acumular turnos: pasada la ventana, el turno se pierde igual.
+ *
+ * Subió de 5 a 8 el 1 de octubre de 2026: la mayoría de los fallos no son del diario sino del
+ * proveedor (un 503, o el centro de datos desde el que no atiende Gemini) y esos intentos no
+ * escriben nada ni cuestan casi nada. Una nota publicada cierra el turno al instante, así que más
+ * intentos no pueden producir dos notas.
  */
-export const MAX_INTENTOS_POR_FRANJA = 5;
+export const MAX_INTENTOS_POR_FRANJA = 8;
 
 export type TickDecision =
   | { run: false; reason: "paused" | "fuera_de_horario" | "turno_hecho" | "no_db" | "error" }

@@ -188,7 +188,16 @@ export function franjaActiva(
     const f = franjas[i];
     if (!f) continue;
     const inicio = f.hour * 60;
-    if (minutosAhora >= inicio && minutosAhora < inicio + ventanaHoras * 60) return f;
+    // UN TURNO SIGUE PENDIENTE HASTA QUE EMPIEZA EL SIGUIENTE.
+    //
+    // Con la ventana fija de una hora, un turno sin visitas a esa hora en punto se perdía: el 1 de
+    // octubre de 2026 el turno de las 14:00 falló por un 503 del proveedor y a las 15:13 ya no
+    // había forma de reintentarlo, aunque la portada siguiera sin esa nota. Ahora la ventana llega
+    // hasta el turno siguiente (el último, una hora), así que el reintento cabe y aun así NUNCA
+    // pueden solaparse dos turnos ni salir dos notas juntas.
+    const siguiente = franjas[i + 1];
+    const fin = siguiente ? siguiente.hour * 60 : inicio + ventanaHoras * 60;
+    if (minutosAhora >= inicio && minutosAhora < fin) return f;
   }
   return null;
 }
