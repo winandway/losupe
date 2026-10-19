@@ -44,6 +44,8 @@ export type ArticleFull = ArticleCard & {
    * mostrando: nunca se mezcla un guion en español dentro de la página en inglés.
    */
   guion: string | null;
+  /** El video que se ve dentro de la lectura. `null` cuando la nota no lleva (candado 56). */
+  video: { src: string; poster: string | null; credito: string | null } | null;
   /** La versión de 2 minutos, para un video más largo. `null` en las notas que aún no se regeneraron. */
   guionLargo: string | null;
   /** Título propuesto para el video, de 60 letras como mucho. */
@@ -97,6 +99,9 @@ type FullRow = CardRow & {
   tags_json: string | null;
   sources_json: string | null;
   image_credit: string | null;
+  video_url: string | null;
+  video_poster: string | null;
+  video_credit: string | null;
   image_caption_es: string | null;
   image_caption_en: string | null;
   machine_translated: number;
@@ -123,6 +128,7 @@ const FULL_COLUMNS = `${CARD_COLUMNS},
   COALESCE(t.meta_description, f.meta_description) AS meta_description,
   COALESCE(t.tags_json, f.tags_json) AS tags_json,
   a.sources_json, a.image_credit, a.image_caption_es, a.image_caption_en,
+  a.video_url, a.video_poster, a.video_credit,
   COALESCE(t.machine_translated, f.machine_translated, 0) AS machine_translated,
   CASE WHEN t.article_id IS NOT NULL THEN t.guion ELSE f.guion END AS guion,
   CASE WHEN t.article_id IS NOT NULL THEN t.guion_1m ELSE f.guion_1m END AS guion_1m,
@@ -202,6 +208,13 @@ export function mapFull(
     // El guion de 1 minuto es el principal. Mientras una nota vieja no se haya regenerado, se
     // muestra el guion único que tenía (candado 55).
     guion: row.guion_1m?.trim() || row.guion?.trim() || null,
+    video: row.video_url?.trim()
+      ? {
+          src: row.video_url.trim(),
+          poster: row.video_poster?.trim() || null,
+          credito: row.video_credit?.trim() || null,
+        }
+      : null,
     guionLargo: row.guion_2m?.trim() || null,
     tituloVideo: row.titulo_video?.trim() || null,
     // Se filtra también AL MOSTRAR, contra el texto de la nota: un dato guardado antes de una regla

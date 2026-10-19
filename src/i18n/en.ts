@@ -44,6 +44,14 @@ export const en: Dict = {
   },
   article: {
     sabiasQue: "Did you know?",
+    video: {
+      etiqueta: "Video",
+      conSonido: "Unmute",
+      silenciar: "Mute",
+      reproducir: "Play",
+      pausar: "Pause",
+      cerrar: "Close the video",
+    },
     creadores: {
       titulo: "Script for your video",
       intro:

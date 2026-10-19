@@ -28,11 +28,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
 
@@ -54,3 +54,7 @@
       GitHub se dispara a mano cuando hace falta (1 oct 2026, candado 55).
 - [ ] 🤖 Vigilar los guiones que fallan con «sin respuesta del modelo» (Gemini 503 / ubicación):
       salen en la corrida siguiente, pero hay que medir cuántos quedan sin guion al final del día.
+- [x] 🤖 Video dentro de la lectura, copiando lo bueno de los diarios grandes y tirando la basura
+      (19 oct 2026, candado 56).
+- [ ] 🤖 Clasificación de sección: siguen colándose temas de deporte en Tecnología y de finanzas en
+      Artistas (visto el 19 oct 2026 con un traspaso de hockey y unos fondos de pensiones).

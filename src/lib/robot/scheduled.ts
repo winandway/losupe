@@ -7,6 +7,7 @@
 import { runPipeline, type RobotEnv, type RunSummary } from "./pipeline";
 import { rescatarGuiones } from "./guion";
 import { rehacerImagenesPesadas, rescatarImagenes } from "./rescate-imagenes";
+import { rescatarVideos } from "./rescate-video";
 
 export type RunTrigger = "cron" | "manual";
 
@@ -28,6 +29,8 @@ export type RunResult = {
   /** Guiones para creadores escritos en esta corrida, y los que fallaron. */
   guionesNuevos?: number;
   guionesFallidos?: number;
+  videosNuevos?: number;
+  videosSinTema?: number;
   /** El primer motivo del rechazo, para no tener que adivinar por qué falta un guion. */
   guionPorQue?: string | null;
 };
@@ -69,6 +72,15 @@ export async function runScheduled(
     () => ({ revisadas: 0, pesadas: 0, rehechas: 0, errores: ["fotos pesadas: fallo inesperado"] }),
   );
 
+  // Y el video que acompaña la lectura (19 oct 2026). Igual que la foto: va detrás, nunca frena una
+  // publicación, y en las notas delicadas no se pone ninguno.
+  const videos = await rescatarVideos(env.DB, env, { fetchImpl: opts.fetchImpl }).catch(() => ({
+    encontradas: 0,
+    conVideo: 0,
+    sinTema: 0,
+    errores: ["videos: fallo inesperado"],
+  }));
+
   // El guion para creadores y el «¿Sabías qué?» (17 sep 2026). Va al final y aparte: si falla, la
   // nota ya está publicada y sale igual, solo que sin ese bloque.
   const guiones = await rescatarGuiones(env.DB, env, {
@@ -89,6 +101,9 @@ export async function runScheduled(
           imagenesRescatadas: rescate.ilustradas,
           imagenesPendientes: rescate.encontradas - rescate.ilustradas,
         }
+      : {}),
+    ...(videos.encontradas > 0
+      ? { videosNuevos: videos.conVideo, videosSinTema: videos.sinTema }
       : {}),
     ...(guiones.encontradas > 0
       ? {

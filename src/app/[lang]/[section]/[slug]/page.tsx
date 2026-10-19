@@ -8,6 +8,7 @@ import { Byline } from "@/components/Byline";
 import { JsonLd } from "@/components/JsonLd";
 import { getSponsorForArticle } from "@/lib/robot/publish";
 import { ParaCreadores } from "@/components/ParaCreadores";
+import { VideoEnLectura } from "@/components/VideoEnLectura";
 import { Prose } from "@/components/Prose";
 import { ReadMore } from "@/components/ReadMore";
 import { SabiasQue } from "@/components/SabiasQue";
@@ -110,6 +111,9 @@ export default async function ArticlePage({ params }: Props) {
   // Ficha de quien firma, para el pie de la nota.
   const autor = await getAuthor(db, article.authorId, lang);
   const { before: bodyBefore, after: bodyAfter } = splitAfterParagraph(article.contentHtml, 2);
+  // El video va MÁS ABAJO que el enlace a la nota relacionada: primero se lee, después se ve. Si la
+  // nota es corta y no hay dónde partir, el video va al final del texto (candado 56).
+  const { before: antesDelVideo, after: despuesDelVideo } = splitAfterParagraph(bodyAfter, 2);
   const showLegacy = article.origin === "mundoscrypto";
   const sponsor =
     article.origin === "sponsored" ? await getSponsorForArticle(db, article.id) : null;
@@ -214,10 +218,32 @@ export default async function ArticlePage({ params }: Props) {
               <>
                 <Prose html={bodyBefore} />
                 <ReadMore article={readMoreTarget} lang={lang} label={dict.article.readMore} />
-                <Prose html={bodyAfter} />
+                <Prose html={antesDelVideo} />
+                {article.video ? (
+                  <VideoEnLectura
+                    src={article.video.src}
+                    poster={article.video.poster}
+                    credito={article.video.credito}
+                    textos={dict.article.video}
+                    articleId={article.id}
+                  />
+                ) : null}
+                <Prose html={despuesDelVideo} />
               </>
             ) : (
-              <Prose html={article.contentHtml} />
+              <>
+                <Prose html={bodyBefore} />
+                {article.video ? (
+                  <VideoEnLectura
+                    src={article.video.src}
+                    poster={article.video.poster}
+                    credito={article.video.credito}
+                    textos={dict.article.video}
+                    articleId={article.id}
+                  />
+                ) : null}
+                <Prose html={bodyAfter} />
+              </>
             )}
           </div>
 

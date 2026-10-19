@@ -362,6 +362,11 @@ ALTER TABLE article_i18n ADD COLUMN sabias_que_json TEXT;
 ALTER TABLE article_i18n ADD COLUMN guion_1m TEXT;
 ALTER TABLE article_i18n ADD COLUMN guion_2m TEXT;
 ALTER TABLE article_i18n ADD COLUMN titulo_video TEXT;
+-- El video que acompaña la lectura (19 oct 2026). Vacío (no nulo) significa «ya se miró y no
+-- corresponde»: una nota delicada no lleva video de archivo y no se vuelve a intentar.
+ALTER TABLE articles ADD COLUMN video_url TEXT;
+ALTER TABLE articles ADD COLUMN video_poster TEXT;
+ALTER TABLE articles ADD COLUMN video_credit TEXT;
 
 
 

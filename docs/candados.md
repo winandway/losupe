@@ -1889,3 +1889,74 @@ El `curl` del reloj espera **600 s**: con 300 cortaba la corrida a media faena.
   al final del día.
 - El reloj de la plataforma no tomó el horario nuevo de `yadominios.json`. Mientras siga así, el
   reloj bueno es el de GitHub más los disparos a mano.
+
+## 56. El video dentro de la lectura (ingeniería inversa de un diario grande)
+
+Richard lo pidió el 19 de octubre de 2026: _«queremos que los videos se vean en las lecturas y que
+la gente pueda leer y ver los videos, y que no se interrumpa con tanta publicidad y tanta basura»_.
+Antes de inventar nada se miró **cómo lo hacen ellos**, con REA, capturando el tráfico real de una
+nota de El Tiempo en un navegador controlado.
+
+### Lo que se midió (una sola nota, 19 oct 2026)
+
+| Medida                                   |                                       El Tiempo |  losupe |
+| ---------------------------------------- | ----------------------------------------------: | ------: |
+| Peticiones para abrir UNA nota           |                                           3.059 |     ~25 |
+| Dominios distintos                       |                                             260 |       2 |
+| Peticiones de publicidad y rastreo       |                                    1.860 (61 %) |       0 |
+| Imágenes (casi todas píxeles de rastreo) |                                           1.405 |      ~8 |
+| SDK de anuncios en el reproductor        | Google IMA + Connatix «editorial» y «companion» | ninguno |
+
+Las piezas de video que usan: `cnx-editorial-video-player.js` (el reproductor que se mete en medio
+del texto), `cnx-companion-video-player.js` (el que se queda flotando) y `ima3.js` (los anuncios).
+Todo eso arranca **al cargar la página**, antes de que nadie lea dos párrafos.
+
+### Lo que copiamos y lo que tiramos
+
+Copiado: **el video va en medio del texto** y **se encoge a una esquina si sigues leyendo**. Eso es
+lo bueno que tienen.
+
+Tirado: el SDK de anuncios, las sincronizaciones de cookies, el pre-roll, la carga inmediata y el
+reproductor que se pone encima del texto.
+
+`src/components/VideoEnLectura.tsx`:
+
+1. Va **dentro de la lectura**, después del cuarto párrafo, con el hueco reservado (la página no
+   salta).
+2. **No existe hasta que te acercas**: hasta entonces solo hay una imagen fija.
+3. **Arranca en silencio y solo a la vista**; al salir de pantalla se pausa. El sonido lo enciende
+   la persona.
+4. **Mini reproductor** al pasarlo leyendo, **con cerrar que se respeta**: si lo cierras, no vuelve
+   en esa nota (se recuerda en la sesión del navegador).
+5. **Cero terceros**: ni anuncios, ni cookies, ni rastreo.
+6. Respeta **ahorro de datos** y **menos movimiento**: ahí no se reproduce solo.
+
+### De dónde sale el video
+
+`src/lib/robot/rescate-video.ts`, una pasada más al final de cada corrida, igual que la foto y el
+guion. Antes el video dependía de que el redactor se acordara de pedirlo (`wants_video`) y casi
+nunca lo pedía. Reglas:
+
+- **En una nota delicada NO va video de archivo** (`TEMA_DELICADO`): muertes, tragedias, guerra,
+  accidentes, enfermedad. Se marcan con `video_url = ''` y no se vuelven a intentar.
+- Solo si de la nota salen palabras concretas (las mismas de la foto, `palabrasParaFoto`).
+- **Nunca se toca `updated_at`** (candado 53).
+- Columnas nuevas en `articles`: `video_url`, `video_poster`, `video_credit`.
+
+### Candados
+
+`tests/unit/video-en-lectura.test.tsx` (10): la nota delicada no lleva video y ni se llama a
+Pexels, el video se guarda con su crédito y sin mover la fecha, no se pone un segundo video a la
+nota que ya trae uno, el reproductor arranca en silencio y sin precargar, el hueco está reservado,
+el sonido lo enciende la persona y el crédito se ve. **Cuatro mutaciones comprobadas en rojo.**
+
+**Un fallo que cazó la propia prueba:** la primera versión del filtro decía `muert`, y el titular
+más común de un obituario es **«Muere X»**, que no lleva esa t. Una nota de una muerte habría salido
+con un video bonito de banco de imágenes al lado.
+
+### Qué NO tocar
+
+- Que el video no se cargue hasta acercarse, y que arranque en silencio.
+- Que una nota delicada no lleve video.
+- `reproducir()`: en navegadores antiguos `play()` no devuelve una promesa y encadenar `.catch`
+  tumbaba el bloque entero.

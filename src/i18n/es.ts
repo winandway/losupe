@@ -42,6 +42,14 @@ export const es = {
   },
   article: {
     sabiasQue: "¿Sabías qué?",
+    video: {
+      etiqueta: "Video",
+      conSonido: "Con sonido",
+      silenciar: "Silenciar",
+      reproducir: "Reproducir",
+      pausar: "Pausar",
+      cerrar: "Cerrar el video",
+    },
     creadores: {
       titulo: "Guion para tu video",
       intro:
