@@ -1312,3 +1312,51 @@ test("MCP: la tarjeta, el auth.md y la ruta no se los come el redirector de idio
   // Y el mapa para modelos lo anuncia.
   expect(await (await request.get("/llms.txt")).text()).toContain("/mcp");
 });
+
+// ── Candado 56: el video dentro de la lectura ─────────────────────────────────────────────────────
+
+test("video: se ve dentro del texto, arranca en silencio y no carga nada hasta que te acercas", async ({
+  page,
+}) => {
+  await page.goto(
+    "/es/ventas/casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica",
+  );
+  const bloque = page.locator("[data-video-lectura]");
+  await expect(bloque).toHaveCount(1);
+  // Va DENTRO del texto: hay párrafos de la nota antes y después.
+  const parrafosAntes = await page.locator("[data-video-lectura] ~ p, p").count();
+  expect(parrafosAntes).toBeGreaterThan(3);
+  await bloque.scrollIntoViewIfNeeded();
+  const video = bloque.locator("video");
+  await expect(video).toHaveCount(1);
+  expect(await video.evaluate((v: HTMLVideoElement) => v.muted)).toBe(true);
+  // Sin la barra del navegador: los botones son nuestros.
+  expect(await video.evaluate((v: HTMLVideoElement) => v.hasAttribute("controls"))).toBe(false);
+  await expect(bloque.getByRole("button", { name: /Con sonido|Unmute/ })).toBeVisible();
+});
+
+test("video: al seguir leyendo se encoge a una esquina, y si lo cierras no vuelve", async ({
+  page,
+}) => {
+  await page.goto(
+    "/es/ventas/casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica",
+  );
+  const bloque = page.locator("[data-video-lectura]");
+  await bloque.scrollIntoViewIfNeeded();
+  // Se pone a andar solo, en silencio.
+  await expect
+    .poll(async () => bloque.locator("video").evaluate((v: HTMLVideoElement) => v.paused), {
+      timeout: 8000,
+    })
+    .toBe(false);
+  // Y al pasarlo de largo leyendo, se va a la esquina.
+  await page.mouse.wheel(0, 2000);
+  const marco = bloque.locator("[data-mini]");
+  await expect.poll(async () => marco.getAttribute("data-mini"), { timeout: 8000 }).toBe("si");
+  // El botón de cerrar solo existe ahí, y cerrar es cerrar.
+  await bloque.getByRole("button", { name: /Cerrar|Close/ }).click();
+  await expect(bloque.locator("video")).toHaveCount(0);
+  await page.mouse.wheel(0, -2000);
+  await page.waitForTimeout(500);
+  await expect(bloque.locator("video")).toHaveCount(0);
+});

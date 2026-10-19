@@ -19,6 +19,11 @@ export default {
     status: "published",
     kind: "evergreen",
     origin: "editorial",
+    // Video de ambiente para la lectura (candado 56). Es nuestro y se sirve desde el propio sitio:
+    // así la prueba del reproductor no depende de que un tercero siga en pie.
+    video_url: "/video/hero-v2-m.mp4",
+    video_poster: "/video/hero-v2-poster.jpg",
+    video_credit: "Video: losupe",
     // SIN imagen principal a propósito: la pone sola el rescate (`rescate-imagenes.ts`) con una foto
     // real de paquetería. Aquí había una captura de pantalla del sitio y Richard tenía razón — a los
     // 140 píxeles de una tarjeta, una captura es una mancha gris que no invita a entrar. Las
