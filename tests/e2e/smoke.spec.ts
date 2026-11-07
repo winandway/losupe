@@ -646,11 +646,11 @@ test("las URL viejas de la nota de Mercatren redirigen (301) a las nuevas", asyn
 });
 
 test("el mismo artículo se abre en inglés con aviso de respaldo", async ({ page }) => {
-  await page.goto("/en/crypto");
-  const first = page.locator("article h3 a").first();
-  const href = await first.getAttribute("href");
-  expect(href).toMatch(/^\/en\/crypto\//);
-  const res = await page.goto(href!);
+  // Ya no se enlaza desde los listados en inglés (candado 58), pero quien llegue por un enlace
+  // viejo la sigue viendo, con el aviso y sin indexarse.
+  const res = await page.goto(
+    "/en/crypto/regulador-bancario-de-eeuu-abre-la-puerta-a-operaciones-cripto-en-la-banca-tradicional",
+  );
   expect(res?.status()).toBe(200);
   await expect(page.getByText("This article is available in Spanish only for now.")).toBeVisible();
 });
@@ -1223,6 +1223,26 @@ test("SEO: la palabra del otro idioma redirige para siempre a la buena (308)", a
   const autor = await request.get("/en/autor/kevin-rondon", { maxRedirects: 0 });
   expect(autor.status()).toBe(308);
   expect(autor.headers().location).toMatch(/\/en\/author\/kevin-rondon$/);
+});
+
+test("SEO: el selector de idioma de una nota no inventa direcciones (candado 58)", async ({
+  page,
+  request,
+}) => {
+  const nota =
+    "/es/ventas/casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica";
+  // En el HTML del servidor (lo primero que lee Google) nunca va el slug en español bajo /en/.
+  const html = await (await request.get(nota)).text();
+  expect(html).not.toContain('href="/en/sales/casillero-en-miami');
+  // Ya en el navegador, lleva a la traducción que declara la página.
+  await page.goto(nota);
+  const alterna = await page.locator('link[rel="alternate"][hreflang="en"]').getAttribute("href");
+  expect(alterna).toBeTruthy();
+  const enlace = page.locator('a[hreflang="en"]').first();
+  await expect(enlace).toHaveAttribute("href", new URL(alterna ?? "").pathname);
+  // Y los listados en inglés no enlazan copias en español con noindex.
+  const lista = await (await request.get("/en/crypto")).text();
+  expect(lista).not.toContain("/en/crypto/regulador-bancario");
 });
 
 test("velocidad: la foto grande de la portada se pide primero (LCP)", async ({ request }) => {

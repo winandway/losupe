@@ -145,6 +145,16 @@ const FROM_PUBLISHED = `
   WHERE a.status = 'published' AND a.published_at IS NOT NULL AND a.published_at <= ?2
     AND COALESCE(t.slug, f.slug) IS NOT NULL`;
 
+/**
+ * Lo que se LISTA (portada, secciones, autores, relacionadas, RSS): solo notas que existen en el
+ * idioma pedido. La copia en español que se muestra en /en/ cuando no hay traducción lleva `noindex`;
+ * enlazarla desde cada listado en inglés era mandar a Google a rastrear páginas que se le pide no
+ * guardar (24 en Search Console el 7 nov 2026), y llenar /en/crypto de notas en español. La página
+ * de la nota sigue respondiendo para quien llegue por un enlace viejo (candado 58).
+ */
+const FROM_LISTED = `${FROM_PUBLISHED}
+    AND (?1 = 'es' OR t.article_id IS NOT NULL)`;
+
 export function parseJsonArray<T>(value: string | null | undefined): T[] {
   if (!value) return [];
   try {
@@ -292,7 +302,7 @@ export async function listLatest(
   const offsetIndex = params.length;
   const { results } = await db
     .prepare(
-      `SELECT ${CARD_COLUMNS} ${FROM_PUBLISHED} ${filters}
+      `SELECT ${CARD_COLUMNS} ${FROM_LISTED} ${filters}
        ORDER BY a.published_at DESC LIMIT ?${limitIndex} OFFSET ?${offsetIndex}`,
     )
     .bind(...params)
@@ -300,13 +310,24 @@ export async function listLatest(
   return results.map((r) => mapCard(r, lang));
 }
 
-export async function countPublished(db: D1Database, opts: ListFilters = {}): Promise<number> {
+export async function countPublished(
+  db: D1Database,
+  opts: ListFilters = {},
+  lang?: Lang,
+): Promise<number> {
   const params: unknown[] = [nowIso()];
   const filters = appendFilters(opts, params);
+  // En inglés se cuentan solo las traducidas: si no, la sección anunciaba páginas 2, 3… vacías o
+  // llenas de copias en español (`/en/crypto?page=2` salió en «rastreada sin indexar»).
+  let idioma = "";
+  if (lang === "en") {
+    params.push(lang);
+    idioma = `AND EXISTS (SELECT 1 FROM article_i18n x WHERE x.article_id = a.id AND x.lang = ?${params.length})`;
+  }
   const row = await db
     .prepare(
       `SELECT COUNT(*) AS n FROM articles a
-       WHERE a.status = 'published' AND a.published_at IS NOT NULL AND a.published_at <= ?1 ${filters}`,
+       WHERE a.status = 'published' AND a.published_at IS NOT NULL AND a.published_at <= ?1 ${filters} ${idioma}`,
     )
     .bind(...params)
     .first<{ n: number }>();
@@ -323,7 +344,7 @@ export async function listPaged(
   const safePage = Math.max(1, Math.floor(page));
   const [items, total] = await Promise.all([
     listLatest(db, lang, { ...opts, limit: perPage, offset: (safePage - 1) * perPage }),
-    countPublished(db, opts),
+    countPublished(db, opts, lang),
   ]);
   return { items, total, page: safePage, perPage, pages: Math.max(1, Math.ceil(total / perPage)) };
 }
@@ -339,7 +360,7 @@ export async function listLatestPerSection(
       `SELECT * FROM (
          SELECT ${CARD_COLUMNS},
            ROW_NUMBER() OVER (PARTITION BY a.section_id ORDER BY a.published_at DESC) AS rn
-         ${FROM_PUBLISHED}
+         ${FROM_LISTED}
        ) WHERE rn <= ?3 ORDER BY section_id, published_at DESC`,
     )
     .bind(lang, nowIso(), perSection)
@@ -413,7 +434,7 @@ export async function listRelated(
 ): Promise<ArticleCard[]> {
   const { results } = await db
     .prepare(
-      `SELECT ${CARD_COLUMNS} ${FROM_PUBLISHED} AND a.section_id = ?3 AND a.id <> ?4
+      `SELECT ${CARD_COLUMNS} ${FROM_LISTED} AND a.section_id = ?3 AND a.id <> ?4
        ORDER BY a.published_at DESC LIMIT ?5`,
     )
     .bind(lang, nowIso(), sectionId, excludeId, limit)

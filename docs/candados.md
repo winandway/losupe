@@ -2020,3 +2020,33 @@ ejecución remota de código en la optimización de imágenes, crítico; y zod, 
 loadManifest(/.next/server/preview-props.json)»); se comprobó en el servidor de prueba local. La
 versión 1.20.16 declara compatibilidad con `next >=16.4.5` y lo arregla. **No subir Next sin subir
 también el empaquetador** y sin abrir la portada en `npm run preview` antes de publicar.
+
+## 58. El selector de idioma y los listados en inglés mandaban a Google a direcciones que no debía guardar (7 nov 2026)
+
+- **Qué se veía:** en Search Console, 457 páginas sin indexar. Entre ellas, 45 redirecciones con
+  dirección del propio dominio del tipo `/es/economia/<slug-en-inglés>` o `/en/economy/<slug-en-español>`,
+  24 copias de notas en español servidas bajo `/en/crypto/…` con `noindex`, y `/en/crypto?page=2` en
+  «rastreada sin indexar».
+- **Causa real:** dos piezas del sitio fabricaban esos enlaces en cada página:
+  1. `LangSwitcher` armaba la dirección del otro idioma con `swapLangPath`, que cambia el prefijo y la
+     sección pero **conserva el slug**. En una nota traducida eso es una redirección; en una no
+     traducida, la copia en español con `noindex`. Google los seguía en cada nota.
+  2. Los listados (`listLatest`, `listLatestPerSection`, `listRelated`) caían al español cuando no
+     había traducción, así que `/en/crypto` y sus páginas 2, 3… se llenaban de notas en español.
+- **Arreglo:**
+  - `destinoOtroIdioma()` en `src/lib/urls.ts`: en una nota usa el `hreflang` que declara la propia
+    página; si no lo hay, va a la sección del otro idioma. Nunca inventa una dirección. El selector lee
+    el `hreflang` del `<head>` al cargar, al cambiar de página y otra vez al tocar.
+  - `FROM_LISTED` en `src/lib/queries.ts`: lo que se lista en inglés tiene que existir en inglés.
+    `countPublished(db, opts, lang)` cuenta igual, para que la paginación no anuncie páginas vacías.
+  - La copia en español bajo `/en/` **se mantiene** (con su aviso y `noindex`) para quien llegue por un
+    enlace viejo; simplemente ya no se enlaza.
+- **Prueba que lo fija:** `tests/unit/indexacion.test.ts` (SQLite de verdad + el selector) y el e2e
+  «SEO: el selector de idioma de una nota no inventa direcciones (candado 58)». Comprobado en rojo el
+  7 nov 2026 con tres mutaciones: quitar el filtro de `FROM_LISTED`, volver a `swapLangPath` en las
+  notas y no pasar el idioma al conteo.
+- **Cómo se comprueba en vivo:** `curl -s https://losupe.com/es/ventas/casillero-en-miami-como-comprar-en-estados-unidos-y-recibir-en-sudamerica | grep -c 'href="/en/sales/casillero'` → `0`; y
+  `curl -s https://losupe.com/en/crypto | grep -c '/en/crypto/regulador-bancario'` → `0`.
+- **Qué NO tocar:** no volver a usar `swapLangPath` para el selector de una nota; no quitar el filtro
+  de idioma de los listados; no borrar la copia con `noindex` (rompería enlaces ya compartidos).
+- Informe completo y qué mirar en Search Console: `docs/INDEXACION-2026-11-07.md`.

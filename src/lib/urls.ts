@@ -110,3 +110,34 @@ export function swapLangPath(pathname: string, to: Lang): string {
 export function absoluteUrl(base: string, path: string): string {
   return `${base.replace(/\/$/, "")}${path.startsWith("/") ? path : `/${path}`}`;
 }
+
+/**
+ * Adónde lleva el selector de idioma (candado 58).
+ *
+ * En una nota NO se puede armar la dirección del otro idioma cambiando el prefijo: el slug cambia de
+ * idioma a idioma. `swapLangPath` daba `/en/economy/<slug-en-español>`, que respondía con una
+ * redirección (si la nota estaba traducida) o con una copia en español marcada `noindex` (si no lo
+ * estaba). Google seguía ese enlace en cada nota: el 7 nov 2026 Search Console contaba 45 de esas
+ * redirecciones y 24 copias con noindex, todas nacidas del selector.
+ *
+ * Regla: en una nota se usa la versión que la propia página declara en su `hreflang` (`alternativa`).
+ * Si no la hay —la nota no está traducida—, se va a la sección en el otro idioma, que siempre existe
+ * y se indexa. Fuera de las notas, `swapLangPath` sigue sirviendo.
+ */
+export function destinoOtroIdioma(pathname: string, to: Lang, alternativa?: string | null): string {
+  const segments = (pathname.split("?")[0] ?? "/").split("/").filter(Boolean);
+  const [lang, seccion, slug] = segments;
+  const encontrada = seccion ? sectionByAnySlug(seccion) : undefined;
+  if (segments.length !== 3 || !lang || !isLang(lang) || !encontrada || !slug) {
+    return swapLangPath(pathname, to);
+  }
+  if (alternativa) {
+    try {
+      const destino = new URL(alternativa, "https://losupe.com");
+      if (destino.pathname.startsWith(`/${to}/`)) return destino.pathname;
+    } catch {
+      // Una alternativa rota no puede tumbar el selector: se cae a la sección, que siempre existe.
+    }
+  }
+  return `/${to}/${encontrada.section.slug[to]}`;
+}
