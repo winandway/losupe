@@ -10,10 +10,7 @@
 
 ## 👤 Esperando por Richard
 
-- [ ] 👤 **Verificar Search Console.** Pegar el código en la variable `GOOGLE_SITE_VERIFICATION`
-      (YaDominios Cloud → sitio `losupe` → Variables de entorno). Sin esto se publica a ciegas: no se
-      ve qué busca la gente ni se puede pedir que Google indexe una nota. Guía:
-      [`docs/posicionamiento.md`](docs/posicionamiento.md).
+- [x] 👤 **Search Console verificado** (propiedad de dominio, cuenta windoce1; confirmado el 7 nov 2026).
 - [ ] 👤 **Enlazar losupe.com desde mercatren.com, windoce.com y yadominios.com.** Es lo que más pesa
       para que Google confíe en un sitio nuevo, y lo único que no se puede programar.
 - [ ] 👤 **Llaves de las redes sociales** (Telegram, Bluesky, Mastodon, Facebook). El código está listo
@@ -32,13 +29,18 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                          Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                          En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                          Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                          hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
+
+- [x] 🤖 Indexación: el selector de idioma y los listados en inglés fabricaban redirecciones y copias con noindex (7 nov 2026, candado 58). Informe: [docs/INDEXACION-2026-11-07.md](docs/INDEXACION-2026-11-07.md).
+- [ ] 🤖 **14 nov 2026: revisar Search Console** con la lista de la sección 4 del informe de indexación y anotar los números.
+- [ ] 👤 **Decidir el tipo de notas:** Google rastrea y no guarda las efemérides («7 curiosidades a 100 años…») ni las guías genéricas. Recomendación: menos de esas y más noticias del día con fuente. Detalle en el informe de indexación, sección 3.
+- [ ] 🤖 (medio) El selector de idioma todavía es el de dos banderitas; la regla global pide el estilo Amazon (botón «🇪🇸 ES ▾» con ventanita y opciones con círculo).
 
 - [x] 🤖 Vista previa de WhatsApp con la foto, no con el logo (17 sep 2026, candado 51).
 - [x] 🤖 Guion para creadores y «¿Sabías qué?» en cada nota (17 sep 2026, candado 52).

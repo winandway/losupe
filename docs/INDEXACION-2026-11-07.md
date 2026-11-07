@@ -84,4 +84,13 @@ Se pidió indexación a mano (cupo diario de Google) de la portada en inglés y 
 
 ## 5. Bitácora
 
-- 7 nov 2026 — diagnóstico con Search Console (solo lectura), arreglo del candado 58, publicado.
+- 7 nov 2026 — diagnóstico con Search Console (solo lectura), arreglo del candado 58, publicado
+  (commit 6ca7dfa) y comprobado en vivo: `/en/crypto` ya no enlaza notas en español y el botón EN
+  de una nota lleva a su traducción.
+- 7 nov 2026 — indexación pedida a mano en Search Console (las cinco aceptadas):
+  `https://losupe.com/en`,
+  `https://losupe.com/es/tecnologia/google-podria-limitar-el-buscador-a-escuelas-que-rechacen-la-inteligencia-artificial`,
+  `https://losupe.com/en/technology/google-may-restrict-search-access-for-schools-rejecting-ai`,
+  `https://losupe.com/es/tecnologia/acciones-de-amd-caen-13-y-las-de-nvidia-un-7-por-temor-a-regulacion-de-ia`,
+  `https://losupe.com/en/technology/amd-shares-drop-13-nvidia-7-amid-ai-regulation-fears`.
+  Las cuatro notas Google «no las reconocía» todavía: eran de hoy y de ayer.
