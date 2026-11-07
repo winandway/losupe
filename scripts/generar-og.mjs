@@ -38,6 +38,13 @@ const SECCIONES = [
     onColor: "#FFFFFF",
     simbolo: "musica",
   },
+  {
+    id: "windoce",
+    nombre: "Desde Windoce",
+    color: "#0B1F3A",
+    onColor: "#FFFFFF",
+    simbolo: "chip",
+  },
 ];
 
 const SIMBOLOS = {

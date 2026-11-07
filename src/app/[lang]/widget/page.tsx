@@ -4,7 +4,7 @@ import { Container } from "@/components/Container";
 import { VistaPreviaWidget } from "@/components/VistaPreviaWidget";
 import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 import { getBaseUrl } from "@/lib/site";
 import { staticPath } from "@/lib/urls";
 

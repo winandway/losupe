@@ -8,6 +8,8 @@ const ROUTES_200 = [
   "/en/crypto",
   "/es/economia",
   "/en/economy",
+  "/es/desde-windoce",
+  "/en/from-windoce",
   "/es/autor/kevin-rondon",
   "/en/author/kevin-rondon",
   "/es/buscar?q=bitcoin",
@@ -1359,4 +1361,18 @@ test("video: al seguir leyendo se encoge a una esquina, y si lo cierras no vuelv
   await page.mouse.wheel(0, -2000);
   await page.waitForTimeout(500);
   await expect(bloque.locator("video")).toHaveCount(0);
+});
+
+// Desde Windoce (candado 57): la sección muestra las fichas de los productos, y sus enlaces son
+// patrocinados. Las notas en revisión NO se ven en público.
+test("la sección de la casa muestra las fichas con enlaces patrocinados", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 812 });
+  await page.goto("/es/desde-windoce");
+  const fichas = page.getByTestId("fichas-casa");
+  await expect(fichas).toBeVisible();
+  await expect(fichas.locator("article")).toHaveCount(10);
+  const enlace = fichas.locator('a[href="https://pantalay.com"]');
+  await expect(enlace).toHaveAttribute("rel", /sponsored/);
+  // La nota de Pantalay está en revisión: no puede aparecer en la sección pública.
+  await expect(page.locator('a[href*="grabar-tutoriales"]')).toHaveCount(0);
 });

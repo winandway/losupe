@@ -73,7 +73,8 @@ describe("i18n", () => {
 
 describe("sections", () => {
   it("resuelve por id y por slug en ambos idiomas", () => {
-    expect(SECTIONS).toHaveLength(5);
+    // Cinco de noticias y la de la casa (Desde Windoce).
+    expect(SECTIONS).toHaveLength(6);
     expect(getSection("cripto")?.slug.en).toBe("crypto");
     expect(sectionBySlug("en", "economy")?.id).toBe("economia");
     expect(sectionBySlug("es", "economy")).toBeUndefined();

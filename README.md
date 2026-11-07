@@ -102,6 +102,10 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   de medios y Brave; medios de confianza en `src/lib/robot/trusted-sources.ts` (el redactor los
   nombra: «según The New York Times»). Video corto de Pexels cuando suma. Plan de funcionamiento:
   [docs/plan-editorial.md](docs/plan-editorial.md) (PDF: `docs/plan-editorial-2026-08-23.pdf`).
+- **Desde Windoce** (`/es/desde-windoce`, `/en/from-windoce`): contenido de la casa sobre los
+  productos de Windoce LLC, con el aviso puesto en código (no se publica sin él), fuera del mapa de
+  Google Noticias y una nota al día como máximo. Reglas: [docs/DESDE-WINDOCE.md](docs/DESDE-WINDOCE.md);
+  manual: [docs/desde-windoce-guia.md](docs/desde-windoce-guia.md); candado 57.
 
 ## Monetización
 

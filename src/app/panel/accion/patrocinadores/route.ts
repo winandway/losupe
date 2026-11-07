@@ -2,7 +2,7 @@ import { z } from "zod";
 import { sessionFromRequest } from "@/lib/panel/auth";
 import { panelEnv } from "@/lib/panel/server";
 import { createSponsor, updateSponsor } from "@/lib/robot/queue";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 
 export const dynamic = "force-dynamic";
 

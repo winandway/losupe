@@ -13,7 +13,7 @@ async function badges(): Promise<{ orders: number; notes: number }> {
     const row = await env.DB.prepare(
       `SELECT
         (SELECT COUNT(*) FROM orders WHERE status = 'new') AS orders,
-        (SELECT COUNT(*) FROM articles WHERE status = 'review' AND origin IN ('robot', 'sponsored')) AS notes`,
+        (SELECT COUNT(*) FROM articles WHERE status = 'review' AND origin IN ('robot', 'sponsored', 'casa')) AS notes`,
     ).first<{ orders: number; notes: number }>();
     return { orders: Number(row?.orders ?? 0), notes: Number(row?.notes ?? 0) };
   } catch {

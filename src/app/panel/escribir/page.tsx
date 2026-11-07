@@ -1,7 +1,7 @@
 import { PanelShell } from "@/components/panel/PanelShell";
 import { flashFrom, panelDict, requirePanelSession } from "@/lib/panel/server";
 import { listWriters } from "@/lib/queries";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

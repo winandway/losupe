@@ -15,23 +15,45 @@ type Row = {
   title: string;
   slug: string;
   image_url: string | null;
+  format: string | null;
+  social_json: string | null;
 };
+
+type Redes = {
+  facebook_instagram?: { titulo?: string; texto?: string };
+  tiktok?: string;
+  youtube?: { titulo?: string; descripcion?: string; etiquetas?: string };
+  whatsapp?: string;
+};
+
+function leerRedes(json: string | null): Redes | null {
+  if (!json) return null;
+  try {
+    const r = JSON.parse(json) as Redes;
+    return r && typeof r === "object" ? r : null;
+  } catch {
+    return null;
+  }
+}
 
 export default async function NotesPage({ searchParams }: Props) {
   const { env } = await requirePanelSession();
   const { lang, dict } = await panelDict();
   const p = dict.panel.notes;
   const { results } = await env.DB.prepare(
-    `SELECT a.id, a.status, a.origin, a.section_id, a.created_at, a.published_at, a.image_url, i.title, i.slug
+    `SELECT a.id, a.status, a.origin, a.section_id, a.created_at, a.published_at, a.image_url, i.title, i.slug, h.format, h.social_json
      FROM articles a JOIN article_i18n i ON i.article_id = a.id AND i.lang = 'es'
-     WHERE a.origin IN ('robot', 'sponsored') ORDER BY a.created_at DESC LIMIT 60`,
+     LEFT JOIN house_notes h ON h.article_id = a.id
+     WHERE a.origin IN ('robot', 'sponsored', 'casa') ORDER BY a.created_at DESC LIMIT 60`,
   ).all<Row>();
   const review = results.filter((r) => r.status === "review");
   const rest = results.filter((r) => r.status !== "review");
   const flash = flashFrom(await searchParams);
   const flashText = {
     ok: flash.ok ? ((p as unknown as Record<string, string>)[flash.ok] ?? flash.ok) : undefined,
-    error: flash.error,
+    error: flash.error
+      ? ((p as unknown as Record<string, string>)[flash.error] ?? flash.error)
+      : undefined,
   };
   const Item = ({ r }: { r: Row }) => (
     <li className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -39,14 +61,51 @@ export default async function NotesPage({ searchParams }: Props) {
         <p className="font-semibold">{r.title}</p>
         <p className="text-xs text-muted">
           <span
-            className={`mr-2 rounded-full px-2 py-0.5 font-bold ${r.origin === "sponsored" ? "bg-accent/50" : "bg-paper"}`}
+            className={`mr-2 rounded-full px-2 py-0.5 font-bold ${r.origin === "sponsored" ? "bg-accent/50" : r.origin === "casa" ? "bg-ink text-white" : "bg-paper"}`}
           >
-            {r.origin === "sponsored" ? p.sponsored : p.universal}
+            {r.origin === "sponsored" ? p.sponsored : r.origin === "casa" ? p.casa : p.universal}
           </span>
+          {r.format ? `${p.casaFormato}: ${r.format} · ` : ""}
           {getSection(r.section_id)?.name[lang]} · {r.created_at.slice(0, 16).replace("T", " ")} ·{" "}
           {r.status}
           {!r.image_url ? " · sin imagen" : ""}
         </p>
+        {(() => {
+          // Textos para redes de las notas de la casa: listos para copiar y pegar.
+          const redes = leerRedes(r.social_json);
+          if (!redes) return null;
+          const bloques: [string, string][] = [
+            [
+              "Facebook / Instagram",
+              [redes.facebook_instagram?.titulo, redes.facebook_instagram?.texto]
+                .filter(Boolean)
+                .join("\n\n"),
+            ],
+            ["TikTok", redes.tiktok ?? ""],
+            [
+              "YouTube Shorts",
+              [redes.youtube?.titulo, redes.youtube?.descripcion, redes.youtube?.etiquetas]
+                .filter(Boolean)
+                .join("\n\n"),
+            ],
+            ["WhatsApp", redes.whatsapp ?? ""],
+          ];
+          return (
+            <details className="mt-2 text-xs">
+              <summary className="cursor-pointer font-bold">{p.casaRedes}</summary>
+              {bloques
+                .filter(([, t]) => t)
+                .map(([red, texto]) => (
+                  <div key={red} className="mt-2">
+                    <p className="font-bold">{red}</p>
+                    <pre className="whitespace-pre-wrap rounded-lg bg-paper p-2 font-sans">
+                      {texto}
+                    </pre>
+                  </div>
+                ))}
+            </details>
+          );
+        })()}
       </div>
       <div className="flex shrink-0 gap-1">
         <a

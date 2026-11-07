@@ -1,3 +1,4 @@
+import { assertAvisoCasa } from "@/lib/casa/aviso";
 import { stripHtml } from "@/lib/html";
 import { indexArticle } from "@/lib/search";
 import type { SectionId } from "@/lib/sections";
@@ -14,8 +15,8 @@ export type PublishInput = {
   draft: Draft;
   sectionId: SectionId;
   authorId: string;
-  origin: "robot" | "sponsored";
-  status: "published" | "review";
+  origin: "robot" | "sponsored" | "casa";
+  status: "published" | "review" | "approved";
   sources: { title: string; url: string }[];
   image: { url: string; credit: string | null } | null;
   runId?: string;
@@ -30,7 +31,7 @@ export type PublishResult = {
   slugEn: string;
   pathEs: string;
   pathEn: string;
-  status: "published" | "review";
+  status: "published" | "review" | "approved";
 };
 
 export function wordCount(html: string): number {
@@ -118,13 +119,18 @@ export async function saveArticle(db: D1Database, input: PublishInput): Promise<
   };
 }
 
-/** Publica (o despublica) una nota ya guardada. */
+/**
+ * Publica (o despublica) una nota ya guardada. `approved` = nota de la casa aprobada que espera su
+ * turno (sale una por día). Una nota de la casa sin su aviso NO pasa a `published` ni a `approved`:
+ * `assertAvisoCasa` lanza antes de tocar la base (candado 57).
+ */
 export async function setArticleStatus(
   db: D1Database,
   articleId: string,
-  status: "published" | "review" | "draft" | "archived",
+  status: "published" | "review" | "draft" | "archived" | "approved",
   now = new Date(),
 ): Promise<void> {
+  if (status === "published" || status === "approved") await assertAvisoCasa(db, articleId);
   const iso = now.toISOString();
   await db
     .prepare(

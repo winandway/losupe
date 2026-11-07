@@ -1,6 +1,6 @@
 import { z } from "zod";
 import type { SectionId } from "@/lib/sections";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 import { saveArticle } from "./publish";
 import { generateJson } from "./gemini";
 import { finalizeDraft, SYSTEM_PROMPT, type Draft } from "./writer";
@@ -98,7 +98,7 @@ export type ManualResult = {
   ok: boolean;
   articleId?: string;
   path?: string;
-  status?: "published" | "review";
+  status?: "published" | "review" | "approved";
   title?: string;
   costUsd?: number;
   error?: string;

@@ -1,6 +1,6 @@
 import type { Lang } from "@/i18n/config";
 
-export type SectionId = "economia" | "ventas" | "tecnologia" | "cripto" | "artistas";
+export type SectionId = "economia" | "ventas" | "tecnologia" | "cripto" | "artistas" | "windoce";
 
 export type Section = {
   id: SectionId;
@@ -12,6 +12,12 @@ export type Section = {
   /** Color del texto sobre `color`. */
   onColor: string;
   perDay: number;
+  /**
+   * Sección de la CASA («Desde Windoce»): notas sobre los productos del grupo dueño del medio.
+   * No es noticia: no la escribe el robot de noticias, no entra al mapa de Google Noticias y cada
+   * nota lleva su aviso de contenido de la casa (ver `src/lib/casa/`, candado 57).
+   */
+  house?: boolean;
 };
 
 export const SECTIONS: readonly Section[] = [
@@ -75,7 +81,30 @@ export const SECTIONS: readonly Section[] = [
     onColor: "#FFFFFF",
     perDay: 3,
   },
+  {
+    id: "windoce",
+    slug: { es: "desde-windoce", en: "from-windoce" },
+    name: { es: "Desde Windoce", en: "From Windoce" },
+    description: {
+      es: "Contenido de la casa: historias, lanzamientos y guías de los productos de Windoce LLC, la empresa dueña de Losupe. Cada nota lo dice arriba.",
+      en: "Brand content: stories, launches, and guides about the products of Windoce LLC, the company that owns Losupe. Every story says so up top.",
+    },
+    color: "#0B1F3A",
+    onColor: "#FFFFFF",
+    perDay: 0,
+    house: true,
+  },
 ];
+
+/** La sección de contenido de la casa. */
+export const HOUSE_SECTION_ID = "windoce" as const;
+
+/** Solo las secciones de NOTICIAS: las que escribe el robot, aceptan encargos y van a Google Noticias. */
+export const NEWS_SECTIONS: readonly Section[] = SECTIONS.filter((s) => !s.house);
+
+export function isHouseSection(id: string): boolean {
+  return id === HOUSE_SECTION_ID;
+}
 
 export const SECTION_IDS: readonly SectionId[] = SECTIONS.map((s) => s.id);
 

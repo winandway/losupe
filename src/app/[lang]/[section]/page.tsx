@@ -12,6 +12,7 @@ import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listPaged } from "@/lib/queries";
+import { FichasCasa } from "@/components/FichasCasa";
 import { sectionByAnySlug, sectionBySlug } from "@/lib/sections";
 import { breadcrumbJsonLd, itemListJsonLd, sectionAlternates } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
@@ -135,6 +136,8 @@ export default async function SectionPage({ params, searchParams }: Props) {
         pages={result.pages}
         dict={dict}
       />
+
+      {section.house && page === 1 ? <FichasCasa lang={lang} dict={dict} /> : null}
     </Container>
   );
 }

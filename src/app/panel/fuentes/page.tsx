@@ -1,7 +1,7 @@
 import { PanelShell } from "@/components/panel/PanelShell";
 import { flashFrom, panelDict, requirePanelSession } from "@/lib/panel/server";
 import type { SourceRow } from "@/lib/robot/universal";
-import { getSection, SECTIONS } from "@/lib/sections";
+import { getSection, NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 
 type Props = { searchParams: Promise<Record<string, string | string[] | undefined>> };
 

@@ -157,9 +157,21 @@ export function articleJsonLd(base: string, lang: Lang, article: ArticleFull, br
   const section = getSection(article.sectionId);
   // Google recorta los titulares de más de 110 caracteres en `headline`.
   const headline = article.title.length > 110 ? `${article.title.slice(0, 107)}…` : article.title;
+  // Contenido de la casa: se marca como contenido de anunciante y se nombra a quien lo financia.
+  // Nunca como NewsArticle: no es una noticia independiente (candado 57, política de Google Noticias).
+  const casa = section?.house === true;
   return {
     "@context": "https://schema.org",
-    "@type": article.kind === "news" ? "NewsArticle" : "Article",
+    "@type": casa
+      ? "AdvertiserContentArticle"
+      : article.kind === "news"
+        ? "NewsArticle"
+        : "Article",
+    ...(casa
+      ? {
+          sponsor: { "@type": "Organization", name: "Windoce LLC", url: "https://windoce.com" },
+        }
+      : {}),
     headline,
     description: article.metaDescription ?? article.excerpt,
     image: article.imageUrl ? [absoluteUrl(base, article.imageUrl)] : undefined,

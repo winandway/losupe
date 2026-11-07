@@ -24,7 +24,7 @@ import { duracionLegible, MEDIDAS } from "@/lib/robot/guion";
 import { AuthorCard } from "@/components/AuthorCard";
 import { splitAfterParagraph } from "@/lib/html";
 import { getArticleBySlug, getAuthor, listRelated, type ArticleFull } from "@/lib/queries";
-import { getSection, sectionByAnySlug } from "@/lib/sections";
+import { getSection, isHouseSection, sectionByAnySlug } from "@/lib/sections";
 import { articleJsonLd, breadcrumbJsonLd } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
 import { absoluteUrl, articlePath, homePath, sectionPath } from "@/lib/urls";
@@ -117,6 +117,9 @@ export default async function ArticlePage({ params }: Props) {
   const showLegacy = article.origin === "mundoscrypto";
   const sponsor =
     article.origin === "sponsored" ? await getSponsorForArticle(db, article.id) : null;
+  // Contenido de la casa (Desde Windoce): etiqueta visible arriba, además del aviso que abre el
+  // cuerpo. Las dos cosas a la vez, para que nadie lo lea como una noticia independiente (candado 57).
+  const esCasa = isHouseSection(article.sectionId);
 
   return (
     <>
@@ -150,6 +153,14 @@ export default async function ArticlePage({ params }: Props) {
               {sponsor ? (
                 <span className="rounded-full border border-line bg-paper px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted">
                   {dict.article.sponsoredLabel}
+                </span>
+              ) : null}
+              {esCasa ? (
+                <span
+                  data-testid="etiqueta-casa"
+                  className="rounded-full border border-line bg-paper px-3 py-1 text-xs font-bold uppercase tracking-wide text-muted"
+                >
+                  {dict.article.houseLabel}
                 </span>
               ) : null}
             </div>

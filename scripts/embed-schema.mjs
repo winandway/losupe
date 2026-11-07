@@ -73,11 +73,18 @@ if (existsSync(contentDir)) {
     const statements = [];
     const minutes = Math.max(1, Math.round(wordCount(note.i18n.es?.content_html ?? "") / 200));
     statements.push(
-      `INSERT OR REPLACE INTO articles (id, section_id, author_id, status, kind, origin, image_url, image_alt_es, image_alt_en, image_credit, video_url, video_poster, video_credit, sources_json, ai_assisted, reading_minutes, views, published_at, created_at, updated_at) VALUES (${q(a.id)}, ${q(a.section_id)}, ${q(a.author_id)}, ${q(a.status ?? "published")}, ${q(a.kind ?? "news")}, ${q(a.origin ?? "editorial")}, ${q(a.image_url)}, ${q(a.image_alt_es)}, ${q(a.image_alt_en)}, ${q(a.image_credit)}, ${q(a.video_url ?? null)}, ${q(a.video_poster ?? null)}, ${q(a.video_credit ?? null)}, ${q(JSON.stringify(a.sources ?? []))}, ${a.ai_assisted ? 1 : 0}, ${minutes}, COALESCE((SELECT views FROM articles WHERE id = ${q(a.id)}), 0), ${q(a.published_at)}, COALESCE((SELECT created_at FROM articles WHERE id = ${q(a.id)}), ${q(a.published_at)}), ${q(a.updated_at ?? a.published_at)})`,
+      `INSERT OR REPLACE INTO articles (id, section_id, author_id, status, kind, origin, image_url, image_alt_es, image_alt_en, image_credit, video_url, video_poster, video_credit, sources_json, ai_assisted, reading_minutes, views, published_at, created_at, updated_at) VALUES (${q(a.id)}, ${q(a.section_id)}, ${q(a.author_id)}, ${a.status === "review" ? `COALESCE((SELECT status FROM articles WHERE id = ${q(a.id)}), 'review')` : q(a.status ?? "published")}, ${q(a.kind ?? "news")}, ${q(a.origin ?? "editorial")}, ${q(a.image_url)}, ${q(a.image_alt_es)}, ${q(a.image_alt_en)}, ${q(a.image_credit)}, ${q(a.video_url ?? null)}, ${q(a.video_poster ?? null)}, ${q(a.video_credit ?? null)}, ${q(JSON.stringify(a.sources ?? []))}, ${a.ai_assisted ? 1 : 0}, ${minutes}, COALESCE((SELECT views FROM articles WHERE id = ${q(a.id)}), 0), ${a.status === "review" ? `(SELECT published_at FROM articles WHERE id = ${q(a.id)})` : q(a.published_at)}, COALESCE((SELECT created_at FROM articles WHERE id = ${q(a.id)}), ${q(a.published_at ?? a.created_at)}), ${q(a.updated_at ?? a.published_at ?? a.created_at)})`,
     );
     for (const [lang, t] of Object.entries(note.i18n)) {
       statements.push(
         `INSERT OR REPLACE INTO article_i18n (article_id, lang, slug, title, excerpt, content_html, meta_title, meta_description, tags_json, machine_translated, guion, guion_1m, guion_2m, titulo_video, sabias_que_json) VALUES (${q(a.id)}, ${q(lang)}, ${q(t.slug)}, ${q(t.title)}, ${q(t.excerpt ?? "")}, ${q(t.content_html.trim())}, ${q(t.meta_title ?? null)}, ${q(t.meta_description ?? null)}, ${q(JSON.stringify(t.tags ?? []))}, ${t.machine_translated ? 1 : 0}, ${q(t.guion_1m?.trim() || t.guion?.trim() || null)}, ${q(t.guion_1m?.trim() || null)}, ${q(t.guion_2m?.trim() || null)}, ${q(t.titulo_video?.trim() || null)}, ${q(t.sabias_que?.length ? JSON.stringify(t.sabias_que) : null)})`,
+      );
+    }
+    // Notas de la casa (Desde Windoce): su producto, su formato y sus textos para redes. Va DESPUÉS
+    // del artículo: el INSERT OR REPLACE del artículo podría arrastrar filas que dependan de él.
+    if (note.casa) {
+      statements.push(
+        `INSERT OR REPLACE INTO house_notes (article_id, product_id, format, social_json, created_at) VALUES (${q(a.id)}, ${q(note.casa.product_id)}, ${q(note.casa.format)}, ${q(JSON.stringify(note.casa.redes ?? {}))}, COALESCE((SELECT created_at FROM house_notes WHERE article_id = ${q(a.id)}), strftime('%Y-%m-%dT%H:%M:%fZ','now')))`,
       );
     }
     const fingerprint = hash(statements.join("\n"));

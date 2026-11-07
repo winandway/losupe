@@ -3,6 +3,11 @@
 > 👤 = depende de Richard · 🤖 = lo hace la IA. La IA ejecuta los 🤖 en fila, sin esperar a que se
 > los pidan, y recuerda los 👤 al final de cada respuesta hasta que estén hechos.
 
+## 🔴 Bloque nuevo: «Desde Windoce» (Richard, 7 nov 2026) 🤖
+
+- [x] 🤖 Construir la sección de notas de nuestros productos con su aviso de contenido de la casa, la rotación diaria y la primera semana de notas para revisión. Todo el detalle y la regla en [docs/DESDE-WINDOCE.md](docs/DESDE-WINDOCE.md). Aprobado por Richard «con el aviso». Hecho el 7 nov 2026 (candado 57).
+- [ ] 👤 **Revisar las siete notas de la primera semana** en el panel (Notas → Para revisar) y aprobar las que sirvan. Documento: [docs/DESDE-WINDOCE-SEMANA-1.md](docs/DESDE-WINDOCE-SEMANA-1.md). Sale una por día; tras cinco aprobadas el robot sigue solo.
+
 ## 👤 Esperando por Richard
 
 - [ ] 👤 **Verificar Search Console.** Pegar el código en la variable `GOOGLE_SITE_VERIFICATION`
@@ -14,8 +19,7 @@
 - [ ] 👤 **Llaves de las redes sociales** (Telegram, Bluesky, Mastodon, Facebook). El código está listo
       desde el 29 ago 2026; con las llaves, cada nota se anuncia sola. Guía:
       [`docs/redes-sociales.md`](docs/redes-sociales.md).
-- [ ] 👤 **Google Publisher Center.** Ya se puede: desde el 6 sep 2026 las notas se declaran como
-      noticias.
+- [x] 👤 **Google Publisher Center.** Hecho el 7 nov 2026 por Gerencia con Richard: cuenta windoce1, publicación «losupe», Estados Unidos, español (Latinoamérica), logo cuadrado, dominio verificado. Mapas reenviados en Search Console el mismo día.
 - [ ] 👤 **Bing Webmaster Tools** (variable `BING_SITE_VERIFICATION`). Alimenta Bing, DuckDuckGo y
       ChatGPT.
 
@@ -28,11 +32,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
 

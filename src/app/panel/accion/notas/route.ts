@@ -2,6 +2,8 @@ import { z } from "zod";
 import { pingIndexNow } from "@/lib/indexnow";
 import { sessionFromRequest } from "@/lib/panel/auth";
 import { panelEnv } from "@/lib/panel/server";
+import { CasaSinAvisoError } from "@/lib/casa/aviso";
+import { isHouseSection } from "@/lib/sections";
 import { setArticleStatus } from "@/lib/robot/publish";
 import { absoluteUrl, articlePath } from "@/lib/urls";
 import { SQL_NOW } from "@/lib/sql-time";
@@ -28,8 +30,28 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse({ op: form.get("op"), id: form.get("id") });
   if (!parsed.success) return back("/panel/notas?error=invalid");
   const { op, id } = parsed.data;
-  const status = op === "publish" ? "published" : op === "unpublish" ? "draft" : "archived";
-  await setArticleStatus(env.DB, id, status);
+  // Las notas de la casa no salen al aprobarlas: entran a la fila y el robot publica UNA por día,
+  // alternada con las noticias (docs/DESDE-WINDOCE.md).
+  const fila = await env.DB.prepare(`SELECT section_id FROM articles WHERE id = ?1`)
+    .bind(id)
+    .first<{ section_id: string }>();
+  const esCasa = Boolean(fila && isHouseSection(fila.section_id));
+  const status =
+    op === "publish"
+      ? esCasa
+        ? "approved"
+        : "published"
+      : op === "unpublish"
+        ? "draft"
+        : "archived";
+  try {
+    await setArticleStatus(env.DB, id, status);
+  } catch (error) {
+    // Candado 57: una nota de la casa sin su aviso no se publica, y se dice por qué.
+    if (error instanceof CasaSinAvisoError) return back("/panel/notas?error=sin_aviso");
+    throw error;
+  }
+  if (esCasa && op === "publish") return back("/panel/notas?ok=approved");
   // El encargo ligado (si lo hay) sigue el mismo destino.
   await env.DB.prepare(
     `UPDATE assignments SET status = ?2, published_at = CASE WHEN ?2 = 'published' THEN COALESCE(published_at, ${SQL_NOW}) ELSE published_at END, updated_at = ${SQL_NOW} WHERE article_id = ?1`,

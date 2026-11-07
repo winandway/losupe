@@ -5,7 +5,7 @@ import { SponsorForm } from "@/components/panel/SponsorForm";
 import { flashFrom, panelDict, requirePanelSession } from "@/lib/panel/server";
 import { getSponsor, getSponsorPace, listAssignments, sponsorNextSlot } from "@/lib/robot/queue";
 import { articlePath } from "@/lib/urls";
-import { getSection, SECTIONS } from "@/lib/sections";
+import { getSection, NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 
 type Props = {
   params: Promise<{ id: string }>;

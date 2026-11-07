@@ -1,6 +1,6 @@
 import type { Dict } from "@/i18n/es";
 import type { Lang } from "@/i18n/config";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 import type { SponsorWithCounts } from "@/lib/robot/queue";
 
 const input =

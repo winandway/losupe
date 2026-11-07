@@ -2,7 +2,7 @@ import { z } from "zod";
 import { sessionFromRequest } from "@/lib/panel/auth";
 import { panelEnv } from "@/lib/panel/server";
 import { addAssignments, getAssignment, moveAssignment, updateAssignment } from "@/lib/robot/queue";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 import { parseIdeas, parseUrls } from "@/lib/panel/forms";
 
 export const dynamic = "force-dynamic";

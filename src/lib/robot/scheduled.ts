@@ -4,7 +4,8 @@
  * respeta el interruptor `robot_paused` y delega el trabajo al pipeline (encargos + universales).
  */
 
-import { runPipeline, type RobotEnv, type RunSummary } from "./pipeline";
+import { pasoCasa, type PasoCasaResultado } from "@/lib/casa/paso-diario";
+import { isRobotPaused, runPipeline, type RobotEnv, type RunSummary } from "./pipeline";
 import { rescatarGuiones } from "./guion";
 import { rehacerImagenesPesadas, rescatarImagenes } from "./rescate-imagenes";
 import { rescatarVideos } from "./rescate-video";
@@ -33,6 +34,8 @@ export type RunResult = {
   videosSinTema?: number;
   /** El primer motivo del rechazo, para no tener que adivinar por qué falta un guion. */
   guionPorQue?: string | null;
+  /** «Desde Windoce»: qué nota de la casa salió hoy y cuál quedó escrita (candado 57). */
+  casa?: PasoCasaResultado | { error: string };
 };
 
 export { isRobotPaused } from "./pipeline";
@@ -88,8 +91,22 @@ export async function runScheduled(
     runId: summary.runId,
   }).catch(() => ({ encontradas: 0, hechas: 0, errores: ["guiones: fallo inesperado"] }));
 
+  // «Desde Windoce» (7 nov 2026): una nota de la casa al día como máximo, y la siguiente escrita para
+  // revisión. Va al final y aparte: si falla, el diario de noticias no se entera. El error se ve en
+  // el resumen de la corrida, nunca se traga en silencio.
+  const casa = (await isRobotPaused(env.DB).catch(() => false))
+    ? { publicada: null, escrita: null, motivo: "robot_pausado" }
+    : await pasoCasa(env, {
+        fetchImpl: opts.fetchImpl,
+        runId: summary.runId,
+        base: opts.base ?? baseFrom(env),
+      }).catch((e: unknown) => ({
+        error: (e instanceof Error ? e.message : String(e)).slice(0, 300),
+      }));
+
   return {
     ok: summary.ok,
+    casa,
     runId: summary.runId,
     status: summary.status,
     reason: summary.reason,

@@ -45,4 +45,6 @@
    pipeline Gemini/Seedream/Pexels, candados de costo. Falta que Richard ponga las llaves. Tutorial:
    `docs/robot-y-encargos.md`.
 3. Google y posicionamiento — Publisher Center, IndexNow, autores, Core Web Vitals.
-4. Suscriptores y boletín — registro, confirmación, boletín cada 4 días (Resend).
+4. Desde Windoce (contenido de la casa) — hecho (7 nov 2026). Aviso en código, fuera de Google
+   Noticias, una nota al día. Reglas: `docs/DESDE-WINDOCE.md`; candado 57.
+5. Suscriptores y boletín — registro, confirmación, boletín cada 4 días (Resend).

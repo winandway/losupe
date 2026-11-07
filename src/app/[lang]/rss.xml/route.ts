@@ -2,7 +2,7 @@ import { getDict, isLang } from "@/i18n";
 import { getDb } from "@/lib/db";
 import { listLatest } from "@/lib/queries";
 import { buildRss } from "@/lib/rss";
-import { getSection } from "@/lib/sections";
+import { getSection, isHouseSection } from "@/lib/sections";
 import { baseUrlFromRequest } from "@/lib/site";
 import { absoluteUrl, articlePath, homePath, rssPath } from "@/lib/urls";
 
@@ -15,7 +15,10 @@ export async function GET(request: Request, ctx: { params: Promise<{ lang: strin
   const dict = getDict(lang);
   const base = baseUrlFromRequest(request);
   const db = await getDb();
-  const items = await listLatest(db, lang, { limit: 30 });
+  // El RSS también es fuente de Google Noticias (Publisher Center): sin contenido de la casa.
+  const items = (await listLatest(db, lang, { limit: 30 })).filter(
+    (a) => !isHouseSection(a.sectionId),
+  );
 
   const xml = buildRss(
     {

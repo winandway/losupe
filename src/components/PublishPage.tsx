@@ -4,7 +4,7 @@ import { Container } from "@/components/Container";
 import type { Lang } from "@/i18n/config";
 import type { Dict } from "@/i18n/es";
 import { PLANS, type PlanId } from "@/lib/orders";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 import { homePath } from "@/lib/urls";
 
 const field =

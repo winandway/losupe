@@ -79,6 +79,7 @@ export const en: Dict = {
       "Written with help from artificial intelligence and reviewed by the losupe editorial team.",
     fallbackNotice: "This article is available in Spanish only for now.",
     legacyNotice: "Originally published on MundosCrypto, the site that became losupe.",
+    houseLabel: "Brand content",
     sponsoredLabel: "Sponsored content",
     sponsoredNoticeTemplate:
       "Story produced on commission from {sponsor}. The company provided the information; writing and review are by losupe.",
@@ -95,6 +96,11 @@ export const en: Dict = {
     count: (n: number) => (n === 1 ? "1 story" : `${n} stories`),
     empty: "No stories in this section yet. Our newsroom robot starts publishing very soon.",
     page: (n: number) => `Page ${n}`,
+    houseProductsTitle: "The products we cover here",
+    houseProductsHint:
+      "Losupe is part of Windoce LLC. In this section we share stories and guides about its products, always with a disclosure up top. Here they are, with what we verified on their own sites:",
+    houseChecked: (date: string) => `Details verified on its site on ${date}`,
+    houseVisit: "Visit the site",
   },
   search: {
     title: "Search losupe",
@@ -271,6 +277,15 @@ export const en: Dict = {
           h: "Independence and sponsorship",
           p: [
             "We do not publish advertising disguised as news. If we ever publish sponsored content or affiliate links, they will be clearly and visibly labeled.",
+          ],
+        },
+        {
+          h: "Brand content: the From Windoce section",
+          p: [
+            "Losupe is part of Windoce LLC, a U.S. software company that also makes other products, including Pantalay, Kipuu, Beellon, QRbott, Divoox, Mercatren, YaDominios, YaPanel, Alira, and Tokiia. When we write about them, we do it in a separate section, “From Windoce,” and never among the news.",
+            "Every story in that section carries a visible label at the top and a line saying who owns the product, for example: “Brand content: Losupe and Pantalay are part of Windoce LLC.” Our system adds that disclosure, and a story without it can't be published.",
+            "The usual rules apply, plus a few more: we only state what we verified on the product's own site, with the date; if a person appears and isn't a real user who gave us permission, we present them as an example; we never make up testimonials or user numbers; we don't write ads or knock competitors; and we publish at most one brand story a day.",
+            "These stories are not submitted to Google News as news, and in our search engine data they're marked as company content, with Windoce LLC as the sponsor. Links to the product are marked as sponsored.",
           ],
         },
         {
@@ -657,6 +672,12 @@ export const en: Dict = {
       discard: "Discard",
       open: "Open",
       sponsored: "Sponsored",
+      casa: "From Windoce",
+      approved:
+        "Approved. It joins the brand queue: one goes out per day, alternating with the news.",
+      sin_aviso: "Can't publish: this brand story is missing its brand content disclosure.",
+      casaRedes: "Social media copy",
+      casaFormato: "Format",
       universal: "Universal",
       published: "Published.",
       unpublished: "Unpublished.",

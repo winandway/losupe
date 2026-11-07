@@ -1960,3 +1960,63 @@ con un video bonito de banco de imágenes al lado.
 - Que una nota delicada no lleve video.
 - `reproducir()`: en navegadores antiguos `play()` no devuelve una promesa y encadenar `.catch`
   tumbaba el bloque entero.
+
+## 57. «Desde Windoce»: contenido de la casa con aviso puesto en código (7 nov 2026)
+
+### Qué es y por qué lleva candado
+
+Losupe es de Windoce LLC. Richard decidió (7 nov 2026, «con el aviso») publicar notas sobre los
+productos de Windoce en una sección propia. Una nota de la casa **sin aviso** choca con la FTC
+(publicidad nativa, regla de 2024 contra testimonios falsos) y con Google Noticias, cuya política de
+anuncios y contenido patrocinado (leída el 7 nov 2026) dice que la propiedad o el interés de afiliado
+«should be clearly disclosed» y que no se permite presentar contenido patrocinado como
+independiente. Perder Google Noticias cuesta más que cualquier nota: por eso el aviso no depende de
+que nadie se acuerde.
+
+### Cómo funciona
+
+- Sección `windoce` (`/es/desde-windoce`, `/en/from-windoce`) con `house: true` en
+  `src/lib/sections.ts`. `NEWS_SECTIONS` la deja fuera de todo lo que es de noticias: el robot de
+  noticias, los encargos, las fuentes, el escribir a mano, el widget y los pedidos.
+- **El aviso**: `src/lib/casa/aviso.ts` arma el primer párrafo exacto del cuerpo
+  (`<p class="aviso-casa"><strong>Contenido de la casa:</strong> Losupe y X son de Windoce LLC.</p>`,
+  y su versión en inglés). Lo pone el sistema, nunca el modelo. Mercatren dice «Losupe es de
+  Windoce LLC, que desarrolla Mercatren» porque la opera Mercatren LLC.
+- **El candado**: `setArticleStatus` llama a `assertAvisoCasa` antes de pasar una nota a `published`
+  o `approved`. Si es de la casa y le falta el producto en `house_notes` o el aviso exacto en
+  español o en inglés, lanza `CasaSinAvisoError` y la base no se toca. El panel muestra «No se puede
+  publicar: le falta el aviso».
+- **Fuera de Google Noticias**: `news-sitemap.xml` y el RSS filtran la sección. El mapa normal sí la
+  lleva. Datos estructurados: `AdvertiserContentArticle` con `sponsor: Windoce LLC`. El enlace al
+  producto lleva `rel="sponsored noopener"`; los enlaces que ponga el modelo se quitan.
+- **Una al día**: aprobar en el panel deja la nota en `approved`; el paso diario
+  (`src/lib/casa/paso-diario.ts`, al final de `runScheduled`) publica la más vieja si hoy no salió
+  ninguna, y escribe la siguiente de la rotación (`siguienteTurno`, producto × formato) para
+  revisión. Hasta cinco aprobadas todo espera a Richard; con siete en revisión no escribe más.
+- **Fichas**: `src/lib/casa/productos.ts`, leídas en vivo el 7 nov 2026, con `cuidado` por producto
+  (lo que no se puede afirmar). Las imágenes son las oficiales, copiadas en `public/img/casa/`.
+- **Primera semana**: `seed/content/2026-11-07-casa-*.mjs` (siete, en `review`). La semilla de la
+  casa conserva el estado que ya tenga en la base: volver a sembrar no despublica lo aprobado.
+
+### Candados
+
+`tests/unit/casa.test.ts` (15). **Comprobado en rojo dos veces**: quitando `assertAvisoCasa` de
+`setArticleStatus` fallan «sin aviso no se publica» y «sin producto no se publica»; quitando el
+filtro de `news-sitemap.xml` falla «el mapa de noticias deja fuera las notas de la casa».
+
+### Qué NO tocar
+
+- La llamada a `assertAvisoCasa` en `setArticleStatus`.
+- Que el aviso lo arme el código (`avisoHtml`) y que `seed/casa.mjs` lo escriba letra por letra igual.
+- El filtro de la casa en `news-sitemap.xml` y en el RSS.
+- Que el paso diario nunca guarde una nota de la casa directamente en `published`.
+
+### De paso: Next 16.4.5 y el empaquetador (7 nov 2026)
+
+La verificación de este bloque se puso en rojo por dos fallos de seguridad nuevos (Next con
+ejecución remota de código en la optimización de imágenes, crítico; y zod, alto). Se subió Next a
+**16.4.5** y zod a **4.6.7**. **Ojo:** con Next 16.4.5 el empaquetador viejo
+(`@opennextjs/cloudflare` 1.20.2) daba **500 en todas las páginas** («Unexpected
+loadManifest(/.next/server/preview-props.json)»); se comprobó en el servidor de prueba local. La
+versión 1.20.16 declara compatibilidad con `next >=16.4.5` y lo arregla. **No subir Next sin subir
+también el empaquetador** y sin abrir la portada en `npm run preview` antes de publicar.

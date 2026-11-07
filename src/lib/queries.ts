@@ -350,6 +350,7 @@ export async function listLatestPerSection(
     tecnologia: [],
     cripto: [],
     artistas: [],
+    windoce: [],
   } as Record<SectionId, ArticleCard[]>;
   for (const row of results) {
     const card = mapCard(row, lang);

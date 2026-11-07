@@ -1,7 +1,7 @@
 import { getDb } from "@/lib/db";
 import { listRecentForNews } from "@/lib/queries";
 import { buildNewsSitemap } from "@/lib/rss";
-import { isSectionId } from "@/lib/sections";
+import { isHouseSection, isSectionId } from "@/lib/sections";
 import { baseUrlFromRequest } from "@/lib/site";
 import { absoluteUrl, articlePath } from "@/lib/urls";
 
@@ -18,7 +18,14 @@ export async function GET(request: Request) {
   const xml = buildNewsSitemap(
     "losupe",
     rows
-      .filter((r) => isSectionId(r.section_id) && (r.lang === "es" || r.lang === "en"))
+      // Contenido de la casa (Desde Windoce) FUERA del mapa de Google Noticias: no es noticia
+      // independiente. Sí va en el mapa normal del sitio (candado 57).
+      .filter(
+        (r) =>
+          isSectionId(r.section_id) &&
+          !isHouseSection(r.section_id) &&
+          (r.lang === "es" || r.lang === "en"),
+      )
       .map((r) => ({
         loc: absoluteUrl(
           base,

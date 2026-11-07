@@ -1,7 +1,7 @@
 import { z } from "zod";
 import type { Lang } from "@/i18n/config";
 import type { SectionId } from "@/lib/sections";
-import { SECTIONS } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS } from "@/lib/sections";
 import { addAssignments, createSponsor } from "@/lib/robot/queue";
 import { parseIdeas } from "@/lib/panel/forms";
 import { SQL_NOW } from "./sql-time";

@@ -1,5 +1,5 @@
 import { decodeEntities, stripHtml } from "@/lib/html";
-import { SECTIONS, type SectionId } from "@/lib/sections";
+import { NEWS_SECTIONS as SECTIONS, type SectionId } from "@/lib/sections";
 import { revisarArchivo, type NotaDelArchivo } from "./archivo";
 import { rangoDelDiaLocal } from "./franjas";
 import { BOT_USER_AGENT, fetchPage } from "./research";

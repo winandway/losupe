@@ -297,12 +297,28 @@ CREATE TABLE IF NOT EXISTS social_posts (
 CREATE INDEX IF NOT EXISTS idx_social_posts_fecha ON social_posts(created_at DESC);
 
 -- Datos base (idempotentes).
+-- ---------------------------------------------------------------------------
+-- DESDE WINDOCE (contenido de la casa, candado 57)
+-- Una fila por nota de la sección: qué producto, en qué formato y su texto para redes.
+-- Sin REFERENCES a proposito: las semillas reescriben la nota con INSERT OR REPLACE y una llave
+-- foranea en cascada borraria esta fila. La rotacion diaria cuenta estas filas.
+-- ---------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS house_notes (
+  article_id TEXT PRIMARY KEY,
+  product_id TEXT NOT NULL,
+  format TEXT NOT NULL,
+  social_json TEXT NOT NULL DEFAULT '{}',
+  created_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('economia', 1, 2),
   ('ventas', 2, 1),
   ('tecnologia', 3, 3),
   ('cripto', 4, 1),
   ('artistas', 5, 3);
+-- Desde Windoce: contenido de la casa. No es noticia y el robot de noticias no la escribe (candado 57).
+INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('windoce', 6, 0);
 
 INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en) VALUES
   ('equipo-losupe', 'Equipo editorial de losupe', 'newsroom',
@@ -583,3 +599,4 @@ UPDATE articles SET image_url = NULL, image_credit = NULL
 -- quita para que la busque otra vez, ya con las cosas mandando sobre los lugares (candado 50).
 UPDATE articles SET image_url = NULL, image_credit = NULL
  WHERE id = 'art-2026-09-09-casillero-miami' AND image_credit LIKE '%Matthis Volquardsen%';
+

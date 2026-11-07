@@ -77,6 +77,7 @@ export const es = {
       "Redacción asistida por inteligencia artificial y revisada por el equipo editorial de losupe.",
     fallbackNotice: "Este artículo está disponible solo en español por ahora.",
     legacyNotice: "Publicado originalmente en MundosCrypto, el portal que dio origen a losupe.",
+    houseLabel: "Contenido de la casa",
     sponsoredLabel: "Contenido patrocinado",
     sponsoredNoticeTemplate:
       "Nota producida por encargo de {sponsor}. La empresa aportó la información; la redacción y la revisión son de losupe.",
@@ -93,6 +94,11 @@ export const es = {
     count: (n: number) => (n === 1 ? "1 nota" : `${n} notas`),
     empty: "Todavía no hay notas en esta sección. El robot redactor empieza a publicar muy pronto.",
     page: (n: number) => `Página ${n}`,
+    houseProductsTitle: "Los productos de los que hablamos aquí",
+    houseProductsHint:
+      "Losupe es de Windoce LLC. En esta sección contamos historias y guías de sus productos, siempre con el aviso arriba. Estos son, con lo que comprobamos en sus páginas:",
+    houseChecked: (fecha: string) => `Datos comprobados en su página el ${fecha}`,
+    houseVisit: "Ir a la página",
   },
   search: {
     title: "Buscar en losupe",
@@ -272,6 +278,15 @@ export const es = {
           h: "Independencia y patrocinio",
           p: [
             "No publicamos publicidad disfrazada de noticia. Si algún día publicamos contenido patrocinado o enlaces de afiliados, estará marcado de forma clara y visible.",
+          ],
+        },
+        {
+          h: "Contenido de la casa: la sección Desde Windoce",
+          p: [
+            "Losupe es de Windoce LLC, una empresa de software de Estados Unidos que también hace otros productos, como Pantalay, Kipuu, Beellon, QRbott, Divoox, Mercatren, YaDominios, YaPanel, Alira y Tokiia. Cuando escribimos sobre ellos, lo hacemos en una sección aparte, «Desde Windoce», y nunca entre las noticias.",
+            "Cada nota de esa sección lleva arriba una etiqueta visible y una línea que dice de quién es el producto, por ejemplo: «Contenido de la casa: Losupe y Pantalay son de Windoce LLC». Ese aviso lo pone el sistema y una nota sin él no se puede publicar.",
+            "Las reglas son las mismas de siempre y algunas más: solo contamos lo que comprobamos en la página del producto, con la fecha; si aparece una persona y no es un usuario real que nos dio permiso, la presentamos como ejemplo; no inventamos testimonios ni cifras de usuarios; no escribimos anuncios ni hablamos mal de la competencia; y publicamos como máximo una nota de la casa al día.",
+            "Estas notas no se envían a Google Noticias como noticias, y en los datos para buscadores se marcan como contenido de la empresa, con Windoce LLC como patrocinador. Los enlaces al producto se marcan como patrocinados.",
           ],
         },
         {
@@ -657,6 +672,13 @@ export const es = {
       discard: "Descartar",
       open: "Abrir",
       sponsored: "Patrocinada",
+      casa: "Desde Windoce",
+      approved:
+        "Aprobada. Entra a la fila de la casa: sale una por día, alternada con las noticias.",
+      sin_aviso:
+        "No se puede publicar: a esta nota de la casa le falta el aviso de contenido de la casa.",
+      casaRedes: "Textos para redes",
+      casaFormato: "Formato",
       universal: "Universal",
       published: "Publicada.",
       unpublished: "Despublicada.",
