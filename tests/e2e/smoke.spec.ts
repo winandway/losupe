@@ -524,7 +524,17 @@ test("portada: franja de video, buscador grande y botonera", async ({ page }) =>
 
 test("portada: noticias heredadas, selector de idioma y artículo abre", async ({ page }) => {
   await page.goto("/es");
-  await expect(page.getByRole("link", { name: "English" })).toHaveAttribute("href", /^\/en/);
+  // Selector estilo Amazon: «🇪🇸 ES ▾» abre la ventanita «Cambiar idioma» con círculos.
+  const idioma = page.getByRole("button", { name: "Idioma: Español" });
+  await expect(idioma).toContainText("ES");
+  await idioma.click();
+  const ventanita = page.getByRole("group", { name: "Cambiar idioma" });
+  await expect(ventanita).toBeVisible();
+  await expect(ventanita).toContainText("English - EN");
+  await expect(ventanita).toContainText("español - ES");
+  await expect(ventanita.getByRole("link", { name: "English" })).toHaveAttribute("href", /^\/en/);
+  await page.keyboard.press("Escape");
+  await expect(ventanita).toBeHidden();
   await expect(page.getByRole("link", { name: "Windoce LLC" })).toHaveAttribute(
     "href",
     "https://windoce.com",
@@ -659,6 +669,23 @@ test("404 con página propia y en el idioma correcto", async ({ page }) => {
   const res = await page.goto("/en/crypto/esto-no-existe");
   expect(res?.status()).toBe(404);
   await expect(page.getByText("We couldn't find that page")).toBeVisible();
+});
+
+test("404 hecha desde el servidor, no pintada con JavaScript (candado 59)", async ({ request }) => {
+  for (const [ruta, texto] of [
+    ["/es/nada-de-nada", "No encontramos esa página"],
+    ["/en/crypto/esto-no-existe", "We couldn't find that page"],
+    ["/es/error-404", "No encontramos esa página"],
+  ] as const) {
+    const res = await request.get(ruta);
+    expect(res.status(), ruta).toBe(404);
+    expect(res.headers()["x-robots-tag"], ruta).toContain("noindex");
+    const html = await res.text();
+    // El texto tiene que estar en el HTML de verdad, no solo dentro de los scripts de React.
+    const sinScripts = html.replace(/<script[\s\S]*?<\/script>/g, "");
+    expect(html, ruta).not.toContain('id="__next_error__"');
+    expect(sinScripts.replace(/&#x27;|&#39;/g, "'"), ruta).toContain(texto);
+  }
 });
 
 test("/__health incluye el estado del robot (llaves, tope, cola)", async ({ request }) => {

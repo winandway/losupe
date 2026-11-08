@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { es } from "@/i18n/es";
 import { en } from "@/i18n/en";
 import { ArticleCard } from "@/components/ArticleCard";
@@ -79,9 +79,13 @@ describe("Header, botonera y selector de idioma", () => {
       "/es/acerca",
     );
     expect(screen.getByRole("link", { name: "Buscar" })).toHaveAttribute("href", "/es/buscar");
-    const english = screen.getByRole("link", { name: "English" });
+    const english = screen.getByRole("link", { name: "English", hidden: true });
     expect(english).toHaveAttribute("href", "/en/economy?page=2");
-    expect(screen.getByRole("link", { name: "Español" })).toHaveAttribute("aria-current", "true");
+    expect(screen.getByRole("link", { name: "Español", hidden: true })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    expect(screen.getByRole("button", { name: "Idioma: Español" })).toHaveTextContent("🇪🇸ES");
   });
   it("HeroBanner trae el póster del video y el buscador grande", () => {
     const { container } = render(<HeroBanner lang="en" dict={en} />);
@@ -94,13 +98,61 @@ describe("Header, botonera y selector de idioma", () => {
     expect(form).toHaveAttribute("action", "/en/search");
     expect(screen.getByPlaceholderText("What do you want to know today?")).toBeInTheDocument();
   });
-  it("LangSwitcher marca el idioma activo", () => {
-    render(<LangSwitcher lang="en" labels={en.languages} groupLabel="Language" />);
-    expect(screen.getByRole("link", { name: "English" })).toHaveAttribute("aria-current", "true");
-    expect(screen.getByRole("link", { name: "Español" })).toHaveAttribute(
+  it("LangSwitcher (estilo Amazon): botón «bandera ES ▾», ventanita con círculos, España para el español", async () => {
+    const { container } = render(
+      <LangSwitcher
+        lang="en"
+        labels={en.languages}
+        groupLabel="Language"
+        title="Change language"
+      />,
+    );
+    const boton = screen.getByRole("button", { name: "Language: English" });
+    expect(boton).toHaveTextContent("🇺🇸");
+    expect(boton).toHaveTextContent("EN");
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+    // Cerrada: las opciones existen en el HTML (Google ve el hreflang) pero no se ven.
+    const panel = container.querySelector("[role='group']") as HTMLElement;
+    expect(panel).not.toBeVisible();
+    expect(container.querySelector("a[hreflang='es']")).toHaveAttribute(
       "href",
       "/es/economia?page=2",
     );
+    // Abre
+    fireEvent.click(boton);
+    expect(boton).toHaveAttribute("aria-expanded", "true");
+    expect(panel).toBeVisible();
+    expect(screen.getByText("Change language")).toBeInTheDocument();
+    expect(screen.getByText("English - EN")).toBeInTheDocument();
+    expect(screen.getByText("español - ES")).toBeInTheDocument();
+    const english = screen.getByRole("link", { name: "English" });
+    expect(english).toHaveAttribute("aria-current", "true");
+    expect(english.querySelector("[data-radio='on']")).not.toBeNull();
+    const espanol = screen.getByRole("link", { name: "Español" });
+    expect(espanol.querySelector("[data-radio='off']")).not.toBeNull();
+    // Bandera de España, nunca de México ni de otro país de América.
+    expect(espanol).toHaveTextContent("🇪🇸");
+    expect(container.innerHTML).not.toMatch(/🇲🇽|🇨🇴|🇻🇪|🇦🇷/);
+    // Escape cierra
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+    // Tocar fuera cierra
+    fireEvent.click(boton);
+    fireEvent.pointerDown(document.body);
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+    // Elegir cierra
+    fireEvent.click(boton);
+    fireEvent.click(screen.getByRole("link", { name: "Español" }));
+    expect(boton).toHaveAttribute("aria-expanded", "false");
+  });
+  it("LangSwitcher del menú de celular: lista a la vista, sin botón", () => {
+    render(<LangSwitcher lang="es" labels={es.languages} groupLabel="Idioma" full />);
+    expect(screen.queryByRole("button")).toBeNull();
+    expect(screen.getByRole("link", { name: "English" })).toHaveAttribute(
+      "href",
+      "/en/economy?page=2",
+    );
+    expect(screen.getByRole("link", { name: "Español" })).toHaveAttribute("aria-current", "true");
   });
 });
 

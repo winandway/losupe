@@ -29,26 +29,26 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                          Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                          En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                          Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                          hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
 
 - [x] 🤖 Indexación: el selector de idioma y los listados en inglés fabricaban redirecciones y copias con noindex (7 nov 2026, candado 58). Informe: [docs/INDEXACION-2026-11-07.md](docs/INDEXACION-2026-11-07.md).
 - [ ] 🤖 **14 nov 2026: revisar Search Console** con la lista de la sección 4 del informe de indexación y anotar los números.
 - [ ] 👤 **Decidir el tipo de notas:** Google rastrea y no guarda las efemérides («7 curiosidades a 100 años…») ni las guías genéricas. Recomendación: menos de esas y más noticias del día con fuente. Detalle en el informe de indexación, sección 3.
-- [ ] 🤖 (medio) El selector de idioma todavía es el de dos banderitas; la regla global pide el estilo Amazon (botón «🇪🇸 ES ▾» con ventanita y opciones con círculo).
+- [x] 🤖 Selector de idioma estilo Amazon (botón «🇪🇸 ES ▾», ventanita «Cambiar idioma», opciones con círculo). Hecho el 8 nov 2026 (candado 59).
 
 - [x] 🤖 Vista previa de WhatsApp con la foto, no con el logo (17 sep 2026, candado 51).
 - [x] 🤖 Guion para creadores y «¿Sabías qué?» en cada nota (17 sep 2026, candado 52).
 - [x] 🤖 Auditoría SEO del código: un solo dominio, foto de portada rápida en celular, imagen y
       dirección propia al compartir, página 2 canónica, descripciones cortas (17 sep 2026, candado 53).
-- [ ] 🤖 (bajo) Página 404 vacía desde el servidor: se pinta con JavaScript. Status 404 correcto.
-- [ ] 🤖 (bajo) Contraste de las etiquetas de sección y tamaño táctil de los nombres de autor
-      (accesibilidad). Proponer tonos a Richard con captura antes de tocar colores de marca.
+- [x] 🤖 Página 404 hecha desde el servidor, no pintada con JavaScript (8 nov 2026, candado 59).
+- [x] 🤖 Contraste de las etiquetas de sección (Tecnología y Artistas no llegaban a 4,5:1) y tamaño
+      táctil de los nombres de autor. Sin cambiar los colores de marca (8 nov 2026, candado 59).
 - [x] 🤖 Servidor MCP público, tarjeta de descubrimiento y auth.md para asistentes de IA
       (17 sep 2026, candado 54).
 - [x] 🤖 Tres noticias nuevas al día en Tecnología e IA y en Artistas y tendencias: fuentes vivas,
@@ -58,9 +58,9 @@
 - [x] 🤖 Por qué las corridas «se cortaban»: el trabajo de fondo de una visita dura segundos y
       escribir una nota lleva minutos. La escaleta pasó a ser lista de pendientes y el reloj de
       GitHub se dispara a mano cuando hace falta (1 oct 2026, candado 55).
-- [ ] 🤖 Vigilar los guiones que fallan con «sin respuesta del modelo» (Gemini 503 / ubicación):
-      salen en la corrida siguiente, pero hay que medir cuántos quedan sin guion al final del día.
+- [x] 🤖 Guiones que fallaban con «sin respuesta del modelo»: ahora dicen el motivo real, reintentan
+      con espera un 503 y `/__health` cuenta los que quedan sin guion en 24 h (8 nov 2026, candado 59).
 - [x] 🤖 Video dentro de la lectura, copiando lo bueno de los diarios grandes y tirando la basura
       (19 oct 2026, candado 56).
-- [ ] 🤖 Clasificación de sección: siguen colándose temas de deporte en Tecnología y de finanzas en
-      Artistas (visto el 19 oct 2026 con un traspaso de hockey y unos fondos de pensiones).
+- [x] 🤖 Clasificación de sección: deporte fuera de Tecnología y finanzas a Economía aunque lleguen
+      por otra fuente (8 nov 2026, candado 59).

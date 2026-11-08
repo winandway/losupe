@@ -3,7 +3,13 @@ import { NEWS_SECTIONS as SECTIONS, type SectionId } from "@/lib/sections";
 import { revisarArchivo, type NotaDelArchivo } from "./archivo";
 import { rangoDelDiaLocal } from "./franjas";
 import { BOT_USER_AGENT, fetchPage } from "./research";
-import { bestTrendArticle, classifyTrend, esTemaVetado, parseTrendsFeed } from "./trends";
+import {
+  bestTrendArticle,
+  classifyTrend,
+  esTemaVetado,
+  parseTrendsFeed,
+  seccionCoherente,
+} from "./trends";
 import { trustLevel } from "./trusted-sources";
 import type { SourceDoc } from "./writer";
 
@@ -190,6 +196,12 @@ export async function discoverCandidates(
         : parseFeed(xml)
             .filter((it) => !it.publishedAt || it.publishedAt >= minDate)
             .map((it, i2) => {
+              // La sección de la fuente no siempre es la de la noticia (candado 59).
+              const seccion = seccionCoherente(
+                s.section_id as SectionId,
+                `${it.title} ${it.summary ?? ""}`,
+              );
+              if (!seccion) return null;
               const ageHours = it.publishedAt
                 ? Math.max(0, (now.getTime() - Date.parse(it.publishedAt)) / 3_600_000)
                 : 48;
@@ -202,7 +214,7 @@ export async function discoverCandidates(
                 .bind(
                   crypto.randomUUID(),
                   s.id,
-                  s.section_id,
+                  seccion,
                   it.url,
                   it.title.slice(0, 300),
                   it.summary,
@@ -210,7 +222,8 @@ export async function discoverCandidates(
                   it.publishedAt,
                   score,
                 );
-            });
+            })
+            .filter((x): x is NonNullable<typeof x> => x !== null);
     if (stmts.length > 0) {
       const results = await db.batch(stmts);
       added += results.filter((x) => (x.meta?.changes ?? 0) > 0).length;
@@ -300,17 +313,34 @@ export const MAX_INTENTOS_CANDIDATO = 3;
  */
 export async function limpiarCandidatosFueraDeTema(db: D1Database): Promise<number> {
   const { results } = await db
-    .prepare(`SELECT id, title, summary FROM candidates WHERE status = 'new' LIMIT 500`)
-    .all<{ id: string; title: string; summary: string | null }>();
-  const fuera = results.filter((c) => esTemaVetado(`${c.title} ${c.summary ?? ""}`));
-  for (const c of fuera) {
-    await db
-      .prepare(`UPDATE candidates SET status = 'skipped' WHERE id = ?1`)
-      .bind(c.id)
-      .run()
-      .catch(() => undefined);
+    .prepare(`SELECT id, section_id, title, summary FROM candidates WHERE status = 'new' LIMIT 500`)
+    .all<{ id: string; section_id: string | null; title: string; summary: string | null }>();
+  let fuera = 0;
+  for (const c of results) {
+    const texto = `${c.title} ${c.summary ?? ""}`;
+    if (esTemaVetado(texto)) {
+      fuera += 1;
+      await db
+        .prepare(`UPDATE candidates SET status = 'skipped' WHERE id = ?1`)
+        .bind(c.id)
+        .run()
+        .catch((e: unknown) => console.error("[candidatos] no se pudo apartar", c.id, e));
+      continue;
+    }
+    // Lo que ya estaba en la cola con la sección de su fuente equivocada se cambia de sección: solo
+    // se escribe la fila que cambia, nunca la cola entera.
+    const correcta = c.section_id ? seccionCoherente(c.section_id as SectionId, texto) : null;
+    if (correcta && correcta !== c.section_id) {
+      await db
+        .prepare(`UPDATE candidates SET section_id = ?2 WHERE id = ?1`)
+        .bind(c.id, correcta)
+        .run()
+        .catch((e: unknown) =>
+          console.error("[candidatos] no se pudo cambiar de sección", c.id, e),
+        );
+    }
   }
-  return fuera.length;
+  return fuera;
 }
 
 /**

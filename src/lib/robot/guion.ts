@@ -1,7 +1,7 @@
 import { stripHtml } from "@/lib/html";
-import { assertBudget, BudgetExceededError, recordSpend } from "./budget";
+import { assertBudget, BudgetExceededError, recordSpend, setSetting } from "./budget";
 import { filtrarSabiasQue } from "@/lib/sabias-que";
-import { generateJson } from "./gemini";
+import { GeminiError, GeminiUbicacionError, generateJson } from "./gemini";
 
 export { filtrarSabiasQue } from "@/lib/sabias-que";
 
@@ -285,8 +285,39 @@ export class GuionRechazado extends Error {
 }
 
 /**
- * Pide el guion al modelo y lo valida. Devuelve `null` si no hay llave, si falla, o si el guion no
- * sirve (demasiado corto o largo): un guion malo es peor que ninguno.
+ * EL MODELO NO CONTESTÓ (y aquí va el porqué). Antes esto se tragaba y el resumen solo decía «sin
+ * respuesta del modelo», sin saber si era un 503 de Google, la ubicación del centro de datos o una
+ * respuesta cortada (pendiente del 19 oct 2026).
+ */
+export class GuionSinRespuesta extends Error {
+  /** Gemini no atiende desde este centro de datos: insistir aquí no sirve, sí en otra corrida. */
+  public ubicacion: boolean;
+  /** Fallo pasajero del proveedor (429/5xx o red): vale la pena reintentar con espera. */
+  public pasajero: boolean;
+  constructor(causa: unknown) {
+    const status = causa instanceof GeminiError ? causa.status : undefined;
+    const ubicacion = causa instanceof GeminiUbicacionError;
+    const motivo = causa instanceof Error ? causa.message : String(causa);
+    super(`sin respuesta del modelo: ${motivo.slice(0, 200)}`);
+    this.name = "GuionSinRespuesta";
+    this.ubicacion = ubicacion;
+    this.pasajero =
+      !ubicacion &&
+      (status === undefined
+        ? /fetch|network|timeout|abort/i.test(motivo)
+        : status === 429 || status >= 500);
+  }
+}
+
+/** Clave de `settings` con el último fallo de guiones, para leerlo en /__health. */
+export const CLAVE_ULTIMO_ERROR_GUION = "guion_ultimo_error";
+/** Espera antes de volver a pedir un guion tras un fallo pasajero (además de los reintentos cortos). */
+export const ESPERA_REINTENTO_GUION_MS = 8_000;
+
+/**
+ * Pide el guion al modelo y lo valida. Devuelve `null` si no hay llave o la nota no da para guion.
+ * Si el guion no sirve lanza `GuionRechazado`; si el modelo no contesta, `GuionSinRespuesta` con el
+ * motivo real (nunca se traga en silencio).
  */
 export async function generarGuion(opts: {
   apiKey?: string;
@@ -353,7 +384,7 @@ ${cuerpo}`,
     // El rechazo SÍ sube: es información, no un fallo de red. Lo demás (sin red, modelo caído) se
     // traga y la nota se queda sin guion hasta la próxima corrida.
     if (e instanceof GuionRechazado) throw e;
-    return null;
+    throw new GuionSinRespuesta(e);
   }
 }
 
@@ -368,7 +399,14 @@ export type ResultadoRescateGuiones = { encontradas: number; hechas: number; err
 export async function rescatarGuiones(
   db: D1Database,
   env: { GEMINI_API_KEY?: string },
-  opts: { limite?: number; fetchImpl?: typeof fetch; runId?: string; ahora?: Date } = {},
+  opts: {
+    limite?: number;
+    fetchImpl?: typeof fetch;
+    runId?: string;
+    ahora?: Date;
+    /** Espera antes del reintento tras un fallo pasajero (las pruebas la ponen en 0). */
+    esperaReintentoMs?: number;
+  } = {},
 ): Promise<ResultadoRescateGuiones> {
   const out: ResultadoRescateGuiones = { encontradas: 0, hechas: 0, errores: [] };
   if (!env.GEMINI_API_KEY) return out;
@@ -411,16 +449,29 @@ export async function rescatarGuiones(
         // Cada guion cuesta menos de un centavo, pero el tope diario manda sobre todo.
         await assertBudget(db, 0.01);
         const fuentes = leerFuentes(nota.sources_json);
-        const r = await generarGuion({
-          apiKey: env.GEMINI_API_KEY,
-          titulo: nota.title,
-          entradilla: nota.excerpt,
-          cuerpoHtml: nota.content_html,
-          fuentes,
-          fetchImpl: opts.fetchImpl,
-        });
+        const pedir = () =>
+          generarGuion({
+            apiKey: env.GEMINI_API_KEY,
+            titulo: nota.title,
+            entradilla: nota.excerpt,
+            cuerpoHtml: nota.content_html,
+            fuentes,
+            fetchImpl: opts.fetchImpl,
+          });
+        let r: ResultadoGuion;
+        try {
+          r = await pedir();
+        } catch (e) {
+          // Un 503 de Google que siguió después de los reintentos cortos: se espera un rato más y se
+          // prueba UNA vez. Siempre el mismo modelo barato: jamás se escala a uno caro.
+          if (!(e instanceof GuionSinRespuesta) || !e.pasajero) throw e;
+          await new Promise((listo) =>
+            setTimeout(listo, opts.esperaReintentoMs ?? ESPERA_REINTENTO_GUION_MS),
+          );
+          r = await pedir();
+        }
         if (!r) {
-          out.errores.push(`${nota.id}: sin respuesta del modelo`);
+          out.errores.push(`${nota.id}: la nota no da para guion`);
           continue;
         }
         await recordSpend(db, {
@@ -465,13 +516,30 @@ export async function rescatarGuiones(
         // salía «Actualizado» sin motivo (auditoría SEO, 17 sep 2026).
         out.hechas += 1;
       } catch (error) {
-        out.errores.push(`${nota.id}: ${error instanceof Error ? error.message : String(error)}`);
+        const msg = `${nota.id}: ${error instanceof Error ? error.message : String(error)}`;
+        out.errores.push(msg);
+        console.error(`[guion] ${msg}`);
         // Sin presupuesto no tiene sentido seguir probando con las demás.
         if (error instanceof BudgetExceededError) break;
+        // Desde este centro de datos Google no atiende: las demás fallarían igual. Otra corrida, sí.
+        if (error instanceof GuionSinRespuesta && error.ubicacion) break;
       }
     }
   } catch (error) {
-    out.errores.push(error instanceof Error ? error.message : String(error));
+    const msg = error instanceof Error ? error.message : String(error);
+    out.errores.push(msg);
+    console.error(`[guion] ${msg}`);
+  }
+  // El último fallo queda a la vista en /__health (una sola escritura, y solo si hubo fallo).
+  if (out.errores.length > 0) {
+    await setSetting(
+      db,
+      CLAVE_ULTIMO_ERROR_GUION,
+      JSON.stringify({
+        t: (opts.ahora ?? new Date()).toISOString(),
+        error: out.errores[0]!.slice(0, 300),
+      }),
+    ).catch((e: unknown) => console.error("[guion] no se pudo guardar el último error", e));
   }
   return out;
 }

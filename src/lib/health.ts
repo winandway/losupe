@@ -25,6 +25,12 @@ export type HealthReport = {
      */
     fallos: { t: string; error: string }[];
   } | null;
+  /**
+   * GUIONES PARA CREADORES: cuántas notas publicadas en las últimas 24 horas siguen sin guion, y el
+   * último fallo con su motivo real (503 de Google, ubicación, guion rechazado). Pendiente del
+   * 19 oct 2026: «hay que medir cuántos quedan sin guion al final del día».
+   */
+  guiones?: { sinGuion24h: number; ultimoError: { t: string; error: string } | null } | null;
   db: {
     binding: boolean;
     schema: SchemaStatus | null;
@@ -77,6 +83,7 @@ export async function buildHealthReport(
         .catch(() => ({ results: [] })),
     ]);
     const filas = relojes.results ?? [];
+    const guiones = await leerEstadoGuiones(db);
     return {
       ok: true,
       time,
@@ -91,6 +98,7 @@ export async function buildHealthReport(
           .slice(0, 5)
           .map((r) => ({ t: r.started_at, error: String(r.error).slice(0, 300) })),
       },
+      guiones,
       db: {
         binding: true,
         schema,
@@ -115,5 +123,37 @@ export async function buildHealthReport(
         error: error instanceof Error ? error.message : String(error),
       },
     };
+  }
+}
+
+/** Notas de las últimas 24 h sin guion y el último fallo guardado. Solo lectura; nunca lanza. */
+async function leerEstadoGuiones(db: D1Database): Promise<HealthReport["guiones"]> {
+  try {
+    const [pendientes, ultimo] = await Promise.all([
+      db
+        .prepare(
+          `SELECT COUNT(*) AS n FROM articles a
+             JOIN article_i18n es ON es.article_id = a.id AND es.lang = 'es'
+            WHERE a.status = 'published' AND a.published_at >= ?1
+              AND (es.guion_1m IS NULL OR es.guion_1m = '')`,
+        )
+        .bind(new Date(Date.now() - 86_400_000).toISOString())
+        .first<{ n: number }>(),
+      db
+        .prepare(`SELECT value FROM settings WHERE key = 'guion_ultimo_error'`)
+        .first<{ value: string }>(),
+    ]);
+    let ultimoError: { t: string; error: string } | null = null;
+    try {
+      ultimoError = ultimo?.value
+        ? (JSON.parse(ultimo.value) as { t: string; error: string })
+        : null;
+    } catch {
+      ultimoError = { t: "", error: String(ultimo?.value).slice(0, 300) };
+    }
+    return { sinGuion24h: pendientes?.n ?? 0, ultimoError };
+  } catch (error) {
+    console.error("[health] no se pudo leer el estado de los guiones", error);
+    return null;
   }
 }

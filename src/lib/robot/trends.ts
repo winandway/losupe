@@ -63,6 +63,9 @@ const SKIP = [
   // llevaba ni «NFL» ni «football», y por eso se coló (24 ago 2026).
   /\b(signing|signs with|traded to|trade deadline|free agent|draft pick|roster|lineup|coach|quarterback|fichaje|traspaso|convocatoria|entrenador)\b/i,
   /\b(f[uú]tbol|soccer|baseball|basketball|football|hockey|tennis|golf|boxing|boxeo|cricket|rugby)\b/i,
+  // Fichajes de hockey, béisbol o fútbol que no dicen el deporte («Canucks acquire defenseman in
+  // deal with Penguins»): se colaban en Tecnología desde las fuentes de noticias (19 oct 2026).
+  /\b(defense(man|men)|goaltender|goalie|winger|pitcher|shortstop|outfielder|infielder|linebacker|wide receiver|running back|tight end|striker|midfielder|delantero|portero|arquero|centrocampista|mediocampista|stanley cup|touchdown|hat[- ]trick|home run|jonr[oó]n|grand slam|olympics|ol[ií]mpicos|mundialista|selecci[oó]n nacional|nhl|mls)\b/i,
   /\b(powerball|mega millions|loter[ií]a|lottery|jackpot)\b/i,
   /\b(porn|xxx|onlyfans|desnud|nude)\b/i,
   /\b(tiroteo|shooting|asesinat|murder|homicid|suicid|masacre|massacre)\b/i,
@@ -79,7 +82,7 @@ const SECTION_RULES: [SectionId, RegExp][] = [
   ],
   [
     "economia",
-    /\b(inflaci[oó]n|inflation|fed|reserva federal|tasas?|interest rate|d[oó]lar|dollar|econom[ií]a|economy|bolsa|stocks?|wall street|s&p|dow|nasdaq|empleo|jobs?|desempleo|unemployment|impuestos?|tax(es)?|irs|precio|prices?|gasolina|gas prices|housing|vivienda|hipoteca|mortgage|salario|wage|tarifas?|tariffs?|pib|gdp|recesi[oó]n|recession|seguro social|social security|medicare|estímulo|stimulus)\b/i,
+    /\b(inflaci[oó]n|inflation|fed|reserva federal|tasas?|interest rate|d[oó]lar|dollar|econom[ií]a|economy|bolsa|stocks?|wall street|s&p|dow|nasdaq|empleo|jobs?|desempleo|unemployment|impuestos?|tax(es)?|irs|precio|prices?|gasolina|gas prices|housing|vivienda|hipoteca|mortgage|salario|wage|tarifas?|tariffs?|pib|gdp|recesi[oó]n|recession|seguro social|social security|medicare|estímulo|stimulus|pensi[oó]n\w*|pension\w*|jubilaci[oó]n|retirement|401\(?k\)?|fondos? de inversi[oó]n|fondos? de pensiones|mutual funds?|pension funds?|banco central|central bank|bonos del tesoro|treasury|deuda p[uú]blica)\b/i,
   ],
   [
     "ventas",
@@ -121,6 +124,24 @@ export function classifyTrend(text: string): SectionId | null {
   if (SKIP.some((re) => re.test(text))) return null;
   for (const [section, re] of SECTION_RULES) if (re.test(text)) return section;
   return null;
+}
+
+/**
+ * La sección de verdad de una noticia que llega de una FUENTE (RSS) con su sección fija.
+ *
+ * El feed de tecnología trae a veces un traspaso de hockey, y el de espectáculos unos fondos de
+ * pensiones (visto el 19 oct 2026). Regla:
+ * - si es tema vetado (deporte, apuestas, sucesos) → `null`, no entra;
+ * - si encaja con la sección de su fuente → se queda ahí;
+ * - si no encaja con la suya pero sí claramente con OTRA → va a esa otra;
+ * - si no encaja con ninguna → se queda en la de su fuente (las fuentes son legítimas aunque el
+ *   titular no traiga palabras clave).
+ */
+export function seccionCoherente(seccionFuente: SectionId, texto: string): SectionId | null {
+  if (esTemaVetado(texto)) return null;
+  const propia = SECTION_RULES.find(([id]) => id === seccionFuente)?.[1];
+  if (!propia || propia.test(texto)) return seccionFuente;
+  return classifyTrend(texto) ?? seccionFuente;
 }
 
 /** Mejor artículo de una tendencia: primero la fuente más confiable. */

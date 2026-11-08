@@ -28,7 +28,10 @@ export function Byline({
       {!compact && <span>{dict.article.by}</span>}
       <Link
         href={authorPath(lang, authorId)}
-        className="inline-block py-1 font-semibold text-ink hover:underline"
+        // Tamaño táctil: el nombre del autor es un enlace y en celular se tocaba con el dedo a ciegas.
+        className={`inline-flex items-center font-semibold text-ink hover:underline ${
+          compact ? "min-h-8" : "min-h-11"
+        }`}
       >
         {authorName}
       </Link>

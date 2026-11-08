@@ -130,6 +130,25 @@ describe("¿quién dispara las corridas? (medido el 29 ago 2026)", () => {
     expect(r.relojes!.fallos[0]).toMatchObject({ error: "sin candidatos frescos" });
   });
 
+  it("/__health dice cuántas notas del día siguen sin guion y el último motivo", async () => {
+    const { buildHealthReport } = await import("@/lib/health");
+    const { FakeD1 } = await import("./fake-d1");
+    const db = new FakeD1((sql) => {
+      if (sql.includes("guion_1m IS NULL")) return [{ n: 3 }];
+      if (sql.includes("guion_ultimo_error"))
+        return [
+          { value: JSON.stringify({ t: "2026-11-08T12:00:00Z", error: "Gemini respondió 503" }) },
+        ];
+      if (sql.includes("started_at, trigger")) return [];
+      return [{ n: 5 }];
+    });
+    const r = await buildHealthReport(db.asD1(), null);
+    expect(r.guiones).toEqual({
+      sinGuion24h: 3,
+      ultimoError: { t: "2026-11-08T12:00:00Z", error: "Gemini respondió 503" },
+    });
+  });
+
   it("sin base no inventa números: dice que no sabe", async () => {
     const { buildHealthReport } = await import("@/lib/health");
     const r = await buildHealthReport(undefined, null);

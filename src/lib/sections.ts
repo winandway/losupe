@@ -11,6 +11,11 @@ export type Section = {
   color: string;
   /** Color del texto sobre `color`. */
   onColor: string;
+  /**
+   * Tonos de la etiqueta pequeña cuando `color`/`onColor` no llegan al contraste mínimo (4,5:1) en
+   * letra de 10 px. La marca no cambia: es el mismo color, un punto más hondo, o el texto en tinta.
+   */
+  badge?: { bg: string; fg: string };
   perDay: number;
   /**
    * Sección de la CASA («Desde Windoce»): notas sobre los productos del grupo dueño del medio.
@@ -55,6 +60,7 @@ export const SECTIONS: readonly Section[] = [
     },
     color: "#3B82F6",
     onColor: "#FFFFFF",
+    badge: { bg: "#2563EB", fg: "#FFFFFF" },
     perDay: 3,
   },
   {
@@ -79,6 +85,7 @@ export const SECTIONS: readonly Section[] = [
     },
     color: "#FF5A5F",
     onColor: "#FFFFFF",
+    badge: { bg: "#FF5A5F", fg: "#0B1F3A" },
     perDay: 3,
   },
   {

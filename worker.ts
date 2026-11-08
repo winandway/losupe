@@ -32,6 +32,7 @@ import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { legacyRedirectTarget } from "./src/lib/legacy-redirects";
 import { rutaConPalabraDelIdioma } from "./src/lib/urls";
+import { debeServir404Propia, esRuta404, ruta404 } from "./src/lib/pagina-404";
 import { claimTick, closeStaleRuns, getTickToken } from "./src/lib/robot/heartbeat";
 import { robotStatus } from "./src/lib/robot/pipeline";
 import { handleScheduledRequest, runScheduled } from "./src/lib/robot/scheduled";
@@ -261,7 +262,29 @@ export default {
       }
     }
 
-    const response: Response = await nextHandler.fetch(request, env, ctx);
+    let response: Response = await nextHandler.fetch(request, env, ctx);
+
+    // Candado 59: la 404 de Next llega como cascarón vacío que se pinta con JavaScript. Se cambia por
+    // la página 404 hecha desde el servidor, con el mismo estado 404 y fuera de los buscadores.
+    if (debeServir404Propia(request, response, lang) || esRuta404(pathname, lang)) {
+      if (!esRuta404(pathname, lang) && lang) {
+        const interna = new Request(new URL(ruta404(lang), url), {
+          method: request.method,
+          headers: request.headers,
+        });
+        const propia: Response = await nextHandler.fetch(interna, env, ctx);
+        if (propia.ok) response = propia;
+        else console.error(`[404] la página 404 interna respondió ${propia.status}`);
+      }
+      const h404 = new Headers(response.headers);
+      h404.set("X-Robots-Tag", "noindex");
+      h404.set("Cache-Control", "no-store");
+      response = new Response(response.body, {
+        status: 404,
+        statusText: "Not Found",
+        headers: h404,
+      });
+    }
 
     // Cabeceras útiles para agentes y caché de estáticos.
     const contentType = response.headers.get("content-type") ?? "";

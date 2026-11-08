@@ -56,7 +56,7 @@ export function Header({ lang, dict }: { lang: Lang; dict: Dict }) {
       >
         {dict.nav.skip}
       </a>
-      <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur md:static md:bg-white md:backdrop-blur-none">
+      <header className="sticky top-0 z-40 border-b border-line bg-white/95 backdrop-blur md:relative md:z-50 md:bg-white md:backdrop-blur-none">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-2 px-2 py-2 md:px-4 md:py-3">
           <div className="flex min-w-0 items-center gap-1">
             <Suspense fallback={null}>
@@ -110,7 +110,12 @@ export function Header({ lang, dict }: { lang: Lang; dict: Dict }) {
               </svg>
             </Link>
             <Suspense fallback={null}>
-              <LangSwitcher lang={lang} labels={dict.languages} groupLabel={dict.nav.language} />
+              <LangSwitcher
+                lang={lang}
+                labels={dict.languages}
+                groupLabel={dict.nav.language}
+                title={dict.nav.changeLanguage}
+              />
             </Suspense>
           </div>
         </div>

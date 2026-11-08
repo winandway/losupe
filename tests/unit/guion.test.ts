@@ -281,16 +281,19 @@ describe("generarGuion", () => {
     expect(f).not.toHaveBeenCalled();
   });
 
-  it("si el modelo falla, no revienta", async () => {
-    const caido = vi.fn(async () => new Response("no", { status: 500 }));
-    expect(
-      await generarGuion({
-        apiKey: "k",
-        titulo: "x",
-        cuerpoHtml: CUERPO,
-        fetchImpl: caido as unknown as typeof fetch,
-      }),
-    ).toBeNull();
+  it("si el modelo falla, dice POR QUÉ (nada de «sin respuesta» a secas)", async () => {
+    const caido = vi.fn(async () => new Response("overloaded", { status: 503 }));
+    const intento = generarGuion({
+      apiKey: "k",
+      titulo: "x",
+      cuerpoHtml: CUERPO,
+      fetchImpl: caido as unknown as typeof fetch,
+    });
+    await expect(intento).rejects.toThrow(/Gemini respondió 503/);
+    await expect(intento).rejects.toMatchObject({ pasajero: true, ubicacion: false });
+    // Siempre el modelo barato, también en los reintentos.
+    for (const [url] of caido.mock.calls as unknown as [string][])
+      expect(url).toContain("gemini-2.5-flash");
   });
 });
 
@@ -346,6 +349,108 @@ describe("rescatarGuiones", () => {
     // Añadir el guion NO es actualizar la noticia: la fecha de modificación no se mueve (si se
     // moviera, Google vería la nota «actualizada» sin que cambiara una palabra).
     expect(db.calls.some((c) => /updated_at/.test(c.sql))).toBe(false);
+  });
+
+  const respuestaBuena = () =>
+    Response.json({
+      candidates: [
+        {
+          content: {
+            parts: [
+              {
+                text: JSON.stringify({
+                  titulo_video_es: "Un título",
+                  titulo_video_en: "A title",
+                  guion_1m_es: palabras(130),
+                  guion_1m_en: palabras(130),
+                  guion_2m_es: palabras(250),
+                  guion_2m_en: palabras(250),
+                  sabias_que_es: [],
+                  sabias_que_en: [],
+                }),
+              },
+            ],
+          },
+        },
+      ],
+      usageMetadata: { promptTokenCount: 2000, candidatesTokenCount: 800 },
+    });
+  const baseCon = (filas: (typeof fila)[]) =>
+    new FakeD1((sql) => {
+      if (sql.includes("es.guion_1m IS NULL")) return filas;
+      if (sql.includes("value FROM settings")) return [{ value: "5" }];
+      if (sql.includes("SUM(cost_usd)")) return [{ total: 0 }];
+      return [];
+    });
+
+  it("un 503 que persiste se reintenta con espera y, si se recupera, el guion sale", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    try {
+      let llamadas = 0;
+      // Los tres primeros intentos (el normal y sus dos reintentos cortos) dan 503; el cuarto, bien.
+      const fetchImpl = (async () =>
+        ++llamadas <= 3
+          ? new Response("busy", { status: 503 })
+          : respuestaBuena()) as unknown as typeof fetch;
+      const db = baseCon([fila]);
+      const p = rescatarGuiones(
+        db.asD1(),
+        { GEMINI_API_KEY: "k" },
+        { fetchImpl, esperaReintentoMs: 10 },
+      );
+      await vi.runAllTimersAsync();
+      const r = await p;
+      expect(r.hechas).toBe(1);
+      expect(r.errores).toEqual([]);
+      expect(llamadas).toBe(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it("si sigue caído, el motivo real queda escrito y a la vista en /__health", async () => {
+    vi.useFakeTimers({ toFake: ["setTimeout"] });
+    const error = vi.spyOn(console, "error").mockImplementation(() => undefined);
+    try {
+      const fetchImpl = (async () =>
+        new Response("busy", { status: 503 })) as unknown as typeof fetch;
+      const db = baseCon([fila]);
+      const p = rescatarGuiones(
+        db.asD1(),
+        { GEMINI_API_KEY: "k" },
+        { fetchImpl, esperaReintentoMs: 10 },
+      );
+      await vi.runAllTimersAsync();
+      const r = await p;
+      expect(r.hechas).toBe(0);
+      expect(r.errores[0]).toMatch(/art-1: sin respuesta del modelo: Gemini respondió 503/);
+      expect(error).toHaveBeenCalledWith(expect.stringContaining("[guion] art-1"));
+      const guardado = db.calls.find((c) => c.sql.includes("INSERT OR REPLACE INTO settings"));
+      expect(guardado?.params[0]).toBe("guion_ultimo_error");
+      expect(String(guardado?.params[1])).toContain("503");
+    } finally {
+      vi.useRealTimers();
+      error.mockRestore();
+    }
+  });
+
+  it("si Google no atiende desde este centro de datos, no insiste con las demás notas", async () => {
+    vi.spyOn(console, "error").mockImplementation(() => undefined);
+    let llamadas = 0;
+    const fetchImpl = (async () => {
+      llamadas++;
+      return new Response("User location is not supported for the API use.", { status: 400 });
+    }) as unknown as typeof fetch;
+    const db = baseCon([fila, { ...fila, id: "art-2" }, { ...fila, id: "art-3" }]);
+    const r = await rescatarGuiones(
+      db.asD1(),
+      { GEMINI_API_KEY: "k" },
+      { fetchImpl, esperaReintentoMs: 0 },
+    );
+    expect(llamadas).toBe(1);
+    expect(r.errores).toHaveLength(1);
+    expect(r.errores[0]).toMatch(/no atiende desde este centro de datos/);
+    vi.mocked(console.error).mockRestore();
   });
 
   it("sin llave de Gemini no toca la base", async () => {

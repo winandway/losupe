@@ -15,6 +15,7 @@ export const es = {
     search: "Buscar",
     about: "Acerca de losupe",
     language: "Idioma",
+    changeLanguage: "Cambiar idioma",
     menu: "Menú",
     closeMenu: "Cerrar el menú",
     skip: "Saltar al contenido",

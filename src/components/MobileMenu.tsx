@@ -155,7 +155,7 @@ export function MobileMenu({
                 <h2 className="text-[11px] font-bold uppercase tracking-widest text-muted">
                   {labels.language}
                 </h2>
-                <div className="mt-2 inline-flex">
+                <div className="mt-1">
                   <LangSwitcher
                     lang={lang}
                     labels={labels.languages}

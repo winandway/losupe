@@ -17,6 +17,7 @@ export const en: Dict = {
     search: "Search",
     about: "About losupe",
     language: "Language",
+    changeLanguage: "Change language",
     menu: "Menu",
     closeMenu: "Close menu",
     skip: "Skip to content",

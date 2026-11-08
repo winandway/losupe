@@ -2050,3 +2050,59 @@ también el empaquetador** y sin abrir la portada en `npm run preview` antes de 
 - **Qué NO tocar:** no volver a usar `swapLangPath` para el selector de una nota; no quitar el filtro
   de idioma de los listados; no borrar la copia con `noindex` (rompería enlaces ya compartidos).
 - Informe completo y qué mirar en Search Console: `docs/INDEXACION-2026-11-07.md`.
+
+## 59. Selector estilo Amazon, 404 hecha desde el servidor, guiones con motivo y secciones coherentes (8 nov 2026)
+
+Cuatro pendientes 🤖 de la fila, en un solo bloque.
+
+### a) Selector de idioma estilo Amazon (regla global del 10 oct 2026)
+
+- **Qué se veía:** dos banderitas sueltas una al lado de la otra.
+- **Arreglo:** `src/components/LangSwitcher.tsx`, una sola pieza. Botón «🇪🇸 ES ▾» → ventanita blanca
+  con piquito, título «Cambiar idioma» / «Change language» (`nav.changeLanguage`), opciones con círculo
+  («español - ES», «English - EN»), el elegido relleno en naranja. Cierra al elegir, al tocar fuera y
+  con Escape. En el menú de celular (`full`) va la misma lista a la vista, sin botón.
+- **Lo que NO se tocó (candado 58):** las opciones siguen siendo enlaces que están SIEMPRE en el HTML
+  (ocultos con `hidden` mientras la ventanita está cerrada) y siguen usando `destinoOtroIdioma`.
+- **De paso:** el encabezado en escritorio pasó de `md:static` a `md:relative md:z-50`; si no, la
+  botonera de secciones tapaba la ventanita.
+- **Prueba:** `tests/unit/components.test.tsx` (abre, círculos, España, Escape, tocar fuera, elegir) y
+  el e2e de la portada. Rojo comprobado poniendo la bandera de México.
+
+### b) La 404 venía vacía y se pintaba con JavaScript
+
+- **Causa real:** Next 16.4 responde a `notFound()` con su «cascarón de error»
+  (`<html id="__next_error__">` con el `<body>` vacío) y la página se arma después en el navegador.
+  No es un fallo nuestro: es su ruta de recuperación cuando el error sale antes del primer HTML.
+- **Arreglo:** el worker (`worker.ts` + `src/lib/pagina-404.ts`) ve un 404 HTML de una visita (no la
+  navegación interna con `rsc`) y sirve en su lugar `/<idioma>/error-404`, una página normal hecha
+  desde el servidor, con estado 404, `X-Robots-Tag: noindex` y `no-store`. La propia `/es/error-404`
+  también responde 404. El contenido vive en `PaginaNoEncontrada` (lo usa también `not-found.tsx`).
+- **Prueba:** `tests/unit/pagina-404.test.ts` y el e2e «404 hecha desde el servidor» (busca el texto
+  en el HTML sin scripts).
+- **Comprobar en vivo:** `curl -s https://losupe.com/es/nada-xyz | grep -c __next_error__` → `0`.
+- **Qué NO tocar:** no quitar el desvío del worker hasta que Next sirva la 404 con HTML por sí solo.
+
+### c) Contraste de las etiquetas y tamaño táctil del autor
+
+- Tecnología (azul con blanco, 3,7:1) y Artistas (coral con blanco, 3,0:1) no llegaban a 4,5:1 en
+  letra de 10 px. Campo `badge` en `src/lib/sections.ts`: Tecnología un azul un punto más hondo
+  (`#2563EB`, 5,2:1); Artistas el mismo coral con texto en tinta (5,4:1). La marca no cambia.
+- El nombre del autor (`Byline`) mide 44 px de alto en la nota y 32 px en las tarjetas.
+- **Prueba:** `tests/unit/accesibilidad.test.tsx` calcula el contraste de TODAS las secciones.
+
+### d) Guiones «sin respuesta del modelo» y secciones que se colaban
+
+- **Causa real del primero:** `generarGuion` se tragaba el error y solo quedaba «sin respuesta del
+  modelo». Ahora lanza `GuionSinRespuesta` con el motivo real; si es pasajero (429/5xx/red) el
+  rescate espera 8 s y lo pide UNA vez más, siempre con `gemini-2.5-flash`. Si Google no atiende
+  desde ese centro de datos, no insiste con las demás notas. Cada fallo va a `console.error` y el
+  último queda en `settings.guion_ultimo_error`; `/__health` muestra `guiones.sinGuion24h` y
+  `guiones.ultimoError`.
+- **Causa real del segundo:** las fuentes RSS tienen sección fija y lo que traían entraba ahí sin
+  mirar. `seccionCoherente()` (`src/lib/robot/trends.ts`): lo vetado no entra; lo que no encaja con
+  su fuente pero sí con otra sección, se muda; lo demás se queda. Se amplió el veto con puestos de
+  juego (defenseman, portero, pitcher…) y Economía con pensiones, jubilación y fondos.
+  `limpiarCandidatosFueraDeTema` corrige también lo que ya estaba en la cola.
+- **Prueba:** `tests/unit/guion.test.ts`, `tests/unit/robot.test.ts` y
+  `tests/unit/clasificacion-seccion.test.ts`. Rojo comprobado devolviendo `null` en el error.

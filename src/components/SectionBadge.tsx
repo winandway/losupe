@@ -19,7 +19,11 @@ export function SectionBadge({
   const className = `inline-block rounded-full font-bold uppercase tracking-wide ${
     size === "md" ? "px-3 py-1 text-xs" : "px-2.5 py-0.5 text-[10px]"
   }`;
-  const style = { backgroundColor: section.color, color: section.onColor };
+  // Contraste AA (4,5:1) garantizado por prueba: `badge` corrige las secciones que no llegaban.
+  const style = {
+    backgroundColor: section.badge?.bg ?? section.color,
+    color: section.badge?.fg ?? section.onColor,
+  };
   if (!asLink) {
     return (
       <span className={className} style={style}>

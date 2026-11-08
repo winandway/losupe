@@ -72,7 +72,8 @@ Paso a paso con croquis: [docs/publicar-en-yadominios.md](docs/publicar-en-yadom
   fallara, cae a `LIKE` con sinónimos.
 - Celular con figura de diario (23 ago 2026): barra superior fija con ☰ menú + logo + lupa
   (`Header.tsx` + `MobileMenu.tsx`, panel a pantalla completa con secciones, idioma y enlaces del
-  sitio); las fichas de secciones se deslizan con la página. La búsqueda abre una hoja a pantalla
+  sitio). Selector de idioma estilo Amazon (`LangSwitcher.tsx`, 8 nov 2026: botón «🇪🇸 ES ▾» con
+  ventanita «Cambiar idioma»; la 404 la sirve el worker hecha desde el servidor, candado 59); las fichas de secciones se deslizan con la página. La búsqueda abre una hoja a pantalla
   completa (`SearchBox.tsx`, portal en `body`); «Lo último» y los bloques de sección son filas
   compactas con miniatura a la derecha (`ArticleCard` tarjeta = fila bajo `sm`), la etiqueta de
   sección va sobre la foto de la nota principal y los bloques no repiten notas ya mostradas.
