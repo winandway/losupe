@@ -152,6 +152,15 @@ export function websiteJsonLd(base: string, lang: Lang, name: string, searchPath
   };
 }
 
+/**
+ * Dirección completa de un archivo de medios. El video y su miniatura pueden venir ya completos (un
+ * banco de imágenes) o ser nuestros (`/media/...`): pegarle el dominio a una dirección que ya lo
+ * lleva produce `https://losupe.com/https://…`, que Google descarta sin decir por qué.
+ */
+export function medioUrl(base: string, src: string): string {
+  return /^https?:\/\//i.test(src) ? src : absoluteUrl(base, src);
+}
+
 export function articleJsonLd(base: string, lang: Lang, article: ArticleFull, brand: string) {
   const url = absoluteUrl(base, articlePath(lang, article.sectionId, article.slug));
   const section = getSection(article.sectionId);
@@ -201,6 +210,33 @@ export function articleJsonLd(base: string, lang: Lang, article: ArticleFull, br
         height: 512,
       },
     },
+    // EL VIDEO, DECLARADO. Sin esto Google no sabe que la nota lleva video: el 10 nov 2026 Search
+    // Console decía «0 vídeos indexados» con el único que encontró marcado «el vídeo no está en una
+    // página de visualización». Un VideoObject con su miniatura, su fecha y su archivo es lo que
+    // convierte la nota en página de visualización (candado 60).
+    ...(article.video
+      ? {
+          video: {
+            "@type": "VideoObject",
+            name: headline,
+            description: article.metaDescription ?? article.excerpt ?? headline,
+            thumbnailUrl: [
+              medioUrl(base, article.video.poster ?? article.imageUrl ?? "/brand/logo-512.png"),
+            ],
+            uploadDate: article.publishedAt,
+            contentUrl: medioUrl(base, article.video.src),
+            embedUrl: url,
+            inLanguage: article.lang,
+            isFamilyFriendly: true,
+            ...(article.video.credito ? { creditText: article.video.credito } : {}),
+            publisher: {
+              "@type": "NewsMediaOrganization",
+              "@id": `${base}#organizacion`,
+              name: brand,
+            },
+          },
+        }
+      : {}),
     isAccessibleForFree: true,
     // Lo que un asistente de voz debe leer si le preguntan por esta nota.
     speakable: {

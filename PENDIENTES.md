@@ -29,15 +29,22 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                  Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                  En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                  Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                  hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
 
 - [x] 🤖 Indexación: el selector de idioma y los listados en inglés fabricaban redirecciones y copias con noindex (7 nov 2026, candado 58). Informe: [docs/INDEXACION-2026-11-07.md](docs/INDEXACION-2026-11-07.md).
+- [x] 🤖 El diario publicaba dos notas al día: el latido de las visitas quemaba los intentos del turno
+      y el reloj llegaba al turno agotado. Compuerta del latido + guardia larga en el reloj
+      (10 nov 2026, candado 60).
+- [x] 🤖 Google no veía ni un video: el `<video>` lo pintaba el navegador, no había `VideoObject` y el
+      mapa del sitio no lo declaraba (10 nov 2026, candado 60).
+- [ ] 🤖 **Revisar en Search Console (a partir del 17 nov) que los vídeos indexados pasen de 0** y que
+      «vídeos descubiertos» en el mapa deje de ser cero.
 - [ ] 🤖 **14 nov 2026: revisar Search Console** con la lista de la sección 4 del informe de indexación y anotar los números.
 - [ ] 👤 **Decidir el tipo de notas:** Google rastrea y no guarda las efemérides («7 curiosidades a 100 años…») ni las guías genéricas. Recomendación: menos de esas y más noticias del día con fuente. Detalle en el informe de indexación, sección 3.
 - [x] 🤖 Selector de idioma estilo Amazon (botón «🇪🇸 ES ▾», ventanita «Cambiar idioma», opciones con círculo). Hecho el 8 nov 2026 (candado 59).

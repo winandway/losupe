@@ -41,8 +41,30 @@ export const MAX_INTENTOS_POR_FRANJA = 8;
  */
 export const MINUTOS_ENTRE_NOTAS = 20;
 
+/**
+ * EL LATIDO POR TRÁFICO SE APARTA CUANDO EL RELOJ ESTÁ VIVO.
+ *
+ * Medido el 10 nov 2026, con el diario publicando **dos notas al día en vez de diez**: el latido de
+ * las visitas lanzaba 36 corridas diarias y **las 36 morían**. Mueren porque el trabajo va en el
+ * `waitUntil` de una invocación que ya respondió: sin una petición HTTP abierta esperándola,
+ * Cloudflare la corta mucho antes de los minutos que tarda escribir una nota. Las del reloj de
+ * GitHub, que llaman con `wait=1` y esperan la respuesta, sí terminan.
+ *
+ * Lo grave no era el gasto (céntimos) sino el daño colateral: **cada corrida muerta gasta un intento
+ * de la franja**, y con ocho intentos por franja el latido los quemaba todos en una hora. Cuando el
+ * reloj llegaba, encontraba el turno agotado y se iba sin publicar. La prueba quedó en el canario de
+ * ese día: `turnoHecho: "2026-11-10:manana-2#7"` — siete intentos gastados sin una sola nota.
+ *
+ * Desde aquí el latido es lo que siempre debió ser: una red por si el reloj se cae, no el que manda.
+ * Si hubo una corrida de reloj en las últimas horas, no se mete.
+ */
+export const HORAS_DE_CORTESIA_AL_RELOJ = 3;
+
 export type TickDecision =
-  | { run: false; reason: "paused" | "fuera_de_horario" | "turno_hecho" | "no_db" | "error" }
+  | {
+      run: false;
+      reason: "paused" | "fuera_de_horario" | "turno_hecho" | "no_db" | "error" | "reloj_vivo";
+    }
   | { run: true; franja: Franja["key"]; marca: string };
 
 /**
@@ -55,11 +77,14 @@ export type TickDecision =
 export async function claimTick(
   db: D1Database | undefined,
   now = new Date(),
-  opts: { saltar?: number } = {},
+  opts: { saltar?: number; origen?: "reloj" | "trafico" } = {},
 ): Promise<TickDecision> {
   const saltados = Math.min(opts.saltar ?? 0, 4);
   if (!db) return { run: false, reason: "no_db" };
   try {
+    // El latido de las visitas no compite con el reloj: si el reloj corrió hace poco, se aparta.
+    if (opts.origen === "trafico" && (await relojVivo(db, now)))
+      return { run: false, reason: "reloj_vivo" };
     const paused = await db
       .prepare(`SELECT value FROM settings WHERE key = 'robot_paused'`)
       .first<{ value: string }>();
@@ -122,7 +147,7 @@ export async function claimTick(
         const siguiente = franjaPendiente(now, notasHoy + 1);
         if (!siguiente || siguiente.key === franja.key)
           return { run: false, reason: "turno_hecho" };
-        return claimTick(db, now, { saltar: saltados + 1 });
+        return claimTick(db, now, { saltar: saltados + 1, origen: opts.origen });
       }
       // ¿YA SALIÓ LA NOTA DE ESTE TURNO? Si la hay, el turno está hecho, diga lo que diga el
       // estado de la corrida. Esto es lo que se aprendió el 28 ago 2026: una corrida que tarda más
@@ -149,6 +174,28 @@ export async function claimTick(
     return { run: true, franja: franja.key, marca };
   } catch {
     return { run: false, reason: "error" };
+  }
+}
+
+/**
+ * ¿Corrió el reloj de verdad hace poco? Reloj = una corrida con disparador `cron`: el programador de
+ * la plataforma o el reloj de GitHub, los dos únicos que esperan a que la nota termine.
+ */
+export async function relojVivo(
+  db: D1Database,
+  now = new Date(),
+  horas = HORAS_DE_CORTESIA_AL_RELOJ,
+): Promise<boolean> {
+  try {
+    const desde = new Date(now.getTime() - horas * 3_600_000).toISOString();
+    const row = await db
+      .prepare(`SELECT COUNT(*) AS n FROM runs WHERE trigger = 'cron' AND started_at >= ?1`)
+      .bind(desde)
+      .first<{ n: number }>();
+    return Number(row?.n ?? 0) > 0;
+  } catch {
+    // Si no se puede saber, se deja pasar al latido: peor es no publicar.
+    return false;
   }
 }
 

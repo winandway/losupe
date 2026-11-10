@@ -1,27 +1,27 @@
 # EL RELOJ DEL DIARIO.
 #
-# El robot se despertaba de dos formas y ninguna era fiable: el cron de la plataforma no llegó a
-# dispararse ni una vez, y el «latido» depende de que alguien visite el sitio — a las siete de la
-# mañana no entra nadie. El 24 y el 25 de agosto de 2026 el diario no publicó por esto.
+# Tres relojes y ninguno puntual. El de la plataforma casi no se dispara. El «latido» de las visitas
+# arranca corridas que mueren (el trabajo va en segundo plano y sin nadie esperando la respuesta,
+# Cloudflare lo corta). Y los cron de GitHub, en un repositorio público, llegan dos o tres veces al
+# día aunque se programen veinticuatro: medido el 29 ago y confirmado el 10 nov de 2026.
 #
-# Esto es un reloj de verdad: GitHub dispara a su hora, pase lo que pase, y espera a que la nota
-# termine de escribirse (`wait=1`), así el worker no muere a media faena por no tener quien espere.
+# Por eso este reloj ya no es «un disparo, una nota»: es una GUARDIA. Cada vez que GitHub se digna a
+# disparar, el trabajo se queda despierto casi seis horas llamando al diario cada quince minutos y
+# esperando a que la nota termine de escribirse (`wait=1`). Así basta con que lleguen cuatro disparos
+# al día para cubrir el día entero, y deja de importar a qué hora llegan.
+#
+# No hay riesgo de publicar de más: el turno se apunta por franja y día local, fuera de franja no se
+# publica, el cupo diario lo manda la base y el gasto tiene su tope. Los disparos de sobra encuentran
+# el turno hecho y se van en milisegundos.
 name: robot
 
 on:
   schedule:
-    # CADA HORA, y no en las horas exactas de las franjas. Motivo medido el 29 ago 2026: los cron de
-    # GitHub se retrasan mucho y de forma irregular — de ocho disparos diarios programados llegaban
-    # uno o dos, con horas de desfase. Disparando cada hora, cada ventana de tres horas recibe varios
-    # intentos y basta con que llegue uno.
-    #
-    # No hay riesgo de nota doble: el turno se apunta por franja y día local, así que los disparos
-    # de más encuentran el turno hecho y se van en milisegundos. Y fuera de franja no se publica.
-    # El repositorio es público, así que estas ejecuciones no cuestan nada.
     - cron: "7 * * * *"
   workflow_dispatch: # y a mano desde la pestaña Actions, cuando haga falta
 
-# Si una corrida anterior sigue viva, no se lanza otra encima.
+# Una sola guardia a la vez. La siguiente espera en la cola y arranca en cuanto esta termina, así la
+# cobertura es continua sin depender de que el cron llegue a su hora.
 concurrency:
   group: robot
   cancel-in-progress: false
@@ -29,23 +29,42 @@ concurrency:
 jobs:
   publicar:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # El tope de un trabajo son seis horas; se deja margen para que el propio paso cierre con orden.
+    timeout-minutes: 350
     steps:
-      - name: Escribir la nota del turno
+      - name: Guardia del diario (casi seis horas, una llamada cada quince minutos)
         run: |
           set -o pipefail
-          echo "Hora UTC: $(date -u +%H:%M)"
-          # 600 s: escribir una nota en dos idiomas, con su foto, puede pasar de cinco minutos
-          # cuando el proveedor va lento. Con 300 el reloj cortaba la corrida a media faena
-          # (1 oct 2026).
-          RESP=$(curl -sS -m 600 \
-            -H "x-yad-cron: github-actions" \
-            ${CRON_SECRET:+--url-query "key=$CRON_SECRET"} \
-            "https://losupe.com/__scheduled?wait=1")
-          echo "$RESP"
-          # Que el trabajo se ponga en rojo si la corrida falla: un fallo en silencio es como no
-          # tener reloj. `skipped` es normal (ya se publicó el turno o se llegó al cupo).
-          echo "$RESP" | grep -q '"status":"error"' && exit 1
-          exit 0
+          FIN=$(( $(date +%s) + 330 * 60 ))
+          FALLOS=0
+          VUELTA=0
+          while [ "$(date +%s)" -lt "$FIN" ]; do
+            VUELTA=$((VUELTA + 1))
+            echo "::group::Vuelta $VUELTA — $(date -u +%H:%M:%S) UTC"
+            # 600 s: escribir una nota en dos idiomas, con su foto, puede pasar de cinco minutos
+            # cuando el proveedor va lento. Con 300 el reloj cortaba la corrida a media faena.
+            RESP=$(curl -sS -m 600 \
+              -H "x-yad-cron: github-actions" \
+              ${CRON_SECRET:+--url-query "key=$CRON_SECRET"} \
+              "https://losupe.com/__scheduled?wait=1" || echo '{"status":"error","error":"no respondio el sitio"}')
+            echo "$RESP" | head -c 900
+            echo
+            echo "::endgroup::"
+            # `skipped` es normal (turno hecho, cupo lleno o fuera de horario). Un error suelto
+            # tampoco es noticia: lo que importa es que no se encadenen.
+            if printf '%s' "$RESP" | grep -q '"status":"error"'; then
+              FALLOS=$((FALLOS + 1))
+            else
+              FALLOS=0
+            fi
+            if [ "$FALLOS" -ge 6 ]; then
+              echo "Seis fallos seguidos: algo está roto de verdad. Se corta la guardia en rojo."
+              exit 1
+            fi
+            # Quince minutos: los turnos están separados por veinte, así que ninguna franja se queda
+            # sin su intento y ninguna recibe dos notas pegadas.
+            sleep 900
+          done
+          echo "Guardia terminada sin incidencias."
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}

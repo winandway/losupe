@@ -521,12 +521,19 @@ export type SitemapRow = {
   updated_at: string;
   /** La imagen de la nota. Va al sitemap: sin eso, Google no indexa nuestras fotos. */
   image_url: string | null;
+  /** Titular del idioma de esta fila. Hace falta para declarar el video en el mapa (candado 60). */
+  title: string;
+  excerpt: string | null;
+  /** El video de la nota. Sin declararlo en el mapa, Google no lo encuentra nunca. */
+  video_url: string | null;
+  video_poster: string | null;
 };
 
 export async function listForSitemap(db: D1Database, limit = 5000): Promise<SitemapRow[]> {
   const { results } = await db
     .prepare(
-      `SELECT a.id, a.section_id, t.lang, t.slug, a.published_at, a.updated_at, a.image_url
+      `SELECT a.id, a.section_id, t.lang, t.slug, a.published_at, a.updated_at, a.image_url,
+              t.title, t.excerpt, a.video_url, a.video_poster
        FROM articles a JOIN article_i18n t ON t.article_id = a.id
        WHERE a.status = 'published' AND a.published_at IS NOT NULL AND a.published_at <= ?1
        ORDER BY a.published_at DESC LIMIT ?2`,

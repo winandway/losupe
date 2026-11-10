@@ -223,7 +223,9 @@ export default {
         (async () => {
           // Una corrida que se cortó no debe quedar «en marcha» para siempre.
           await closeStaleRuns(env.DB);
-          const decision = await claimTick(env.DB);
+          // `origen: "trafico"`: este latido es la red de emergencia, no el reloj. Si el reloj corrió
+          // hace poco, se aparta en vez de quemarle los intentos del turno (10 nov 2026).
+          const decision = await claimTick(env.DB, new Date(), { origen: "trafico" });
           if (!decision.run) return;
           // El trabajo NO se hace aquí: se pide a /__scheduled, que corre en su propia invocación
           // con su propio presupuesto de tiempo. Si esta petición se corta, aquella ya arrancó.

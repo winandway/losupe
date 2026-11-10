@@ -3,6 +3,7 @@ import { LANGS } from "@/i18n/config";
 import { getDb } from "@/lib/db";
 import { listForSitemap } from "@/lib/queries";
 import { isSectionId, SECTIONS } from "@/lib/sections";
+import { medioUrl } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
 import { aboutPath, absoluteUrl, articlePath, homePath, sectionPath, staticPath } from "@/lib/urls";
 
@@ -85,16 +86,35 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // Agrupa traducciones por artículo para declarar hreflang.
   const byArticle = new Map<
     string,
-    { es?: string; en?: string; updated: string; section: string; image?: string }
+    {
+      es?: string;
+      en?: string;
+      updated: string;
+      published: string;
+      section: string;
+      image?: string;
+      video?: string;
+      poster?: string;
+      titulo: Partial<Record<string, string>>;
+      resumen: Partial<Record<string, string>>;
+    }
   >();
   for (const r of rows) {
     const entry = byArticle.get(r.id) ?? {
       updated: r.updated_at,
+      published: r.published_at,
       section: r.section_id,
       image: r.image_url ?? undefined,
+      // `video_url` vacío (no nulo) significa «se miró y no corresponde» (candado 56).
+      video: r.video_url?.trim() ? r.video_url : undefined,
+      poster: r.video_poster?.trim() ? r.video_poster : undefined,
+      titulo: {} as Partial<Record<string, string>>,
+      resumen: {} as Partial<Record<string, string>>,
     };
     if (r.lang === "es") entry.es = r.slug;
     if (r.lang === "en") entry.en = r.slug;
+    entry.titulo[r.lang] = r.title;
+    if (r.excerpt) entry.resumen[r.lang] = r.excerpt;
     byArticle.set(r.id, entry);
   }
   for (const entry of byArticle.values()) {
@@ -114,6 +134,30 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         // LA IMAGEN VA EN EL SITEMAP. Sin esto Google no tiene por dónde encontrarla, y por eso
         // buscar «losupe» en Google Imágenes no devolvía ni una foto nuestra (24 ago 2026).
         ...(entry.image ? { images: [absoluteUrl(base, entry.image)] } : {}),
+        // Y EL VIDEO TAMBIÉN. Mismo motivo que la imagen, comprobado el 10 nov 2026: Search Console
+        // decía «vídeos descubiertos: 0» en los dos mapas y «0 vídeos indexados», porque el video no
+        // se declaraba en ninguna parte. Sin miniatura no se puede declarar: Google la exige.
+        ...(entry.video && (entry.poster || entry.image)
+          ? {
+              videos: [
+                {
+                  title: (entry.titulo[lang] ?? entry.titulo.es ?? "losupe").slice(0, 100),
+                  thumbnail_loc: medioUrl(base, (entry.poster ?? entry.image) as string),
+                  description: (
+                    entry.resumen[lang] ??
+                    entry.titulo[lang] ??
+                    entry.titulo.es ??
+                    "losupe"
+                  ).slice(0, 2048),
+                  content_loc: medioUrl(base, entry.video),
+                  player_loc: absoluteUrl(base, articlePath(lang, entry.section, slug)),
+                  publication_date: entry.published,
+                  family_friendly: "yes" as const,
+                  requires_subscription: "no" as const,
+                },
+              ],
+            }
+          : {}),
       });
     }
   }

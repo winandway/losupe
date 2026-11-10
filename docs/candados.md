@@ -2106,3 +2106,89 @@ Cuatro pendientes 🤖 de la fila, en un solo bloque.
   `limpiarCandidatosFueraDeTema` corrige también lo que ya estaba en la cola.
 - **Prueba:** `tests/unit/guion.test.ts`, `tests/unit/robot.test.ts` y
   `tests/unit/clasificacion-seccion.test.ts`. Rojo comprobado devolviendo `null` en el error.
+
+## 60. El diario publicaba dos notas al día, y Google no veía ni un video (10 nov 2026)
+
+> Salió de la revisión que pidió Richard: «cómo va el posicionamiento, si Google ya lo reconoce como
+> medio, cómo van las publicaciones y qué necesitan los videos». Los tres hilos llevaban al mismo
+> sitio: medir antes de opinar.
+
+### a) El latido de las visitas le quemaba los intentos al reloj
+
+- **Qué se veía:** el diario publicaba **dos notas al día** con un cupo de diez, y los días malos
+  ninguna. El canario mostraba 36 corridas con disparador `manual` y **las 36 en error**: «la corrida
+  se cortó antes de terminar».
+- **Causa real, y no es la obvia.** Las corridas del latido mueren porque el trabajo va en el
+  `waitUntil` de una invocación que **ya respondió**: sin una petición HTTP abierta esperándola,
+  Cloudflare la corta mucho antes de los minutos que tarda escribir una nota. Las del reloj de
+  GitHub, que llaman con `wait=1` y esperan, sí terminan. Lo grave no era el gasto (céntimos) sino el
+  daño colateral: **cada corrida muerta gasta un intento de la franja**, y con ocho intentos por
+  franja el latido los quemaba todos en una hora. Cuando el reloj llegaba, encontraba el turno
+  agotado y se iba sin publicar. La huella exacta, en el canario de ese día:
+  `turnoHecho: "2026-11-10:manana-2#7"` — siete intentos gastados sin una sola nota.
+- **Qué se hizo:** `claimTick` acepta `origen: "trafico" | "reloj"`. Con `origen: "trafico"`, si hubo
+  una corrida `cron` en las últimas `HORAS_DE_CORTESIA_AL_RELOJ` (3), devuelve
+  `reason: "reloj_vivo"` **sin tocar la marca del turno**. El latido vuelve a ser lo que debió ser
+  siempre: la red por si el reloj se cae, no el que manda.
+- **Y el reloj dejó de ser un disparo suelto.** Los cron de GitHub, en un repositorio público, llegan
+  dos o tres veces al día aunque se programen veinticuatro (medido el 29 ago y confirmado el 10 nov).
+  `robot.yml` ya no escribe una nota y se va: monta una **guardia de 330 minutos** que llama cada 15
+  con `wait=1`. Con cuatro disparos al día se cubre el día entero y deja de importar la hora a la que
+  lleguen. Una guardia a la vez (`concurrency: robot`, sin cancelar), así la siguiente espera en cola
+  y arranca al terminar la anterior: cobertura continua. Seis fallos seguidos cortan la guardia en
+  rojo.
+- **Prueba:** `tests/unit/reloj-del-diario.test.ts`. **Rojo comprobado** con tres mutaciones: quitar
+  la compuerta del latido, quitar `wait=1` del workflow y volver a dejar el reloj como disparo suelto.
+- **Qué NO tocar:** el latido NO debe llamar a `/__scheduled?wait=1` (el `waitUntil` de la visita del
+  lector muere antes y vuelve el fallo de agosto de 2026). Y `/__*` sigue fuera del latido.
+
+### b) Google no veía ni uno de los videos
+
+- **Qué se veía:** once de las doce notas recientes llevaban su video, y Search Console decía
+  **«0 vídeos indexados»**, «vídeos descubiertos: 0» en los dos mapas del sitio y el único que Google
+  encontró marcado **«el vídeo no está en una página de visualización»**.
+- **Causa real, en tres capas:**
+  1. El `<video>` lo pintaba el navegador al acercarte (candado 56), así que el HTML que recibe
+     Google **no tenía ninguno**: solo la foto del póster. Comprobado con
+     `curl … | grep -c "<video"` → `0`.
+  2. La nota no declaraba `VideoObject` en sus datos estructurados.
+  3. El video no estaba en el mapa del sitio, que es por donde Google encuentra los medios (igual que
+     pasó con las fotos en agosto de 2026).
+- **Qué se hizo:**
+  - `VideoEnLectura` pinta el `<video>` **desde el servidor**, con `preload="none"`: existe en el HTML
+    pero no se descarga un byte del archivo hasta que se reproduce. Mientras tanto solo pesa el
+    póster. Sin JavaScript quedan los controles del navegador (`controls={!hidratado}`), y en cuanto
+    el componente cobra vida mandan nuestros dos botones. Lo demás del candado 56 sigue igual.
+  - `articleJsonLd` añade `video: VideoObject` con `contentUrl`, `thumbnailUrl`, `uploadDate`,
+    `embedUrl` (la página donde se ve, que es lo que faltaba) y el crédito.
+  - El mapa del sitio declara el video (`videos: [{ title, thumbnail_loc, content_loc, player_loc,
+publication_date }]`). Sin miniatura no se declara: Google la exige.
+  - **`medioUrl`** (`src/lib/seo.ts`): el video y su póster pueden venir ya con su dominio (banco de
+    imágenes) o ser nuestros. Pegarle el dominio a una dirección que ya lo lleva produce
+    `https://losupe.com/https://…`, que Google descarta sin decir por qué.
+- **Prueba:** `tests/unit/video-para-google.test.tsx`, que renderiza el componente **en el servidor**
+  (`renderToStaticMarkup`) para ver lo mismo que ve Google. **Rojo comprobado** con cinco mutaciones:
+  quitar el `VideoObject`, volver a pintar el video con JavaScript, precargar el archivo entero,
+  quitar los videos del mapa y armar la dirección con el ayudante de siempre.
+- **Comprobar en vivo:**
+  `curl -s <una nota con video> | grep -c '"@type":"VideoObject"'` → `1`, y
+  `curl -s https://losupe.com/sitemap.xml | grep -c "video:video"` → mayor que cero.
+- **Qué NO tocar:** no quitar `preload="none"` (sin eso cada nota se trae el video entero aunque
+  nadie lo mire) y no declarar un video sin miniatura.
+
+### c) Lo que se midió de Google, para no repetir la medición a ciegas
+
+| Qué                                                   | Valor el 10 nov 2026                                     |
+| ----------------------------------------------------- | -------------------------------------------------------- |
+| Search Console · indexadas / sin indexar              | 153 / 708 (informe con fecha del 5 nov)                  |
+| Search Console · 28 días                              | 1 clic, 19 impresiones, posición media 18,1              |
+| Search Console · vídeos                               | 0 indexados                                              |
+| Mapas · vídeos descubiertos                           | 0 y 0                                                    |
+| Google Noticias (`site:losupe.com`, pestaña Noticias) | solo la portada, con extracto del 23 ago                 |
+| Publisher Center                                      | publicación «losupe» creada, `losupe.com` **verificada** |
+
+Lo que hay que saber de Publisher Center, para no volver a buscarlo: desde **marzo de 2025 Google
+Noticias genera las páginas de publicación automáticamente**. Ya no existe «solicitar la entrada» ni
+un sello de medio aprobado que esperar; entrar depende de que Google rastree e indexe las notas como
+noticias. Publisher Center sirve hoy para la ficha (nombre, idioma, sede, logo) y para Reader Revenue
+Manager.

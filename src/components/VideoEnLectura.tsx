@@ -14,8 +14,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
  * Aquí se copia lo bueno y se tira lo demás:
  *
  *  1. **El video va DENTRO del texto**, no encima. Se lee, se ve, se sigue leyendo.
- *  2. **No existe hasta que te acercas.** Hasta entonces solo hay una imagen fija. Nada de cargar
- *     un reproductor que quizá nadie mire.
+ *  2. **No pesa hasta que lo ves.** El reproductor viene en el HTML desde el servidor —Google tiene
+ *     que verlo, y el 10 nov 2026 Search Console decía «0 vídeos indexados» justo porque el `<video>`
+ *     lo pintaba el navegador— pero con `preload="none"`: no se descarga un solo byte del archivo
+ *     hasta que se reproduce. Mientras tanto solo pesa la imagen del póster.
  *  3. **Arranca en silencio y solo cuando está a la vista**; al salir de pantalla se pausa. El
  *     sonido lo enciende la persona, nunca nosotros.
  *  4. **Si sigues leyendo, se encoge a una esquina** —eso es lo bueno que tienen ellos— **y se
@@ -75,7 +77,7 @@ export function VideoEnLectura({
 }) {
   const caja = useRef<HTMLDivElement>(null);
   const video = useRef<HTMLVideoElement>(null);
-  const [cargar, setCargar] = useState(false);
+  const [hidratado, setHidratado] = useState(false);
   const [mini, setMini] = useState(false);
   const [cerrado, setCerrado] = useState(false);
   const [sonando, setSonando] = useState(false);
@@ -97,33 +99,18 @@ export function VideoEnLectura({
     return () => window.clearTimeout(t);
   }, [llave]);
 
-  // 1) El reproductor no existe hasta que el lector se acerca.
+  // 1) Sin JavaScript mandan los controles del navegador (si no, el video sería una foto inerte).
+  // En cuanto el componente cobra vida, se los quitamos y mandan nuestros dos botones.
   useEffect(() => {
-    const el = caja.current;
-    if (!el || cargar) return;
-    if (typeof IntersectionObserver !== "function") {
-      // Navegador antiguo: se carga igual, pero en un turno aparte.
-      const t = window.setTimeout(() => setCargar(true), 0);
-      return () => window.clearTimeout(t);
-    }
-    const io = new IntersectionObserver(
-      (entradas) => {
-        if (entradas.some((e) => e.isIntersecting)) {
-          setCargar(true);
-          io.disconnect();
-        }
-      },
-      { rootMargin: "300px 0px" },
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [cargar]);
+    const t = window.setTimeout(() => setHidratado(true), 0);
+    return () => window.clearTimeout(t);
+  }, []);
 
   // 2) Se reproduce solo a la vista; al pasarlo de largo leyendo, se va a la esquina.
   useEffect(() => {
     const el = caja.current;
     const v = video.current;
-    if (!el || !v || !cargar || cerrado) return;
+    if (!el || !v || cerrado) return;
     if (typeof IntersectionObserver !== "function") return;
     const io = new IntersectionObserver(
       (entradas) => {
@@ -147,7 +134,7 @@ export function VideoEnLectura({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [cargar, cerrado]);
+  }, [cerrado]);
 
   const alternarSonido = useCallback(() => {
     const v = video.current;
@@ -187,7 +174,7 @@ export function VideoEnLectura({
         data-mini={mini ? "si" : "no"}
       >
         <div className="relative aspect-video w-full">
-          {cargar && !cerrado ? (
+          {!cerrado ? (
             <video
               ref={video}
               src={src}
@@ -196,14 +183,14 @@ export function VideoEnLectura({
               loop
               playsInline
               preload="none"
-              controls={false}
+              controls={!hidratado}
               onPlay={() => setEnMarcha(true)}
               onPause={() => setEnMarcha(false)}
               className="h-full w-full object-cover"
               aria-label={textos.etiqueta}
             />
           ) : poster ? (
-            // Mientras no te acercas, solo hay una imagen. Pesa lo que pesa una foto.
+            // Cerrado: se queda la foto, que es lo que había antes de reproducir.
             <img src={poster} alt="" className="h-full w-full object-cover" loading="lazy" />
           ) : (
             <div className="h-full w-full bg-ink" />
