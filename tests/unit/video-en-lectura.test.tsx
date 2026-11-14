@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { VideoEnLectura } from "@/components/VideoEnLectura";
 import { notasSinVideo, rescatarVideos, TEMA_DELICADO } from "@/lib/robot/rescate-video";
@@ -170,8 +170,10 @@ describe("el reproductor dentro de la lectura", () => {
     expect(v).toBeTruthy();
     expect(v.muted).toBe(true);
     expect(v.getAttribute("preload")).toBe("none");
-    // Nada de la barra del navegador: los botones son nuestros y son dos.
-    expect(v.hasAttribute("controls")).toBe(false);
+    // Nada de la barra del navegador: los botones son nuestros y son dos. Los botones existen desde
+    // el primer pintado y la barra se quita cuando el componente despierta: se espera a ese momento
+    // (sin esperar, la prueba fallaba a ratos en GitHub, que es más lento; 14 nov 2026).
+    await waitFor(() => expect(v.hasAttribute("controls")).toBe(false));
     expect(screen.getByRole("button", { name: /Reproducir/ })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Con sonido/ })).toBeInTheDocument();
   });
