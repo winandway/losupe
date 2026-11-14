@@ -29,11 +29,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                                  Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                                  En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                                  Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                                  hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🤖 Fila de la IA
 
@@ -45,7 +45,9 @@
       mapa del sitio no lo declaraba (10 nov 2026, candado 60).
 - [ ] 🤖 **Revisar en Search Console (a partir del 17 nov) que los vídeos indexados pasen de 0** y que
       «vídeos descubiertos» en el mapa deje de ser cero.
-- [ ] 🤖 **14 nov 2026: revisar Search Console** con la lista de la sección 4 del informe de indexación y anotar los números.
+- [x] 🤖 **14 nov 2026: revisión de la sección 4 del informe de indexación, por fuera.** Las 631 direcciones del mapa dan 200 con su canónica y sin noindex; arreglado el mapa de videos, que daba la página como reproductor (candado 61). Números en la bitácora del informe.
+- [ ] 🤖 **Anotar los números de Search Console de la sección 4** (indexadas, redirecciones, noindex, otra canónica, fecha del informe, Noticias) en cuanto Richard vuelva a entrar con windoce1. Juntarlo con la revisión de videos del 17 nov.
+- [ ] 👤 **Volver a entrar a Google con la cuenta windoce1 en el Chrome de la oficina.** El 14 nov salía «saliste de la cuenta» y la otra cuenta no tiene acceso a Search Console de losupe.com. Sin eso no se pueden leer los números.
 - [ ] 👤 **Decidir el tipo de notas:** Google rastrea y no guarda las efemérides («7 curiosidades a 100 años…») ni las guías genéricas. Recomendación: menos de esas y más noticias del día con fuente. Detalle en el informe de indexación, sección 3.
 - [x] 🤖 Selector de idioma estilo Amazon (botón «🇪🇸 ES ▾», ventanita «Cambiar idioma», opciones con círculo). Hecho el 8 nov 2026 (candado 59).
 
