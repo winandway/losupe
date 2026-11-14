@@ -1,0 +1,9 @@
+# Caché de estáticos (Workers Static Assets / YaDominios Cloud). Los HTML los sirve el worker.
+/img/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/video/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/brand/*
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
+/favicon.ico
+  Cache-Control: public, max-age=86400
