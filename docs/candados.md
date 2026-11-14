@@ -2192,3 +2192,21 @@ Noticias genera las páginas de publicación automáticamente**. Ya no existe «
 un sello de medio aprobado que esperar; entrar depende de que Google rastree e indexe las notas como
 noticias. Publisher Center sirve hoy para la ficha (nombre, idioma, sede, logo) y para Reader Revenue
 Manager.
+
+## 61. El mapa de videos le daba a Google la página como si fuera el reproductor (14 nov 2026)
+
+- **Qué se rompió y cómo se veía:** los 310 videos del mapa del sitio llevaban
+  `<video:player_loc>` con la misma dirección que el `<loc>` de la nota. La guía oficial de Google
+  para mapas de video dice de esa etiqueta: «no debe ser la misma dirección que `<loc>`». El
+  `VideoObject` de la nota hacía lo mismo con `embedUrl`. No da error visible: Google descarta o no
+  cuenta el video, y Search Console sigue diciendo «0 vídeos indexados».
+- **Causa real:** el candado 60 confundió «la página donde se ve» con «el reproductor». `player_loc`
+  y `embedUrl` son la dirección de un reproductor para `<iframe>` (YouTube, Vimeo). Nuestros videos
+  son un archivo `.mp4` directo, y para eso está `content_loc` / `contentUrl`, que ya estaban.
+- **Qué se hizo:** se quitó `player_loc` de `src/app/sitemap.ts` y `embedUrl` de `articleJsonLd`
+  (`src/lib/seo.ts`). Queda `content_loc` / `contentUrl`, que Google prefiere cuando existe.
+- **Prueba:** `tests/unit/video-para-google.test.tsx` exige que el mapa no lleve `player_loc` y que
+  el `VideoObject` no lleve `embedUrl`. **Rojo comprobado** con el código anterior (2 fallos).
+- **Comprobar en vivo:** `curl -s https://losupe.com/sitemap.xml | grep -c player_loc` → `0`, y
+  `grep -c "video:content_loc"` mayor que cero.
+- **Qué NO tocar:** no volver a poner la dirección de la nota en `player_loc` ni en `embedUrl`.

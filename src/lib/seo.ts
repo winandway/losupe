@@ -225,7 +225,8 @@ export function articleJsonLd(base: string, lang: Lang, article: ArticleFull, br
             ],
             uploadDate: article.publishedAt,
             contentUrl: medioUrl(base, article.video.src),
-            embedUrl: url,
+            // Sin embedUrl: es la dirección de un reproductor para <iframe>, no la de la página.
+            // Con contentUrl basta (candado 61, 14 nov 2026).
             inLanguage: article.lang,
             isFamilyFriendly: true,
             ...(article.video.credito ? { creditText: article.video.credito } : {}),

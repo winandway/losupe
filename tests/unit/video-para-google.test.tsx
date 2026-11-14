@@ -62,8 +62,9 @@ describe("la nota con video se declara como página de visualización", () => {
     expect(v?.contentUrl).toBe("https://videos.pexels.com/123-hd.mp4");
     expect(v?.thumbnailUrl).toEqual(["https://images.pexels.com/videos/123/poster.jpg"]);
     expect(v?.uploadDate).toBe("2026-11-10T12:00:00.000Z");
-    // La página donde se ve: es lo que Google echaba en falta.
-    expect(v?.embedUrl).toContain("/es/tecnologia/una-nota");
+    // embedUrl es la dirección de un REPRODUCTOR (lo que iría en un <iframe>), no la de la página.
+    // Ponerle la página la confunde con un reproductor; con contentUrl basta (candado 61).
+    expect(v?.embedUrl).toBeUndefined();
     expect(v?.creditText).toContain("Ana Ruiz");
   });
 
@@ -156,8 +157,11 @@ describe("el video está en el mapa del sitio", () => {
       title: "Una noticia con su video",
       thumbnail_loc: "https://images.pexels.com/videos/123/poster.jpg",
       content_loc: "https://videos.pexels.com/123-hd.mp4",
-      player_loc: "https://losupe.com/es/tecnologia/una-nota",
     });
+    // Google: player_loc «no debe ser la misma dirección que <loc>». Lo era en los 310 videos del
+    // mapa (14 nov 2026). Con content_loc basta, así que no se declara reproductor (candado 61).
+    expect(conVideo?.videos?.[0]).not.toHaveProperty("player_loc");
+    expect(conVideo?.videos?.[0]?.content_loc).not.toBe(conVideo?.url);
     expect(sinVideo?.videos).toBeUndefined();
     vi.doUnmock("@/lib/queries");
     vi.doUnmock("@/lib/db");

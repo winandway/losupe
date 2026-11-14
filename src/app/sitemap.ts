@@ -150,7 +150,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
                     "losupe"
                   ).slice(0, 2048),
                   content_loc: medioUrl(base, entry.video),
-                  player_loc: absoluteUrl(base, articlePath(lang, entry.section, slug)),
+                  // SIN player_loc. Google: «no debe ser la misma dirección que <loc>», y lo era en
+                  // los 310 videos (14 nov 2026). Con content_loc basta (candado 61).
                   publication_date: entry.published,
                   family_friendly: "yes" as const,
                   requires_subscription: "no" as const,

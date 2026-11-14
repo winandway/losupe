@@ -94,3 +94,17 @@ Se pidió indexación a mano (cupo diario de Google) de la portada en inglés y 
   `https://losupe.com/es/tecnologia/acciones-de-amd-caen-13-y-las-de-nvidia-un-7-por-temor-a-regulacion-de-ia`,
   `https://losupe.com/en/technology/amd-shares-drop-13-nvidia-7-amid-ai-regulation-fears`.
   Las cuatro notas Google «no las reconocía» todavía: eran de hoy y de ayer.
+- 14 nov 2026 — **revisión de la sección 4, a medias.** Search Console no se pudo abrir: en el Chrome
+  de la oficina la cuenta windoce1 aparece como «saliste de la cuenta» y la cuenta activa
+  (go@windoce.com) no tiene acceso a la propiedad. Los puntos 1 a 4 (fecha del informe,
+  redirecciones, noindex, otra canónica, indexadas) y el 6 quedan sin número hasta que Richard vuelva
+  a entrar con windoce1. Lo que sí se midió desde fuera, en vivo:
+  - Las 631 direcciones del mapa responden 200, cada una con su canónica propia y ninguna con noindex.
+  - `www.losupe.com` y `http://` redirigen con 301 a `https://losupe.com`; `/en` declara su propia
+    canónica.
+  - El mapa de noticias tiene 36 notas, la última de hoy (05:03 UTC). El mapa general declara 310 videos.
+  - **Fallo encontrado y arreglado (candado 61):** los 310 videos del mapa ponían la dirección de la
+    nota como `player_loc`, cosa que Google prohíbe; el `VideoObject` hacía lo mismo con `embedUrl`.
+  - Pendiente aparte (no es fallo del código): las 310 entradas usan 146 miniaturas, es decir, el
+    mismo video de banco de imágenes se repite en varias notas. Google tiende a no indexar un video
+    que no es el contenido principal de la página; esto va con la decisión del tipo de notas.
