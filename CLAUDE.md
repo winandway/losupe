@@ -48,3 +48,6 @@
 4. Desde Windoce (contenido de la casa) — hecho (7 nov 2026). Aviso en código, fuera de Google
    Noticias, una nota al día. Reglas: `docs/DESDE-WINDOCE.md`; candado 57.
 5. Suscriptores y boletín — registro, confirmación, boletín cada 4 días (Resend).
+6. Delivery y logística — segmento diario del sector (25 nov 2026). Tres notas al día, firma Pedro
+   Llerena, fuentes propias y **línea de transparencia automática** cuando una nota nombra un producto
+   del grupo. Reglas: `docs/DELIVERY.md`; candado 61.

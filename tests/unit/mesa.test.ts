@@ -115,12 +115,12 @@ describe("la escaleta manda: 2 de actualidad y 2 de curiosidades", () => {
     // La causa era aritmética: `notasHoy % 10 < 4` con tres notas al día da 0, 1 y 2 — los tres
     // menores que 4, así que SIEMPRE salía «propia». Ahora manda la franja, y esto lo demuestra.
     const dia = FRANJAS.map((f, i) => elegirGenero(f, i, REGLAS, true, true));
-    // Ocho turnos de actualidad y dos piezas propias (que con efemérides activas son efemérides).
-    expect(dia.filter((g) => g === "actualidad")).toHaveLength(8);
-    expect(dia.filter((g) => g === "efemeride")).toHaveLength(2);
-    // Y las dos propias están donde manda la escaleta: mediodía y nueve de la noche.
+    // Diez turnos de actualidad y UNA pieza propia (que con efemérides activas es efeméride). El
+    // turno de rankings de las nueve pasó a delivery el 25 nov 2026.
+    expect(dia.filter((g) => g === "actualidad")).toHaveLength(10);
+    expect(dia.filter((g) => g === "efemeride")).toHaveLength(1);
+    // Y la propia está donde manda la escaleta: al mediodía.
     expect(dia[FRANJAS.findIndex((f) => f.key === "mediodia")]).toBe("efemeride");
-    expect(dia[FRANJAS.findIndex((f) => f.key === "noche-3")]).toBe("efemeride");
   });
 
   it("una efeméride NO puede comerse la actualidad", () => {
@@ -131,9 +131,10 @@ describe("la escaleta manda: 2 de actualidad y 2 de curiosidades", () => {
     // Ni a los turnos de los dos canales: tecnología y artistas son noticia sí o sí.
     expect(elegirGenero(F["manana-2"]!, 1, REGLAS, true, true)).toBe("actualidad");
     expect(elegirGenero(F["noche-2"]!, 8, REGLAS, true, true)).toBe("actualidad");
+    // Ni al turno de delivery, que desde el 25 nov 2026 también es noticia sí o sí.
+    expect(elegirGenero(F["noche-3"]!, 9, REGLAS, true, true)).toBe("actualidad");
     // En su hueco sí, porque un «diez años sin» solo se puede contar hoy.
     expect(elegirGenero(F.mediodia!, 1, REGLAS, true, true)).toBe("efemeride");
-    expect(elegirGenero(F["noche-3"]!, 9, REGLAS, true, true)).toBe("efemeride");
   });
 
   it("si toca actualidad y no hay material, se escribe una propia en vez de perder la nota", () => {
@@ -271,13 +272,17 @@ describe("rankings: la franja de la noche pregunta y responde", () => {
     expect(mediodia?.genero).not.toBe("ranking");
   });
 
-  it("la escaleta reparte las dos franjas propias en cosas distintas", async () => {
+  it("queda UNA franja propia, la de curiosidades del mediodía", async () => {
     const { FRANJAS } = await import("@/lib/robot/franjas");
     const propias = FRANJAS.filter((f) => f.genero === "propia");
-    expect(propias).toHaveLength(2);
-    // Antes las dos eran lo mismo y se notaba. Ahora una es de curiosidades y otra de rankings.
-    expect(new Set(propias.map((f) => f.subgenero)).size).toBe(2);
-    expect(FRANJAS.find((f) => f.key === "noche-3")?.subgenero).toBe("ranking");
+    // El turno de rankings de las nueve pasó a delivery el 25 nov 2026: los rankings genéricos son
+    // justo lo que Google rastrea y no guarda (informe de indexación del 7 nov), así que ese hueco
+    // rinde más con noticia del sector. Los rankings siguen existiendo como idea propia cuando un
+    // turno de actualidad se queda sin material.
+    expect(propias).toHaveLength(1);
+    expect(propias[0]?.key).toBe("mediodia");
+    expect(propias[0]?.subgenero).toBe("curiosidades");
+    expect(FRANJAS.find((f) => f.key === "noche-3")?.seccion).toBe("delivery");
   });
 
   it("el encargo de un ranking pide el dato en la primera frase, sin rodeos", async () => {

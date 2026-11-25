@@ -29,11 +29,21 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                          Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                          En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                          Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                          hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+
+## 🔴 Segmento de delivery (Richard, 25 nov 2026)
+
+- [x] 🤖 Sección «Delivery y logística», nueve fuentes del sector, tres turnos al día, firma de Pedro
+      Llerena con su LinkedIn y línea de transparencia automática (candado 61). Plan:
+      [docs/DELIVERY.md](docs/DELIVERY.md).
+- [ ] 👤 **La página de Divoox dice «próximamente» en Venezuela.** Si ya hay pruebas en ciudades, hay
+      que actualizarla: mientras diga eso, las notas no pueden afirmar lo contrario.
+- [ ] 🤖 Vigilar la primera semana del segmento: que salgan las tres al día y que ninguna se vaya a
+      otra sección.
 
 ## 🤖 Fila de la IA
 

@@ -1,6 +1,7 @@
 import type { Lang } from "@/i18n/config";
 
-export type SectionId = "economia" | "ventas" | "tecnologia" | "cripto" | "artistas" | "windoce";
+export type SectionId =
+  "economia" | "ventas" | "tecnologia" | "cripto" | "artistas" | "delivery" | "windoce";
 
 export type Section = {
   id: SectionId;
@@ -86,6 +87,29 @@ export const SECTIONS: readonly Section[] = [
     color: "#FF5A5F",
     onColor: "#FFFFFF",
     badge: { bg: "#FF5A5F", fg: "#0B1F3A" },
+    perDay: 3,
+  },
+  {
+    /**
+     * DELIVERY Y LOGÍSTICA (25 nov 2026). El segmento diario que pidió Richard: cómo funciona el
+     * reparto de comida y de paquetes en el mundo — DoorDash, Uber Eats, Rappi, Instacart, los
+     * bloques de Amazon Flex, los drones, la última milla — y cómo se vive en cada país.
+     *
+     * Es PERIODISMO DEL SECTOR, no el folleto de nadie. Divoox (producto de la casa) aparece aquí
+     * solo cuando es noticia de verdad dentro del tema, y siempre con su línea de transparencia,
+     * que pone el código (`src/lib/casa/aviso.ts`). Un segmento que solo hablara de nuestro producto
+     * no lo guardaría Google, y con razón.
+     */
+    id: "delivery",
+    slug: { es: "delivery", en: "delivery" },
+    name: { es: "Delivery y logística", en: "Delivery & Logistics" },
+    description: {
+      es: "Cómo funciona el reparto de comida y de paquetes: las apps, lo que gana un repartidor, lo que paga un restaurante y la última milla, país por país.",
+      en: "How food and package delivery really works: the apps, what a driver earns, what a restaurant pays, and the last mile, country by country.",
+    },
+    color: "#8B5CF6",
+    onColor: "#FFFFFF",
+    badge: { bg: "#6D28D9", fg: "#FFFFFF" },
     perDay: 3,
   },
   {

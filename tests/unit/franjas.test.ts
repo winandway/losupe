@@ -93,21 +93,27 @@ describe("franjas horarias del diario", () => {
     }
   });
 
-  it("la escaleta trae TRES turnos de tecnología y TRES de artistas cada día", () => {
+  it("la escaleta trae TRES turnos de tecnología, TRES de artistas y TRES de delivery", () => {
     // Es el contrato con los dos canales de video de Richard (1 oct 2026): sin tres noticias nuevas
-    // en cada una de esas secciones, no hay material que grabar.
+    // en cada una de esas secciones, no hay material que grabar. Y desde el 25 nov 2026, el mismo
+    // contrato para el segmento de delivery: «todos los días vamos a sacar nuestro segmento».
     const deSeccion = (id: string) =>
       FRANJAS.filter((f) => f.genero === "actualidad" && f.seccion === id);
     expect(deSeccion("tecnologia")).toHaveLength(3);
     expect(deSeccion("artistas")).toHaveLength(3);
+    expect(deSeccion("delivery")).toHaveLength(3);
+    // Repartidos por el día, no los tres seguidos: mañana, tarde y noche.
+    const horasDelivery = deSeccion("delivery").map((f) => f.hour);
+    expect(Math.max(...horasDelivery) - Math.min(...horasDelivery)).toBeGreaterThanOrEqual(8);
     // Y quedan turnos libres para Economía, Ventas y Cripto, que siguen como estaban.
     expect(FRANJAS.filter((f) => f.genero === "actualidad" && !f.seccion).length).toBeGreaterThan(
       0,
     );
-    // Las dos piezas propias siguen en su sitio: curiosidades al mediodía, rankings de noche.
+    // Queda UNA pieza propia, la de curiosidades del mediodía. El turno de rankings de la noche
+    // pasó a delivery el 25 nov 2026: los rankings genéricos son justo lo que Google rastrea y no
+    // guarda (informe de indexación del 7 nov), así que ese hueco rinde más con noticia del sector.
     expect(FRANJAS.filter((f) => f.genero === "propia").map((f) => f.subgenero)).toEqual([
       "curiosidades",
-      "ranking",
     ]);
     // Ninguna franja puede pisar a la siguiente: si se solaparan, dos notas saldrían pegadas.
     for (let i = 1; i < FRANJAS.length; i++) {

@@ -155,7 +155,6 @@ CREATE TABLE IF NOT EXISTS page_views (
   PRIMARY KEY (day, article_id)
 );
 
-
 -- Patrocinadores: empresas que compraron notas (encargos) en losupe. Se administran desde el panel.
 CREATE TABLE IF NOT EXISTS sponsors (
   id TEXT PRIMARY KEY,
@@ -250,7 +249,6 @@ CREATE TABLE IF NOT EXISTS login_attempts (
 );
 CREATE INDEX IF NOT EXISTS idx_login_attempts_ip ON login_attempts(ip, at);
 
-
 -- Pedidos de la página pública «Publica tu noticia» (comunicados autoservicio).
 CREATE TABLE IF NOT EXISTS orders (
   id TEXT PRIMARY KEY,
@@ -274,7 +272,6 @@ CREATE TABLE IF NOT EXISTS orders (
   updated_at TEXT NOT NULL DEFAULT (datetime('now'))
 );
 CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status, created_at DESC);
-
 
 
 -- ── Publicacion en redes sociales (bloque 5) ────────────────────────────────────────────────────
@@ -317,8 +314,12 @@ INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('tecnologia', 3, 3),
   ('cripto', 4, 1),
   ('artistas', 5, 3);
+-- Delivery y logística: el segmento diario del sector (25 nov 2026, candado 61).
+INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('delivery', 6, 3);
+UPDATE sections SET notes_per_day = 3 WHERE id = 'delivery' AND notes_per_day < 3;
 -- Desde Windoce: contenido de la casa. No es noticia y el robot de noticias no la escribe (candado 57).
-INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('windoce', 6, 0);
+INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('windoce', 7, 0);
+UPDATE sections SET sort_order = 7 WHERE id = 'windoce' AND sort_order <> 7;
 
 INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en) VALUES
   ('equipo-losupe', 'Equipo editorial de losupe', 'newsroom',
@@ -333,7 +334,6 @@ INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en)
    'Editora de losupe. Firma y revisa las notas de economía, ventas, tecnología e inteligencia artificial, cripto y tendencias que publicamos cada mañana.',
    'Editor at losupe. She writes and reviews the economy, sales, technology and AI, crypto, and trends stories we publish every morning.',
    'Editora', 'Editor');
-
 
 -- Especialidades de cada autor (secciones que domina). Columna añadida el 23 ago 2026: en las bases
 -- que ya existían se agrega con ALTER (el guardián tolera que ya esté puesta).
@@ -385,7 +385,6 @@ ALTER TABLE articles ADD COLUMN video_poster TEXT;
 ALTER TABLE articles ADD COLUMN video_credit TEXT;
 
 
-
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
 INSERT OR IGNORE INTO authors (id, name, kind, sections_json, bio_es, bio_en, role_es, role_en, avatar_url) VALUES
   ('andreea-blidar', 'Andreea Blidar', 'person', '["economia","tecnologia"]',
@@ -414,6 +413,7 @@ UPDATE article_i18n SET content_html = REPLACE(content_html, '<p>Por Magaly Moli
 UPDATE article_i18n SET content_html = REPLACE(content_html, '<p>By Magaly Molina</p>', '')
   WHERE content_html LIKE '%By Magaly Molina%';
 UPDATE authors SET sections_json = '[]' WHERE id IN ('equipo-losupe', 'kevin-rondon');
+
 UPDATE articles SET author_id = 'andreea-blidar' WHERE author_id = 'magaly-molina' AND section_id = 'economia';
 UPDATE articles SET author_id = 'merry-melina' WHERE author_id = 'magaly-molina';
 
@@ -465,6 +465,21 @@ INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VA
   ('billboard-latin', 'artistas', 'Billboard Latin', 'https://www.billboard.com/c/latin/feed/', 'rss', 'en', 3),
   ('rollingstone-latin', 'artistas', 'Rolling Stone Latin', 'https://www.rollingstone.com/music/music-latin/feed/', 'rss', 'en', 1),
   ('gnews-musica-en', 'artistas', 'Google News: Latin music (EN)', 'https://news.google.com/rss/search?q=latin+music+OR+reggaeton+OR+Bad+Bunny+OR+Shakira+when:2d&hl=en-US&gl=US&ceid=US:en', 'rss', 'en', 2);
+
+-- DELIVERY Y LOGÍSTICA (25 nov 2026). Comprobadas una por una antes de sembrarlas: la lección del
+-- candado 55 es que un feed muerto no da error, solo deja la sección seca. Lo que traía cada una ese
+-- día: Food On Demand 10, Restaurant Dive 10, Supply Chain Dive 10, Modern Retail 10, TechCrunch
+-- Transportation 20, y los de Google News 100, 28, 27 y 53.
+INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VALUES
+  ('foodondemand', 'delivery', 'Food On Demand', 'https://foodondemand.com/feed/', 'rss', 'en', 3),
+  ('restaurantdive', 'delivery', 'Restaurant Dive', 'https://www.restaurantdive.com/feeds/news/', 'rss', 'en', 2),
+  ('supplychaindive', 'delivery', 'Supply Chain Dive', 'https://www.supplychaindive.com/feeds/news/', 'rss', 'en', 2),
+  ('modernretail', 'delivery', 'Modern Retail', 'https://www.modernretail.co/feed/', 'rss', 'en', 1),
+  ('techcrunch-transporte', 'delivery', 'TechCrunch Transportation', 'https://techcrunch.com/category/transportation/feed/', 'rss', 'en', 2),
+  ('gnews-apps-delivery-en', 'delivery', 'Google News: delivery apps (EN)', 'https://news.google.com/rss/search?q=DoorDash+OR+%22Uber+Eats%22+OR+Instacart+OR+Rappi+OR+Deliveroo+OR+Glovo+when:3d&hl=en-US&gl=US&ceid=US:en', 'rss', 'en', 3),
+  ('gnews-ultima-milla-en', 'delivery', 'Google News: last mile and gig work (EN)', 'https://news.google.com/rss/search?q=%22last+mile%22+OR+%22gig+economy%22+OR+%22delivery+drones%22+OR+%22Amazon+Flex%22+when:3d&hl=en-US&gl=US&ceid=US:en', 'rss', 'en', 2),
+  ('gnews-reparto-es', 'delivery', 'Google News: reparto a domicilio (ES)', 'https://news.google.com/rss/search?q=reparto+a+domicilio+OR+domicilios+OR+%22apps+de+delivery%22+OR+repartidores+when:3d&hl=es-419&gl=US&ceid=US:es-419', 'rss', 'es', 3),
+  ('gnews-latam-logistica-es', 'delivery', 'Google News: logística en América Latina (ES)', 'https://news.google.com/rss/search?q=log%C3%ADstica+OR+mensajer%C3%ADa+OR+paqueter%C3%ADa+Venezuela+OR+Colombia+OR+M%C3%A9xico+when:7d&hl=es-419&gl=US&ceid=US:es-419', 'rss', 'es', 2);
 
 -- Feeds que se murieron o se quedaron secos. Se arreglan en su sitio en vez de dejar filas muertas:
 -- un feed roto no da error, simplemente deja de traer noticias, y la sección se queda vieja.
@@ -600,3 +615,20 @@ UPDATE articles SET image_url = NULL, image_credit = NULL
 UPDATE articles SET image_url = NULL, image_credit = NULL
  WHERE id = 'art-2026-09-09-casillero-miami' AND image_credit LIKE '%Matthis Volquardsen%';
 
+-- LA FIRMA DEL SEGMENTO DE DELIVERY (25 nov 2026, candado 61). Richard pidió que lo lleve Pedro
+-- Llerena como periodista del sector, con su perfil público enlazado.
+--
+-- Su biografía DICE QUE ES EL FUNDADOR DE WINDOCE, y eso no es un adorno: Windoce es dueña de
+-- Losupe y también de Divoox, que es una empresa del mismo sector del que escribe. Un medio que
+-- esconde eso se lo come Google (y con razón); uno que lo pone arriba y firma con nombre y perfil
+-- verificable gana justo lo contrario: autoridad. Por eso va en la bio, en el rol y en `sameAs`.
+UPDATE authors SET
+  sections_json = '["delivery","cripto","ventas"]',
+  role_es = 'Delivery, logística y emprendimiento',
+  role_en = 'Delivery, logistics, and entrepreneurship',
+  bio_es = 'Lleva el segmento de delivery y logística de Losupe: cómo funcionan las apps de reparto, qué gana un repartidor, qué paga un restaurante y cómo se mueve la última milla en cada país. Empresario con experiencia en comercio electrónico y fundador de Windoce LLC, la empresa dueña de Losupe y de Divoox, una app de reparto. Cuando escribe sobre un producto del grupo, la nota lo dice arriba. También escribe de criptomonedas y emprendimiento.',
+  bio_en = 'Leads the delivery and logistics desk at Losupe: how delivery apps work, what a driver earns, what a restaurant pays, and how the last mile moves in each country. An entrepreneur with e-commerce experience and founder of Windoce LLC, the company that owns Losupe and Divoox, a delivery app. When he writes about a product from the group, the story says so up top. He also covers crypto and entrepreneurship.',
+  linkedin_url = 'https://www.linkedin.com/in/pedro-llerena-montes/',
+  expertise_es = 'Delivery y última milla, logística, comercio electrónico, emprendimiento',
+  expertise_en = 'Delivery and last mile, logistics, e-commerce, entrepreneurship'
+WHERE id = 'pedro-llerena';

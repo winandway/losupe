@@ -76,6 +76,14 @@ const SECTION_RULES: [SectionId, RegExp][] = [
     "cripto",
     /\b(bitcoin|btc|ethereum|eth|crypto|cripto|solana|xrp|stablecoin|binance|coinbase|blockchain|nft|memecoin|dogecoin)\b/i,
   ],
+  // DELIVERY: va ANTES de tecnología a propósito. Si no, «app», «robot» o «Tesla» se llevan a
+  // Tecnología media sección de reparto, que es justo lo que pasaba con el deporte en agosto.
+  [
+    "delivery",
+    // Escrita sin alternancias que se solapen (`app|apps`, `driver|drivers`): con ellas el lint
+    // avisa de retroceso catastrófico, y un titular largo puede colgar la corrida entera.
+    /\b(?:doordash|dasher|ubereats|uber\seats|instacart|rappi|deliveroo|glovo|ifood|pedidosya|didi\sfood|wolt|grubhub|gopuff|getir|just\seat|amazon\sflex|food\sdelivery|delivery\s(?:apps?|drivers?|fees?|service)|last[-\s]mile|[uú]ltima\smilla|repartidor\w*|reparto\sa\sdomicilio|domicilios?|mensajer[ií]a|paqueter[ií]a|courier|ghost\skitchens?|cocinas?\sfantasma|dark\sstores?|gig\s(?:economy|workers?)|drone\sdelivery|drones?\sde\sreparto|sidewalk\srobots?)\b/i,
+  ],
   [
     "tecnologia",
     /\b(ai|ia|inteligencia artificial|chatgpt|gemini|openai|anthropic|claude|apple|iphone|ipad|mac|google|microsoft|windows|nvidia|tesla|samsung|android|app|software|robot|meta|instagram|tiktok|whatsapp|youtube|spacex|starlink|cybersecurity|ciberseguridad|gadget|smartphone)\b/i,

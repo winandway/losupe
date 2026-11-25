@@ -207,6 +207,74 @@ const TEMAS: Record<
       "qué país come más carne y cuál menos",
     ],
   },
+  /**
+   * DELIVERY Y LOGÍSTICA (25 nov 2026). El plan editorial que pidió Richard: «un día una empresa,
+   * otro día otra», cómo funciona cada cosa, y el reparto país por país. Son temas del SECTOR —las
+   * empresas grandes del mundo, lo que cobra cada una, lo que gana un repartidor— porque un
+   * segmento que solo hablara de nuestro producto no lo guardaría Google, y con razón. Cuando una
+   * nota nombra a Divoox, el aviso de transparencia lo pone el código (`src/lib/casa/aviso.ts`).
+   */
+  delivery: {
+    curiosidades: [
+      "DoorDash",
+      "Uber Eats",
+      "Instacart",
+      "Rappi",
+      "Amazon Flex",
+      "Deliveroo",
+      "Glovo",
+      "iFood",
+      "PedidosYa",
+      "DiDi Food",
+      "Wolt",
+      "Grubhub",
+      "los drones de reparto",
+      "los robots de acera que reparten comida",
+      "las cocinas fantasma",
+      "la propina en las apps de reparto",
+      "los repartidores en bicicleta",
+      "la última milla",
+      "los casilleros de paquetes",
+      "el reparto en moto en América Latina",
+    ],
+    errores: [
+      "pedir comida a domicilio",
+      "dejar propina en una app de reparto",
+      "poner un restaurante en una app de delivery",
+      "trabajar como repartidor",
+      "calcular cuánto se gana repartiendo",
+      "mandar un paquete a otro país",
+      "elegir la dirección de entrega",
+      "manejar los pedidos en hora pico",
+    ],
+    guia: [
+      "cómo funciona DoorDash",
+      "cómo funciona Uber Eats",
+      "cómo funciona Instacart",
+      "cómo funciona Rappi",
+      "cómo funcionan los bloques de Amazon Flex",
+      "cuánto cobra una app de reparto a un restaurante",
+      "cuánto gana de verdad un repartidor",
+      "cómo se reparte el dinero de un pedido a domicilio",
+      "qué es la última milla y por qué es la parte más cara",
+      "cómo se sigue un pedido en el mapa",
+      "qué pasa cuando un producto se agota a mitad del pedido",
+      "cómo se abre una ciudad nueva en una app de reparto",
+      "cómo funciona el reparto de paquetes de una empresa",
+      "qué es un código plus y por qué importa en direcciones sin número",
+      "cómo se paga a un repartidor en un país sin tarjetas",
+    ],
+    ranking: [
+      "las apps de reparto más usadas en Estados Unidos",
+      "las apps de reparto más usadas en América Latina",
+      "las apps de reparto más usadas en Venezuela",
+      "las apps de reparto más usadas en Colombia",
+      "las apps de reparto más usadas en México",
+      "las comisiones que cobran las apps de reparto",
+      "las ciudades donde más se pide comida a domicilio",
+      "las formas de repartir un paquete en la última milla",
+    ],
+  },
 };
 
 const PLANTILLAS: Record<Genero, (tema: string) => string> = {

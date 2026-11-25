@@ -40,6 +40,7 @@ export type Franja = {
     | "mediodia"
     | "tarde"
     | "tarde-2"
+    | "tarde-2b"
     | "tarde-3"
     | "noche"
     | "noche-2"
@@ -94,14 +95,18 @@ export type Franja = {
 export const FRANJAS: readonly Franja[] = [
   { key: "manana", hour: 7, genero: "actualidad", seccion: "tecnologia" },
   { key: "manana-2", hour: 9, genero: "actualidad", seccion: "artistas" },
-  { key: "manana-3", hour: 10, genero: "actualidad" },
+  // El segmento de delivery (25 nov 2026): tres turnos repartidos por el día, como los de los dos
+  // canales. Salen de turnos que antes no tenían sección fija o eran piezas propias; el día sigue
+  // teniendo once notas, no se le carga más trabajo al robot.
+  { key: "manana-3", hour: 10, genero: "actualidad", seccion: "delivery" },
   { key: "mediodia", hour: 12, genero: "propia", subgenero: "curiosidades" },
   { key: "tarde", hour: 14, genero: "actualidad", seccion: "tecnologia" },
+  { key: "tarde-2b", hour: 15, genero: "actualidad", seccion: "delivery" },
   { key: "tarde-2", hour: 16, genero: "actualidad", seccion: "artistas" },
   { key: "tarde-3", hour: 17, genero: "actualidad" },
   { key: "noche", hour: 19, genero: "actualidad", seccion: "tecnologia" },
   { key: "noche-2", hour: 20, genero: "actualidad", seccion: "artistas" },
-  { key: "noche-3", hour: 21, genero: "propia", subgenero: "ranking" },
+  { key: "noche-3", hour: 21, genero: "actualidad", seccion: "delivery" },
 ];
 
 /**
@@ -223,6 +228,7 @@ export const NOMBRE_FRANJA: Record<Franja["key"], { es: string; en: string }> = 
   "manana-3": { es: "Media mañana (10:00)", en: "Mid-morning (10:00)" },
   mediodia: { es: "Mediodía (12:00)", en: "Midday (12:00)" },
   tarde: { es: "Tarde (14:00)", en: "Afternoon (14:00)" },
+  "tarde-2b": { es: "Tarde (15:00)", en: "Afternoon (15:00)" },
   "tarde-2": { es: "Tarde (16:00)", en: "Afternoon (16:00)" },
   "tarde-3": { es: "Tarde (17:00)", en: "Afternoon (17:00)" },
   noche: { es: "Noche (19:00)", en: "Evening (19:00)" },

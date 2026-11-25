@@ -195,7 +195,12 @@ describe("el paso diario", () => {
   });
 
   it("no escribe más si ya hay siete esperando a Richard", async () => {
-    const { d1 } = await baseConCasa();
+    const { db, d1 } = await baseConCasa();
+    // Las fichas sembradas se guardan con `created_at` por defecto, que es la fecha REAL del día en
+    // que se corre la prueba. Con un `now` fijo en el pasado, el paso creía que «ya se escribió
+    // hoy» y la prueba caducaba sola (pasó el 25 nov 2026). Se fija la fecha y deja de depender
+    // del reloj de quien la corre.
+    db.raw.exec(`UPDATE house_notes SET created_at = '2026-11-07T12:00:00Z'`);
     const r = await pasoCasa(
       { DB: d1, GEMINI_API_KEY: "x" },
       { now: new Date("2026-11-20T15:00:00.000Z"), fetchImpl: async () => new Response("") },

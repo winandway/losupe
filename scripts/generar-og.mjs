@@ -39,6 +39,13 @@ const SECCIONES = [
     simbolo: "musica",
   },
   {
+    id: "delivery",
+    nombre: "Delivery y logística",
+    color: "#8B5CF6",
+    onColor: "#FFFFFF",
+    simbolo: "tienda",
+  },
+  {
     id: "windoce",
     nombre: "Desde Windoce",
     color: "#0B1F3A",

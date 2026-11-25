@@ -370,6 +370,7 @@ export async function listLatestPerSection(
     ventas: [],
     tecnologia: [],
     cripto: [],
+    delivery: [],
     artistas: [],
     windoce: [],
   } as Record<SectionId, ArticleCard[]>;
