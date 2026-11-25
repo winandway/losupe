@@ -499,6 +499,34 @@ export function ajustarMetadatos(raw: unknown): unknown {
   return d;
 }
 
+/**
+ * ¿ESTO ES UNA NOTA O ES UNA NOTA SOBRE NADA? (25 nov 2026)
+ *
+ * La primera nota del segmento de delivery salió así: «Food On Demand lanza su encuesta semanal» y,
+ * dentro, «**aunque los resultados específicos no se han detallado**, el sondeo **probablemente**
+ * explora las tendencias…». Es decir: una nota sobre un anuncio del que no se sabe nada, rellenada
+ * con suposiciones. Eso no informa a nadie, Google no lo guarda, y encima enseña al robot que vale
+ * escribir sin material.
+ *
+ * El filtro mira el arranque de la nota —el primer tercio, que es donde se nota si hay sustancia— y
+ * cuenta las dos cosas juntas: decir que no se conocen los datos Y suponer qué dirán. Una sola de
+ * las dos puede ser legítima («no se conoce el monto», en una nota con otros datos); las dos a la
+ * vez son el relleno.
+ */
+const NO_SE_SABE =
+  /\b(no se (han )?(detalla\w*|revela\w*|especifica\w*|precisa\w*|conoc\w*|publicad\w*)|sin detalles|se desconoc\w*|a[uú]n no (se sabe|hay datos)|not (yet )?(disclosed|detailed|revealed|specified)|no details|remains? unclear|has not been (disclosed|detailed|revealed))\b/gi;
+const SUPONE =
+  /\b(probablemente|presumiblemente|es de suponer|cabe suponer|podr[ií]a (explorar|estar|tratar)|se espera que|likely (explores?|covers?|includes?)|presumably|is expected to explore)\b/gi;
+
+export function pareceNotaSobreNada(texto: string): string | null {
+  const arranque = texto.slice(0, Math.max(400, Math.floor(texto.length / 3)));
+  const noSabe = (arranque.match(NO_SE_SABE) ?? []).length;
+  const supone = (arranque.match(SUPONE) ?? []).length;
+  if (noSabe > 0 && supone > 0)
+    return `dice que no se conocen los datos y acto seguido supone cuáles son (${noSabe} + ${supone} marcas en el arranque). Si el material no trae nada concreto, no hay nota: no se rellena con suposiciones`;
+  return null;
+}
+
 export function finalizeDraft(
   raw: unknown,
   // Acepta las fuentes en crudo (cómodo para las pruebas y para `manual.ts`) o el índice ya
@@ -546,6 +574,8 @@ export function finalizeDraft(
     { es: es.title, en: en.title },
   );
   if (sonido) throw new DraftRejectedError(`suena a IA — ${sonido}`);
+  const vacia = pareceNotaSobreNada(`${es.title}. ${es.excerpt} ${stripHtml(es.content_html)}`);
+  if (vacia) throw new DraftRejectedError(`nota sobre nada — ${vacia}`);
   return { ...d, es, en };
 }
 
@@ -587,21 +617,24 @@ export async function writeDraft(
     const motivo = last instanceof Error ? last.message : "";
     const copiaba = motivo.includes("copia fuentes");
     const sonabaAMaquina = motivo.includes("suena a IA");
+    const sobreNada = motivo.includes("nota sobre nada");
     const aviso =
       attempt === 1
         ? ""
-        : sonabaAMaquina
-          ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}
+        : sobreNada
+          ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque era una nota sobre nada (${motivo.replace("nota sobre nada — ", "")}). Busca en el MATERIAL lo que sí se sabe —cifras, nombres, fechas, decisiones— y escribe la nota sobre ESO. Si de verdad el material no trae ningún dato concreto, no inventes contexto ni supongas lo que dirá: escribe la nota desde el ángulo que sí tenga sustancia (qué hace esa empresa, qué está en juego en el sector, qué datos ya se conocen de antes) y no uses ni una vez «probablemente» ni «aunque no se han detallado».`
+          : sonabaAMaquina
+            ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}
 Esto no se arregla cambiando esas palabras por sinónimos: el problema es cómo está escrito el texto entero. Escríbelo OTRA VEZ desde cero, como se lo contarías en voz alta a un amigo que no es del sector: frases cortas, sujeto y verbo al principio, cero frases de relleno, cero adjetivos de folleto. Si una frase no se puede decir en voz alta sin sonar a comunicado de prensa, no va.${
-              attempt > 2
-                ? "\nEs el ÚLTIMO intento: si vuelve a sonar a máquina, la nota se pierde."
-                : ""
-            }`
-          : copiaba
-            ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
-            : motivo.includes("muy corto")
-              ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque el cuerpo era DEMASIADO CORTO (${motivo}). El mínimo son 450 palabras por idioma y lo normal son entre 700 y 1.100. Desarrolla cada punto: el dato, de dónde sale, un ejemplo y por qué le importa a quien lee. No es un resumen, es una nota de diario.`
-              : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
+                attempt > 2
+                  ? "\nEs el ÚLTIMO intento: si vuelve a sonar a máquina, la nota se pierde."
+                  : ""
+              }`
+            : copiaba
+              ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
+              : motivo.includes("muy corto")
+                ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque el cuerpo era DEMASIADO CORTO (${motivo}). El mínimo son 450 palabras por idioma y lo normal son entre 700 y 1.100. Desarrolla cada punto: el dato, de dónde sale, un ejemplo y por qué le importa a quien lee. No es un resumen, es una nota de diario.`
+                : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
     const usage = await generateJson<unknown>({
       apiKey: opts.apiKey,
       model: opts.model ?? WRITER_MODEL,

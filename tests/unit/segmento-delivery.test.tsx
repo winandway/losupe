@@ -386,3 +386,29 @@ describe("un borrador rechazado se corrige, no se pierde el turno", () => {
     expect(prompts[2]).toContain("ÚLTIMO intento");
   });
 });
+
+describe("una nota sobre nada no se publica", () => {
+  it("caza el relleno: «no se han detallado» + «probablemente»", async () => {
+    const { pareceNotaSobreNada } = await import("@/lib/robot/writer");
+    // El texto real de la primera nota del segmento, 25 nov 2026.
+    const real =
+      "La plataforma Food On Demand ha publicado su Encuesta de la Semana del 24 de noviembre. " +
+      "Aunque los resultados específicos no se han detallado, el sondeo probablemente explora las " +
+      "tendencias y desafíos del servicio de catering para fiestas.";
+    expect(pareceNotaSobreNada(real)).toContain("no se conocen los datos");
+    expect(
+      pareceNotaSobreNada("Not yet disclosed. The survey likely explores the trends."),
+    ).not.toBeNull();
+  });
+
+  it("y NO se lleva por delante una nota legítima a la que solo le falta un dato", async () => {
+    const { pareceNotaSobreNada } = await import("@/lib/robot/writer");
+    const buena =
+      "DoorDash subió su comisión al 15 % para los restaurantes de Miami, según el aviso que mandó " +
+      "el lunes. No se conoce el monto que esto le suma al año, pero la compañía dijo que afecta a " +
+      "unos 4.000 locales y que entra en vigor el 1 de enero. Los dueños consultados calculan entre " +
+      "200 y 400 dólares más al mes.";
+    expect(pareceNotaSobreNada(buena)).toBeNull();
+    expect(pareceNotaSobreNada("Uber Eats llega a Maracaibo con 300 restaurantes.")).toBeNull();
+  });
+});

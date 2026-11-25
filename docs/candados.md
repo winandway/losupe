@@ -2261,7 +2261,18 @@ antes de tocar el código.
 en la primera vuelta de la guardia. Para estrenar una sección sin esperar a mañana y para rescatar un
 turno perdido. La marca se apunta igual, así que ese turno no vuelve a salir ese día.
 
-- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con nueve mutaciones
+### f) Y una nota sobre nada tampoco se publica
+
+La primera nota del segmento salió así: «Food On Demand lanza su encuesta semanal» y, dentro,
+«**aunque los resultados específicos no se han detallado**, el sondeo **probablemente** explora las
+tendencias…». Una nota sobre un anuncio del que no se sabe nada, rellenada con suposiciones.
+
+`pareceNotaSobreNada` mira el arranque (el primer tercio, donde se nota si hay sustancia) y exige las
+**dos** cosas juntas para rechazar: decir que no se conocen los datos Y suponer cuáles son. Una sola
+puede ser legítima —«no se conoce el monto» en una nota llena de cifras—; las dos a la vez son
+relleno. El reintento le dice que busque en el material lo que sí se sabe.
+
+- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con diez mutaciones
   (quitar el candado, quitar la regla de clasificación, borrar el LinkedIn, quitar el `rel=sponsored`,
   vaciar el mapa de producto por sección, quitar la prioridad de fuentes, volver a dos intentos…).
 - **Qué NO tocar:** `ponerTransparencia` no debe tocar las notas de la casa, y el aviso de
