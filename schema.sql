@@ -632,3 +632,10 @@ UPDATE authors SET
   expertise_es = 'Delivery y última milla, logística, comercio electrónico, emprendimiento',
   expertise_en = 'Delivery and last mile, logistics, e-commerce, entrepreneurship'
 WHERE id = 'pedro-llerena';
+
+-- ONCE NOTAS AL DÍA (25 nov 2026). La escaleta pasó a once turnos al entrar los tres de delivery, y
+-- el cupo seguía en diez: el turno de las nueve de la noche se quedaba fuera todos los días. Once
+-- notas cuestan unos dieciocho centavos de un tope de un dólar. Solo sube si está por debajo: si
+-- Richard lo baja a mano en el panel, se respeta.
+UPDATE settings SET value = '11', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
+ WHERE key = 'notes_per_day' AND CAST(value AS INTEGER) < 11;
