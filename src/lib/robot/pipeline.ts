@@ -723,7 +723,16 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   await limpiarVisitasViejas(db, now).catch(() => 0);
   // Y el boletín, si toca. Sale cada cuatro días desde la propia corrida: no hace falta otro reloj.
   await enviarBoletin(db, env, opts.base, now).catch(() => undefined);
-  const discover = await discoverCandidates(db, { fetchImpl, now });
+  // La sección del turno manda también en QUÉ FUENTES se leen: si toca delivery, primero las del
+  // sector. Antes el turno llegaba con la cola vacía de su tema y publicaba cualquier otra cosa.
+  const franjaDeEstaCorrida =
+    (opts.franja ? FRANJAS.find((f) => f.key === opts.franja) : undefined) ??
+    franjaPendiente(now, todayTotal);
+  const discover = await discoverCandidates(db, {
+    fetchImpl,
+    now,
+    ...(franjaDeEstaCorrida?.seccion ? { seccion: franjaDeEstaCorrida.seccion } : {}),
+  });
 
   // 5) Notas, alternando
   for (let i = 0; i < maxNotes; i++) {

@@ -13,6 +13,7 @@ import { getProducto } from "@/lib/casa/productos";
 import { setArticleStatus } from "@/lib/robot/publish";
 import { getSection, NEWS_SECTIONS, SECTIONS } from "@/lib/sections";
 import { seccionCoherente } from "@/lib/robot/trends";
+import { FakeD1 } from "./fake-d1";
 import { SqliteD1 } from "./sqlite-d1";
 
 /**
@@ -271,5 +272,49 @@ describe("nuestra propia app aparece en el segmento, declarada", () => {
     expect(
       renderToStaticMarkup(<FichaDelSector sectionId="artistas" lang="es" dict={es as never} />),
     ).toBe("");
+  });
+});
+
+describe("el turno manda también en qué fuentes se leen", () => {
+  it("las fuentes de la sección del turno se leen PRIMERO", async () => {
+    // El día del estreno, el turno de delivery llegó con la cola vacía de su tema y publicó una
+    // noticia de bolsa: el robot lee seis fuentes por corrida rotando entre veintinueve, y a las
+    // del sector no les había tocado turno todavía.
+    const { discoverCandidates } = await import("@/lib/robot/universal");
+    const fuentes = [
+      ...Array.from({ length: 20 }, (_, i) => ({
+        id: `otra-${i}`,
+        section_id: "economia",
+        name: `Otra ${i}`,
+        url: `https://ejemplo.com/${i}`,
+        kind: "rss",
+        lang: "es",
+        weight: 1,
+        active: 1,
+      })),
+      ...["foodondemand", "restaurantdive", "gnews-apps-delivery-en"].map((id) => ({
+        id,
+        section_id: "delivery",
+        name: id,
+        url: `https://ejemplo.com/${id}`,
+        kind: "rss",
+        lang: "en",
+        weight: 2,
+        active: 1,
+      })),
+    ];
+    const db = new FakeD1((sql) => (sql.includes("FROM sources") ? fuentes : []));
+    const pedidas: string[] = [];
+    const fetchImpl = (async (u: string) => {
+      pedidas.push(String(u));
+      return new Response("<rss><channel></channel></rss>");
+    }) as unknown as typeof fetch;
+    await discoverCandidates(db.asD1(), { fetchImpl, seccion: "delivery" });
+    for (const id of ["foodondemand", "restaurantdive", "gnews-apps-delivery-en"]) {
+      expect(
+        pedidas.some((u) => u.includes(id)),
+        id,
+      ).toBe(true);
+    }
   });
 });

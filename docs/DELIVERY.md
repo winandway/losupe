@@ -114,6 +114,20 @@ un plan.
 > pueden afirmar lo contrario: una nota que diga más que la fuente es exactamente lo que hunde a un
 > medio nuevo. Se arregla actualizando la página de Divoox, no el texto de la nota.
 
+## 4 bis. El fallo del día del estreno (25 nov 2026)
+
+El turno de delivery llegó, buscó una noticia del sector, no encontró ninguna y publicó **una de
+bolsa**. La cola estaba vacía de su tema.
+
+La causa no era el segmento: el robot **lee seis fuentes por corrida**, rotando entre las veintinueve
+que hay, para no comerse el tiempo de la corrida leyéndolas todas. A las nueve fuentes nuevas no les
+había tocado turno todavía. Un turno que tiene sección asignada necesita material de ESA sección, y
+el único momento de conseguirlo es justo antes de escribir.
+
+Arreglado para todas las secciones con turno, no solo para delivery: `discoverCandidates` acepta la
+sección del turno y **lee sus fuentes primero**; el resto sigue rotando detrás para que ninguna se
+quede sin leer nunca. Prueba en `tests/unit/segmento-delivery.test.tsx`, comprobada en rojo.
+
 ## 5. Qué se quitó para hacerle sitio
 
 El turno de las 21 era de «rankings» (una pieza propia, genérica). Los rankings y las efemérides son

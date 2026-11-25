@@ -116,6 +116,15 @@ export async function discoverCandidates(
     maxAgeDays?: number;
     maxSources?: number;
     timeoutMs?: number;
+    /**
+     * La sección del turno que toca. Sus fuentes se leen PRIMERO (25 nov 2026).
+     *
+     * Sin esto, el robot leía seis fuentes por corrida rotando entre las veintinueve, y el día que
+     * se estrenó el segmento de delivery llegó su turno con la cola vacía de candidatos del sector:
+     * eligió una noticia de bolsa. Un turno que tiene sección asignada necesita material de ESA
+     * sección, y el único momento de conseguirlo es justo antes.
+     */
+    seccion?: string;
   } = {},
 ): Promise<DiscoverResult> {
   const fetchImpl = opts.fetchImpl ?? fetch;
@@ -129,10 +138,17 @@ export async function discoverCandidates(
   // Cada corrida atiende un grupo distinto, así que en dos o tres vueltas se recorren todas.
   const perRun = opts.maxSources ?? 6;
   const offset = Math.floor(now.getTime() / (60 * 60 * 1000)) % Math.max(1, allSources.length);
+  const rotadas =
+    allSources.length <= perRun
+      ? allSources
+      : [...allSources.slice(offset), ...allSources.slice(0, offset)];
+  // Las de la sección del turno van delante; el resto sigue rotando detrás para que ninguna se
+  // quede sin leer nunca.
+  const deLaSeccion = opts.seccion ? rotadas.filter((s) => s.section_id === opts.seccion) : [];
   const sources =
     allSources.length <= perRun
       ? allSources
-      : [...allSources.slice(offset), ...allSources.slice(0, offset)].slice(0, perRun);
+      : [...deLaSeccion, ...rotadas.filter((s) => !deLaSeccion.includes(s))].slice(0, perRun);
 
   let fetched = 0;
   let added = 0;
