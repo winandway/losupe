@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { sanitizeHtml, stripHtml, stripInlineBylines } from "@/lib/html";
+import { getProducto, type ProductoId } from "@/lib/casa/productos";
 import { getSection, type SectionId } from "@/lib/sections";
 import { generateJson, type GeminiJsonResult } from "./gemini";
 import type { TextModel } from "./model-guard";
@@ -316,7 +317,7 @@ export function buildPiezaPropiaPrompt(b: {
     ranking:
       "Es un RANKING con datos: responde la pregunta del titular con una lista ordenada, y **cada puesto lleva su cifra y de dónde sale**. Empieza contestando la pregunta en la primera frase, sin rodeos ni suspense — quien entra quiere el dato, no que se lo escondan. Después explica POR QUÉ es así, que es lo que hace que la nota valga la pena: qué hay detrás de ese número, desde cuándo, y qué está cambiando. Si el dato tiene matices (una cosa es lo más vendido en unidades y otra en dinero), dilo: ahí está la parte interesante.",
   }[b.genero];
-  return `ENCARGO: pieza propia para la sección "${section?.name.es ?? b.sectionId}".
+  return `ENCARGO: pieza propia para la sección "${section?.name.es ?? b.sectionId}".${bloqueCasaEnElSector(b.sectionId)}
 TITULAR PROPUESTO: ${b.titularPropuesto}
 FORMA: ${forma}
 
@@ -339,6 +340,49 @@ MATERIAL:
 ${sourcesBlock(b.sources)}${internalLinksBlock(b.internalLinks ?? [])}`;
 }
 
+/**
+ * NUESTRA APP, EN LAS NOTAS DEL SECTOR (25 nov 2026).
+ *
+ * El segmento de delivery existe, entre otras cosas, para que la gente conozca Divoox. Pero el
+ * redactor no sabía que Divoox existe: escribía de DoorDash, de Rappi y de Uber Eats y nunca lo
+ * nombraba, porque nadie se lo había contado. Esto se lo cuenta.
+ *
+ * Con dos reglas que son las que hacen que esto funcione en vez de hundirnos:
+ *  1. **Solo cuando encaje de verdad.** En una comparativa de apps de la región, en una nota sobre
+ *     Venezuela, en una sobre comisiones o sobre lo que gana un repartidor en América Latina. Nunca
+ *     metido con calzador en una noticia de Nueva York, y nunca en el titular de algo que no es suyo.
+ *  2. **Solo lo que su página sostiene.** Ni usuarios, ni pedidos, ni ciudades funcionando. Una nota
+ *     que dice de nuestro producto más de lo que se puede comprobar es la forma más rápida de que
+ *     no nos crea nadie — ni el lector ni Google.
+ *
+ * El aviso de transparencia NO lo escribe el modelo: lo pone el código al publicar
+ * (`src/lib/casa/aviso.ts`), siempre, y sin él la nota no sale.
+ */
+export const PRODUCTO_DE_LA_CASA_POR_SECCION: Partial<Record<SectionId, ProductoId>> = {
+  delivery: "divoox",
+};
+
+export function bloqueCasaEnElSector(sectionId: SectionId): string {
+  const id = PRODUCTO_DE_LA_CASA_POR_SECCION[sectionId];
+  const p = id ? getProducto(id) : undefined;
+  if (!p) return "";
+  return `
+NUESTRA PROPIA APP DEL SECTOR (léelo antes de escribir):
+Losupe es de Windoce LLC, y Windoce LLC también es dueña de ${p.nombre} (${p.url}).
+${p.queEs.es}
+Lo que SÍ se puede decir de ${p.nombre}, porque está comprobado en su página:
+${p.datos.es.map((d) => `- ${d}`).join("\n")}
+
+CÓMO SE USA ESTO:
+- Nombra a ${p.nombre} SOLO si encaja de verdad en esta nota: una comparativa de apps de reparto de la región, una nota sobre Venezuela o sobre América Latina, o una sobre comisiones, repartidores o última milla donde tenga sentido citarlo como una empresa más del sector.
+- Si no encaja, NO lo menciones. Una mención forzada se nota y resta.
+- Nunca en el titular de una noticia que no es suya, y nunca como protagonista de algo que hizo otra empresa.
+- Una sola mención, dentro del texto, tratado igual que a Rappi o a DoorDash.
+- SOLO los datos de la lista de arriba. Nada de usuarios, pedidos, ciudades ya funcionando ni planes futuros.${p.cuidado ? `\n- Cuidado: ${p.cuidado}` : ""}
+- NO escribas ningún aviso de transparencia: lo pone el sistema solo.
+`;
+}
+
 export function buildUniversalPrompt(b: UniversalBrief): string {
   const section = getSection(b.sectionId);
   const kindText =
@@ -349,7 +393,7 @@ export function buildUniversalPrompt(b: UniversalBrief): string {
 TEMA: ${b.topicTitle}
 ${b.topicSummary ? `RESUMEN DEL TEMA: ${b.topicSummary}` : ""}
 TIPO: ${kindText}
-${bloqueSeguimiento(b.seguimiento)}${bloqueYaPublicado(b.yaPublicado ?? [])}
+${bloqueSeguimiento(b.seguimiento)}${bloqueYaPublicado(b.yaPublicado ?? [])}${bloqueCasaEnElSector(b.sectionId)}
 Usa SOLO el material de abajo. Si las fuentes se contradicen, dilo. Cita cada fuente con enlace donde uses su dato.
 
 MATERIAL:

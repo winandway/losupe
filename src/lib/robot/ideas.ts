@@ -236,6 +236,9 @@ const TEMAS: Record<
       "la última milla",
       "los casilleros de paquetes",
       "el reparto en moto en América Latina",
+      // Nuestra propia app, en la rotación como una más del sector: es la sección donde la gente
+      // la va a conocer. La línea de transparencia la pone el código al publicar (candado 61).
+      "Divoox",
     ],
     errores: [
       "pedir comida a domicilio",
@@ -263,11 +266,13 @@ const TEMAS: Record<
       "cómo funciona el reparto de paquetes de una empresa",
       "qué es un código plus y por qué importa en direcciones sin número",
       "cómo se paga a un repartidor en un país sin tarjetas",
+      "cómo funciona Divoox, la app de reparto de Windoce",
+      "qué es Divoox Flex y para qué le sirve a una empresa de logística",
     ],
     ranking: [
       "las apps de reparto más usadas en Estados Unidos",
       "las apps de reparto más usadas en América Latina",
-      "las apps de reparto más usadas en Venezuela",
+      "las apps de reparto que van a competir en Venezuela",
       "las apps de reparto más usadas en Colombia",
       "las apps de reparto más usadas en México",
       "las comisiones que cobran las apps de reparto",

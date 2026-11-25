@@ -102,6 +102,10 @@ export const en: Dict = {
       "Losupe is part of Windoce LLC. In this section we share stories and guides about its products, always with a disclosure up top. Here they are, with what we verified on their own sites:",
     houseChecked: (date: string) => `Details verified on its site on ${date}`,
     houseVisit: "Visit the site",
+    // La app del grupo que compite en el sector de esta sección (candado 61).
+    sectorOwnTitle: "Our own delivery app",
+    sectorOwnHint:
+      "Losupe is owned by Windoce LLC, and Windoce LLC also owns this delivery app. We say it right here, up front, so you know before you read us: we cover the whole industry, and we cover this one the same way we cover the rest.",
   },
   search: {
     title: "Search losupe",

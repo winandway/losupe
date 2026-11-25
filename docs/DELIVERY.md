@@ -50,6 +50,28 @@ nativa.
 Una nota **sobre Divoox** va a «Desde Windoce». Una nota **del sector donde Divoox aparece** va a
 Delivery, con su línea.
 
+## 2 bis. Dónde aparece Divoox, en concreto
+
+No es casualidad ni depende de que el redactor se acuerde. Son tres sitios, y los tres están en
+código:
+
+1. **El redactor sabe que existe.** En cada encargo de una nota de delivery va la ficha de Divoox con
+   lo que su página sostiene, y la instrucción de nombrarlo **solo cuando encaje**: una comparativa
+   de apps de la región, una nota sobre Venezuela o América Latina, una sobre comisiones o sobre lo
+   que gana un repartidor. Si no encaja, no lo menciona: una mención forzada se nota y resta. Nunca
+   en el titular de algo que hizo otra empresa, y nunca un dato que no esté en la ficha.
+2. **Su ficha va al pie de la sección**, siempre, en las dos portadas de idioma: qué es, para quién
+   es, cuatro datos comprobados con su fecha y el enlace, marcado `rel="sponsored"`. Encabezada por
+   «Nuestra propia app de reparto» y la frase que lo dice sin rodeos: Losupe es de Windoce, y Windoce
+   también es dueña de esta app.
+3. **Está en la rotación de temas** del segmento, como una empresa más de la lista, junto a DoorDash
+   y a Rappi.
+
+Y encima de todo eso, la línea de transparencia automática del punto 2. Un medio que esconde de
+quién es se lo come Google; uno que lo pone arriba y escribe del sector entero con el mismo rasero
+gana autoridad **y** le da a su producto el sitio donde la gente lo conoce. Eso es lo que estamos
+haciendo.
+
 ## 3. El plan editorial
 
 La rotación la hace el propio sistema con los temas de `src/lib/robot/ideas.ts`, sección `delivery`:

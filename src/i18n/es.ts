@@ -100,6 +100,10 @@ export const es = {
       "Losupe es de Windoce LLC. En esta sección contamos historias y guías de sus productos, siempre con el aviso arriba. Estos son, con lo que comprobamos en sus páginas:",
     houseChecked: (fecha: string) => `Datos comprobados en su página el ${fecha}`,
     houseVisit: "Ir a la página",
+    // La app del grupo que compite en el sector de esta sección (candado 61).
+    sectorOwnTitle: "Nuestra propia app de reparto",
+    sectorOwnHint:
+      "Losupe es de Windoce LLC, y Windoce LLC también es dueña de esta app de reparto. Lo decimos aquí, arriba, para que lo sepas antes de leernos: cubrimos el sector entero, y a ella la contamos igual que a las demás.",
   },
   search: {
     title: "Buscar en losupe",

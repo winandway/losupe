@@ -221,3 +221,55 @@ describe("estrenar un turno el mismo día", () => {
     expect(src).toContain('searchParams.get("franja")');
   });
 });
+
+describe("nuestra propia app aparece en el segmento, declarada", () => {
+  it("el redactor SÍ sabe que Divoox existe cuando escribe de delivery", async () => {
+    const { bloqueCasaEnElSector, buildUniversalPrompt } = await import("@/lib/robot/writer");
+    const bloque = bloqueCasaEnElSector("delivery");
+    expect(bloque).toContain("Divoox");
+    expect(bloque).toContain("Windoce LLC");
+    // Y le llega dentro del encargo de verdad, no solo como función suelta.
+    const prompt = buildUniversalPrompt({
+      sectionId: "delivery",
+      topicTitle: "Las comisiones de las apps de reparto en América Latina",
+      kind: "news",
+      sources: [],
+    } as never);
+    expect(prompt).toContain("Divoox");
+  });
+
+  it("y NO se lo cuela en las secciones donde no pinta nada", async () => {
+    const { bloqueCasaEnElSector } = await import("@/lib/robot/writer");
+    for (const s of ["tecnologia", "artistas", "economia", "cripto", "ventas"] as const) {
+      expect(bloqueCasaEnElSector(s), s).toBe("");
+    }
+  });
+
+  it("le prohíbe inventar y le prohíbe escribir el aviso él mismo", async () => {
+    const { bloqueCasaEnElSector } = await import("@/lib/robot/writer");
+    const b = bloqueCasaEnElSector("delivery");
+    // Lo que hunde a un medio nuevo es decir de su producto más de lo que se puede comprobar.
+    expect(b).toMatch(/Nada de usuarios, pedidos, ciudades ya funcionando/);
+    expect(b).toMatch(/Si no encaja, NO lo menciones/);
+    expect(b).toMatch(/Nunca en el titular/);
+    // El aviso lo pone el código, siempre. Si lo escribiera el modelo, un día se le olvidaría.
+    expect(b).toMatch(/NO escribas ningún aviso de transparencia/);
+  });
+
+  it("la sección lleva su ficha al pie, con enlace marcado como de la casa", async () => {
+    const { renderToStaticMarkup } = await import("react-dom/server");
+    const { FichaDelSector } = await import("@/components/FichaDelSector");
+    const { es } = await import("@/i18n/es");
+    const html = renderToStaticMarkup(
+      <FichaDelSector sectionId="delivery" lang="es" dict={es as never} />,
+    );
+    expect(html).toContain("Divoox");
+    expect(html).toContain("Windoce LLC");
+    // `rel="sponsored"`: es de la casa y Google tiene que saberlo.
+    expect(html).toMatch(/rel="sponsored/);
+    // En una sección donde no tenemos producto, no se pinta nada.
+    expect(
+      renderToStaticMarkup(<FichaDelSector sectionId="artistas" lang="es" dict={es as never} />),
+    ).toBe("");
+  });
+});
