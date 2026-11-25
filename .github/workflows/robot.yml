@@ -19,6 +19,11 @@ on:
   schedule:
     - cron: "7 * * * *"
   workflow_dispatch: # y a mano desde la pestaña Actions, cuando haga falta
+    inputs:
+      franja:
+        description: "Turno a forzar (p. ej. noche-3). Vacío = el que toque por hora."
+        required: false
+        default: ""
 
 # Una sola guardia a la vez. La siguiente espera en la cola y arranca en cuanto esta termina, así la
 # cobertura es continua sin depender de que el cron llegue a su hora.
@@ -40,13 +45,14 @@ jobs:
           VUELTA=0
           while [ "$(date +%s)" -lt "$FIN" ]; do
             VUELTA=$((VUELTA + 1))
+            [ "$VUELTA" -gt 1 ] && FRANJA=""
             echo "::group::Vuelta $VUELTA — $(date -u +%H:%M:%S) UTC"
             # 600 s: escribir una nota en dos idiomas, con su foto, puede pasar de cinco minutos
             # cuando el proveedor va lento. Con 300 el reloj cortaba la corrida a media faena.
             RESP=$(curl -sS -m 600 \
               -H "x-yad-cron: github-actions" \
               ${CRON_SECRET:+--url-query "key=$CRON_SECRET"} \
-              "https://losupe.com/__scheduled?wait=1" || echo '{"status":"error","error":"no respondio el sitio"}')
+              "https://losupe.com/__scheduled?wait=1${FRANJA:+&franja=$FRANJA}" || echo '{"status":"error","error":"no respondio el sitio"}')
             echo "$RESP" | head -c 900
             echo
             echo "::endgroup::"
@@ -68,3 +74,5 @@ jobs:
           echo "Guardia terminada sin incidencias."
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          # Solo en la primera vuelta: un turno forzado se estrena una vez, no cada quince minutos.
+          FRANJA: ${{ inputs.franja }}
