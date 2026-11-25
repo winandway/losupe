@@ -318,3 +318,71 @@ describe("el turno manda también en qué fuentes se leen", () => {
     }
   });
 });
+
+describe("un borrador rechazado se corrige, no se pierde el turno", () => {
+  it("el redactor tiene TRES intentos, y al segundo ya se le dice qué falló", async () => {
+    const { writeDraft } = await import("@/lib/robot/writer");
+    const prompts: string[] = [];
+    let llamadas = 0;
+    const fetchImpl = (async (_u: string, init: RequestInit) => {
+      llamadas += 1;
+      prompts.push(String(init.body));
+      // Las dos primeras suenan a máquina; la tercera sale bien.
+      const malo = llamadas < 3;
+      const cuerpo = malo
+        ? `<p>${"It is crucial to showcase this. Furthermore, it is crucial to underscore the pivotal role. ".repeat(45)}</p>`
+        : `<p>${"La empresa subió el precio del reparto. Lo dijo su propio aviso a los restaurantes, y ahí están las cifras. ".repeat(40)}</p>`;
+      return Response.json({
+        candidates: [
+          {
+            content: {
+              parts: [
+                {
+                  text: JSON.stringify({
+                    es: {
+                      title: "Las apps de reparto suben sus comisiones en la región",
+                      excerpt:
+                        "Qué cambia para el restaurante y para quien pide, con las cifras que publicaron las propias empresas esta semana.",
+                      content_html: cuerpo,
+                      meta_title: "Las apps de reparto suben comisiones",
+                      meta_description:
+                        "Qué cambia para el restaurante y para quien pide comida, con las cifras de las propias empresas.",
+                      tags: ["delivery", "comisiones", "restaurantes"],
+                    },
+                    en: {
+                      title: "Delivery apps raise their fees across the region",
+                      excerpt:
+                        "What changes for restaurants and for the people ordering, with the figures the companies published this week.",
+                      content_html: cuerpo,
+                      meta_title: "Delivery apps raise their fees",
+                      meta_description:
+                        "What changes for restaurants and for people ordering food, with the companies own figures.",
+                      tags: ["delivery", "fees", "restaurants"],
+                    },
+                    kind: "news",
+                    image_prompt: "A delivery rider waiting outside a small restaurant at dusk",
+                    image_alt_es: "Un repartidor espera fuera de un restaurante",
+                    image_alt_en: "A delivery rider waits outside a restaurant",
+                    image_keywords: ["delivery", "rider"],
+                  }),
+                },
+              ],
+            },
+          },
+        ],
+        usageMetadata: { promptTokenCount: 10, candidatesTokenCount: 10 },
+      });
+    }) as unknown as typeof fetch;
+
+    const r = await writeDraft("ENCARGO: nota para la sección Delivery y logística.", [], {
+      apiKey: "k",
+      fetchImpl,
+    });
+    // Tres intentos disponibles: con dos se perdía el turno entero (25 nov 2026).
+    expect(r.attempts).toBe(3);
+    // Y al modelo se le dijo QUÉ falló, no se le repitió el mismo encargo.
+    expect(prompts[1]).toContain("AVISO IMPORTANTE");
+    expect(prompts[1]).toContain("Escríbelo OTRA VEZ desde cero");
+    expect(prompts[2]).toContain("ÚLTIMO intento");
+  });
+});

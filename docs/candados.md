@@ -2210,3 +2210,59 @@ Manager.
 - **Comprobar en vivo:** `curl -s https://losupe.com/sitemap.xml | grep -c player_loc` → `0`, y
   `grep -c "video:content_loc"` mayor que cero.
 - **Qué NO tocar:** no volver a poner la dirección de la nota en `player_loc` ni en `embedUrl`.
+
+## 61. El segmento de delivery, y Divoox dentro de él sin engañar a nadie (25 nov 2026)
+
+Richard pidió un segmento diario del sector «que Google no sienta que es un SEO especial de Divoox».
+Todo el detalle editorial está en [`docs/DELIVERY.md`](DELIVERY.md); aquí queda lo que hay que saber
+antes de tocar el código.
+
+### a) La transparencia va en código, no en la buena memoria de nadie
+
+- `productoMencionado` detecta el nombre de cualquier producto del grupo (entero, no trozos:
+  «divooxmania» no cuenta) en titular, entradilla o cuerpo.
+- `ponerTransparencia` añade la línea antes de publicar; `assertTransparencia` impide que salga sin
+  ella. **Poner y exigir, las dos**: un candado que solo rechazara dejaría sin publicar justo las
+  notas que se quieren.
+- **Casi tumba el candado 57.** La línea nueva y el aviso de la casa se escriben en el mismo sitio, y
+  `conTransparencia` le borraba el suyo a las notas de «Desde Windoce». Por eso `ponerTransparencia`
+  sale temprano si la sección es de la casa. Lo cazó la prueba de la casa.
+
+### b) Divoox aparece en tres sitios, los tres fijos
+
+1. `bloqueCasaEnElSector` mete su ficha en el encargo del redactor, **solo** en la sección que mapea
+   `PRODUCTO_DE_LA_CASA_POR_SECCION` (hoy `delivery: "divoox"`), con la orden de nombrarlo solo
+   cuando encaje y nunca con un dato que no esté en la ficha. El redactor **no sabía que existía**:
+   ese era el motivo real de que nunca lo nombrara.
+2. `FichaDelSector` lo pone al pie de la sección, en los dos idiomas, con `rel="sponsored"`.
+3. Está en los temas de `ideas.ts`, junto a DoorDash y Rappi.
+
+### c) El turno manda también en QUÉ FUENTES se leen
+
+- El robot lee **seis fuentes por corrida**, rotando entre las veintinueve, para no comerse el tiempo
+  de la corrida. El día del estreno, el turno de delivery llegó con la cola vacía de su tema y
+  publicó **una noticia de bolsa**.
+- `discoverCandidates` acepta `seccion` y lee **primero** las fuentes de esa sección; el resto sigue
+  rotando detrás. Vale para Tecnología y Artistas igual que para Delivery.
+
+### d) Tres intentos para el borrador, no dos
+
+- Ese mismo día se perdieron **seis corridas seguidas**, todas por el control de calidad («suena a
+  IA», «copia fuentes»), y en los dos intentos que tenía el modelo no llegaba a corregirlo. Las
+  fuentes del sector son corporativas y en inglés: el modelo copia su prosa («crucial», «showcase»,
+  «underscore»).
+- `writeDraft` pasa a **tres intentos** y el aviso de «suena a IA» ya no pide cambiar palabras: pide
+  reescribir desde cero, y en el último avisa de que es el último. Un intento más cuesta céntimos;
+  un turno perdido cuesta una nota.
+
+### e) Un turno se puede estrenar el mismo día
+
+`/__scheduled?franja=noche-3` (y `gh workflow run robot.yml -f franja=noche-3`) fuerza ESE turno, solo
+en la primera vuelta de la guardia. Para estrenar una sección sin esperar a mañana y para rescatar un
+turno perdido. La marca se apunta igual, así que ese turno no vuelve a salir ese día.
+
+- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con nueve mutaciones
+  (quitar el candado, quitar la regla de clasificación, borrar el LinkedIn, quitar el `rel=sponsored`,
+  vaciar el mapa de producto por sección, quitar la prioridad de fuentes, volver a dos intentos…).
+- **Qué NO tocar:** `ponerTransparencia` no debe tocar las notas de la casa, y el aviso de
+  transparencia no lo escribe nunca el modelo.

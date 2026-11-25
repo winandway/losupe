@@ -553,7 +553,7 @@ export type WriteOptions = {
   apiKey: string;
   model?: TextModel;
   fetchImpl?: typeof fetch;
-  /** Cuántas veces se vuelve a pedir la nota si sale copiada o mal formada (por defecto, una). */
+  /** Cuántas veces se vuelve a pedir la nota si sale copiada o mal formada (por defecto, dos). */
   retries?: number;
 };
 
@@ -563,7 +563,7 @@ export type WriteOptions = {
  * Si el borrador se cae por copiar frases de las fuentes o por venir mal formado, se pide **otra
  * vez** con una advertencia concreta encima. Pasa sobre todo en inglés, cuando la fuente ya está en
  * inglés: reformular sin repetir cuesta más. Sin este reintento, un solo tropiezo dejaba la corrida
- * entera sin nota (y el diario sin publicar ese turno). El listón NO se baja: si el segundo intento
+ * entera sin nota (y el diario sin publicar ese turno). El listón NO se baja: si el último intento
  * también copia, la nota se descarta.
  */
 export async function writeDraft(
@@ -575,7 +575,11 @@ export async function writeDraft(
   // demasiado; resultó que moría por otra cosa (candado 21) y, ya arreglada, una corrida entera
   // tarda 33 segundos: caben dos llamadas de sobra. Y hace falta, porque el modelo a veces devuelve
   // un campo fuera de medida y sin reintento eso tira la nota entera.
-  const maxAttempts = Math.max(1, (opts.retries ?? 1) + 1);
+  // TRES INTENTOS, no dos (25 nov 2026). Medido el día que se estrenó el segmento de delivery: seis
+  // corridas seguidas perdidas, todas por el mismo control de calidad («suena a IA», «copia
+  // fuentes»), y en las dos oportunidades que tenía el modelo no llegaba a corregirlo. Un intento
+  // más cuesta céntimos y recupera turnos enteros del diario — que es lo caro de verdad.
+  const maxAttempts = Math.max(1, (opts.retries ?? 2) + 1);
   // Una sola vez para toda la corrida, pase lo que pase con los reintentos.
   const fuentes = sourceShingles(sourceTexts);
   let last: unknown;
@@ -587,7 +591,12 @@ export async function writeDraft(
       attempt === 1
         ? ""
         : sonabaAMaquina
-          ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}`
+          ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}
+Esto no se arregla cambiando esas palabras por sinónimos: el problema es cómo está escrito el texto entero. Escríbelo OTRA VEZ desde cero, como se lo contarías en voz alta a un amigo que no es del sector: frases cortas, sujeto y verbo al principio, cero frases de relleno, cero adjetivos de folleto. Si una frase no se puede decir en voz alta sin sonar a comunicado de prensa, no va.${
+              attempt > 2
+                ? "\nEs el ÚLTIMO intento: si vuelve a sonar a máquina, la nota se pierde."
+                : ""
+            }`
           : copiaba
             ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
             : motivo.includes("muy corto")
