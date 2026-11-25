@@ -204,3 +204,20 @@ describe("la firma del segmento", () => {
     for (const f of filas) expect(f.url).toMatch(/^https:\/\//);
   });
 });
+
+describe("estrenar un turno el mismo día", () => {
+  it("el reloj acepta `?franja=` y la escaleta reconoce el turno de la noche", async () => {
+    const { FRANJAS } = await import("@/lib/robot/franjas");
+    // Sin esto, una sección montada por la tarde no publica hasta el día siguiente, y un turno que
+    // se pierde por una caída del proveedor se pierde entero.
+    const noche = FRANJAS.find((f) => f.key === "noche-3");
+    expect(noche?.seccion).toBe("delivery");
+    const { handleScheduledRequest } = await import("@/lib/robot/scheduled");
+    expect(typeof handleScheduledRequest).toBe("function");
+    // El parámetro se lee de la URL, no del cuerpo: el reloj llama con GET.
+    const src = await import("node:fs").then((fs) =>
+      fs.readFileSync("src/lib/robot/scheduled.ts", "utf8"),
+    );
+    expect(src).toContain('searchParams.get("franja")');
+  });
+});

@@ -101,6 +101,12 @@ export type PipelineOptions = {
   base: string;
   maxNotes?: number;
   force?: boolean;
+  /**
+   * Turno forzado («noche-3»). Para estrenar una sección el mismo día que se monta, o para rescatar
+   * un turno que se perdió por una caída del proveedor, sin esperar a mañana. No se salta nada más:
+   * la marca del turno se apunta igual, así que ese turno ya no vuelve a salir hoy.
+   */
+  franja?: string;
   fetchImpl?: typeof fetch;
   now?: Date;
 };
@@ -729,7 +735,9 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
     // El turno de la escaleta manda: si este es el de Tecnología, se busca una noticia de
     // tecnología; si es el de Artistas, de artistas. Antes la sección la decidía el cupo libre y
     // casi todo salía de Economía (1 oct 2026).
-    const franjaAhora = franjaPendiente(now, todayTotal);
+    const franjaAhora =
+      (opts.franja ? FRANJAS.find((f) => f.key === opts.franja) : undefined) ??
+      franjaPendiente(now, todayTotal);
     const [nextSponsored, nextCandidate] = await Promise.all([
       nextQueuedAssignment(db, now),
       pickCandidate(db, now, archivo, { seccion: franjaAhora?.seccion }),

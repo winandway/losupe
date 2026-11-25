@@ -51,13 +51,20 @@ function baseFrom(env: ScheduledEnv, request?: Request): string {
 export async function runScheduled(
   env: ScheduledEnv,
   trigger: RunTrigger,
-  opts: { base?: string; maxNotes?: number; force?: boolean; fetchImpl?: typeof fetch } = {},
+  opts: {
+    base?: string;
+    maxNotes?: number;
+    force?: boolean;
+    franja?: string;
+    fetchImpl?: typeof fetch;
+  } = {},
 ): Promise<RunResult> {
   const summary = await runPipeline(env, {
     trigger,
     base: opts.base ?? baseFrom(env),
     maxNotes: opts.maxNotes,
     force: opts.force,
+    franja: opts.franja,
     fetchImpl: opts.fetchImpl,
   });
   // Antes de cerrar, se le pone foto a cualquier nota que se haya quedado sin ella —venga del robot,
@@ -193,9 +200,12 @@ export async function handleScheduledRequest(
   const trigger: RunTrigger = request.headers.has("x-yad-cron") ? "cron" : "manual";
   const base = baseFrom(env, request);
   const esperar = new URL(request.url).searchParams.get("wait") === "1";
+  // `?franja=noche-3` fuerza ESE turno. Sirve para estrenar una sección el mismo día que se monta
+  // y para rescatar un turno perdido, sin tocar nada más: la marca se apunta igual.
+  const franja = new URL(request.url).searchParams.get("franja") ?? undefined;
 
   if (ctx && !esperar) {
-    ctx.waitUntil(runScheduled(env, trigger, { base }).catch(() => undefined));
+    ctx.waitUntil(runScheduled(env, trigger, { base, franja }).catch(() => undefined));
     return Response.json(
       { ok: true, started: true, trigger },
       { status: 202, headers: { "Cache-Control": "no-store" } },
@@ -203,7 +213,7 @@ export async function handleScheduledRequest(
   }
 
   try {
-    const result = await runScheduled(env, trigger, { base });
+    const result = await runScheduled(env, trigger, { base, franja });
     return Response.json(result, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     const message = error instanceof Error ? error.message : "unknown";
