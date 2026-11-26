@@ -74,7 +74,7 @@ describe("i18n", () => {
 describe("sections", () => {
   it("resuelve por id y por slug en ambos idiomas", () => {
     // Seis de noticias (con Delivery desde el 25 nov 2026) y la de la casa (Desde Windoce).
-    expect(SECTIONS).toHaveLength(7);
+    expect(SECTIONS).toHaveLength(6);
     // La dirección de delivery es la misma en los dos idiomas: es la palabra que usa la gente.
     expect(getSection("delivery")?.slug).toEqual({ es: "delivery", en: "delivery" });
     expect(getSection("cripto")?.slug.en).toBe("crypto");

@@ -372,7 +372,6 @@ export async function listLatestPerSection(
     cripto: [],
     delivery: [],
     artistas: [],
-    windoce: [],
   } as Record<SectionId, ArticleCard[]>;
   for (const row of results) {
     const card = mapCard(row, lang);

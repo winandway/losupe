@@ -55,6 +55,7 @@ import { TICK_KEY } from "./heartbeat";
 import { encargoDelTurno, reglasDeLaMesa } from "./mesa";
 import { buscarArticulos } from "./wikipedia";
 import { fetchPage } from "./research";
+import { leerNovedadesPropias } from "./novedades-propias";
 import {
   buildPiezaPropiaPrompt,
   buildSponsoredPrompt,
@@ -749,6 +750,11 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   const franjaDeEstaCorrida =
     (opts.franja ? FRANJAS.find((f) => f.key === opts.franja) : undefined) ??
     franjaPendiente(now, todayTotal);
+  // Turno de delivery: antes de leer el sector, ¿Divoox publicó una guía nueva? Si sí, es candidata
+  // a la nota nuestra del día (candado 67). Si falla, el turno sigue con las noticias.
+  if (franjaDeEstaCorrida?.seccion === "delivery") {
+    await leerNovedadesPropias(db, { fetchImpl, now }).catch(() => undefined);
+  }
   const discover = await discoverCandidates(db, {
     fetchImpl,
     now,

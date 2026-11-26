@@ -8,8 +8,6 @@ const ROUTES_200 = [
   "/en/crypto",
   "/es/economia",
   "/en/economy",
-  "/es/desde-windoce",
-  "/en/from-windoce",
   "/es/autor/kevin-rondon",
   "/en/author/kevin-rondon",
   "/es/buscar?q=bitcoin",
@@ -535,10 +533,7 @@ test("portada: noticias heredadas, selector de idioma y artículo abre", async (
   await expect(ventanita.getByRole("link", { name: "English" })).toHaveAttribute("href", /^\/en/);
   await page.keyboard.press("Escape");
   await expect(ventanita).toBeHidden();
-  await expect(page.getByRole("link", { name: "Windoce LLC" })).toHaveAttribute(
-    "href",
-    "https://windoce.com",
-  );
+  await expect(page.locator('a[href*="windoce.com"]')).toHaveCount(0);
   const first = page.locator("article h2 a, article h3 a").first();
   await expect(first).toBeVisible();
   const href = await first.getAttribute("href");
@@ -1410,16 +1405,19 @@ test("video: al seguir leyendo se encoge a una esquina, y si lo cierras no vuelv
   await expect(bloque.locator("video")).toHaveCount(0);
 });
 
-// Desde Windoce (candado 57): la sección muestra las fichas de los productos, y sus enlaces son
-// patrocinados. Las notas en revisión NO se ven en público.
-test("la sección de la casa muestra las fichas con enlaces patrocinados", async ({ page }) => {
-  await page.setViewportSize({ width: 375, height: 812 });
-  await page.goto("/es/desde-windoce");
-  const fichas = page.getByTestId("fichas-casa");
-  await expect(fichas).toBeVisible();
-  await expect(fichas.locator("article")).toHaveCount(10);
-  const enlace = fichas.locator('a[href="https://pantalay.com"]');
-  await expect(enlace).toHaveAttribute("rel", /sponsored/);
-  // La nota de Pantalay está en revisión: no puede aparecer en la sección pública.
-  await expect(page.locator('a[href*="grabar-tutoriales"]')).toHaveCount(0);
+// Candado 66: la sección de la casa se retiró. Sus direcciones (y lo que colgara de ellas) van a la
+// portada con 301, y ningún enlace del sitio apunta a ella.
+test("la sección retirada redirige a la portada y nadie la enlaza", async ({ page, request }) => {
+  for (const [vieja, nueva] of [
+    ["/es/desde-windoce", "/es"],
+    ["/en/from-windoce", "/en"],
+    ["/es/desde-windoce/una-nota-vieja", "/es"],
+  ] as const) {
+    const res = await request.get(vieja, { maxRedirects: 0 });
+    expect(res.status(), vieja).toBe(301);
+    expect(res.headers()["location"], vieja).toBe(nueva);
+  }
+  await page.goto("/es");
+  await expect(page.locator('a[href*="desde-windoce"], a[href*="windoce.com"]')).toHaveCount(0);
+  await expect(page.locator("footer")).not.toContainText("Windoce");
 });

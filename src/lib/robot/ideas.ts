@@ -44,9 +44,8 @@ export type Idea = {
  * Los temas de cada sección. Se escriben aquí y no en la base para que se puedan leer de un vistazo
  * y ampliar en el mismo trabajo en que se piensan.
  */
-// La sección de la casa (Desde Windoce) no tiene temas de noticias: la escribe su propio paso.
 const TEMAS: Record<
-  Exclude<SectionId, "windoce">,
+  SectionId,
   { curiosidades: string[]; errores: string[]; guia: string[]; ranking: string[] }
 > = {
   economia: {
@@ -341,7 +340,7 @@ const QUE_BUSCAR: Record<Genero, (tema: string) => string> = {
 
 /** Todas las ideas posibles de una sección. */
 export function ideasDeSeccion(sectionId: SectionId): Idea[] {
-  const temas = sectionId === "windoce" ? undefined : TEMAS[sectionId];
+  const temas = TEMAS[sectionId];
   if (!temas) return [];
   const out: Idea[] = [];
   for (const genero of ["curiosidades", "errores", "guia", "ranking"] as const) {

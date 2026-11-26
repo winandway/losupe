@@ -31,6 +31,7 @@ import { INDEXNOW_KEY, indexNowKeyPath, pingIndexNow } from "./src/lib/indexnow"
 import { isLang } from "./src/i18n/config";
 import { langRedirectTarget } from "./src/lib/lang-redirect";
 import { legacyRedirectTarget } from "./src/lib/legacy-redirects";
+import { retiredSectionRedirect } from "./src/lib/sections";
 import { rutaConPalabraDelIdioma } from "./src/lib/urls";
 import { debeServir404Propia, esRuta404, ruta404 } from "./src/lib/pagina-404";
 import { claimTick, closeStaleRuns, getTickToken } from "./src/lib/robot/heartbeat";
@@ -198,7 +199,7 @@ export default {
       });
     }
 
-    const legacy = legacyRedirectTarget(pathname);
+    const legacy = legacyRedirectTarget(pathname) ?? retiredSectionRedirect(pathname);
     if (legacy) {
       return new Response(null, {
         status: 301,

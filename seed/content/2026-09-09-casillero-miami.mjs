@@ -1,10 +1,7 @@
 // Nota editorial sembrada desde el repo (ver scripts/embed-schema.mjs).
 // Firma: Merry Melina · Sección: Ventas y motivación · Redacción asistida por IA (marcada).
 //
-// TRANSPARENCIA, y va dentro de la nota a la vista: Mercatren es una empresa del mismo grupo que
-// losupe. Una nota de servicio sobre la empresa del dueño del medio SIN decirlo es exactamente lo
-// que penaliza Google Noticias, y estamos justo intentando entrar ahí. Se dice arriba, en un
-// recuadro, antes de que el lector lea nada más.
+// Sin aviso de propiedad: el recuadro que llevaba se quitó el 26 nov 2026 (candado 66).
 //
 // Todo lo que se afirma de Mercatren se comprobó en su sitio el 9 de septiembre de 2026:
 // mercatren.com/es/casillero (los cuatro pasos, el aviso del número, la bodega de Miami operada por
@@ -96,7 +93,6 @@ La nota completa está en losupe.com`,
         "comercio electrónico",
       ],
       content_html: `
-<p><em><strong>Aviso de transparencia:</strong> Mercatren, el servicio que se usa de ejemplo en esta guía, pertenece al mismo grupo empresarial que losupe. Lo decimos antes de que sigas leyendo. Los consejos de esta nota sirven con cualquier casillero: son los mismos errores que se cometen con todos.</em></p>
 
 <p>La escena se repite todos los días. Alguien en Estados Unidos encuentra el repuesto, el celular o la herramienta que su familia necesita en Venezuela, en Colombia o en Chile. Lo agrega al carrito. Y en la pantalla de pago se topa con la misma pared: <strong>«no enviamos a ese país»</strong>.</p>
 
@@ -221,7 +217,6 @@ The full story is on losupe.com`,
         "e-commerce",
       ],
       content_html: `
-<p><em><strong>Disclosure:</strong> Mercatren, the service used as an example in this guide, belongs to the same business group as losupe. We are saying so before you read any further. The advice in this piece applies to any package-forwarding service: these are the same mistakes people make with all of them.</em></p>
 
 <p>The scene repeats every day. Someone in the United States finds the auto part, the phone, or the tool their family needs in Venezuela, Colombia, or Chile. Into the cart it goes. And at checkout comes the same wall: <strong>"we don't ship to that country."</strong></p>
 

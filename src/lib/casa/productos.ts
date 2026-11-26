@@ -95,19 +95,15 @@ export const PRODUCTOS: readonly Producto[] = [
         "Stores (grocery, pharmacy, hardware) can upload their catalog with a spreadsheet or by barcode.",
       ],
     },
+    // La fuente cambió el 26 nov 2026: ya no es solo la página, es la empresa por boca de su dueño.
+    // Se cuenta atribuido y con fecha. Sigue prohibido inventar cifras.
     etapa: {
-      es: "En su propia página, Miami, Orlando, Tampa y Ocala figuran como «próximamente», igual que Venezuela, que arrancaría por Caracas, Maracaibo y Valencia con precios en bolívares.",
-      en: "On its own site, Miami, Orlando, Tampa, and Ocala are listed as “coming soon,” as is Venezuela, which would start with Caracas, Maracaibo, and Valencia, with prices in bolívars.",
+      es: "Según la empresa, a 26 de noviembre de 2026 ya trabaja en Venezuela en El Vigía, Tucaní y Santa Bárbara del Zulia; arranca en Barquisimeto, y en camino están Valera, Valencia y Caracas. En Estados Unidos su página lista Miami, Orlando, Tampa y Ocala como próximas.",
+      en: "According to the company, as of November 26, 2026, it already works in Venezuela in El Vigía, Tucaní, and Santa Bárbara del Zulia; it is starting in Barquisimeto, with Valera, Valencia, and Caracas on the way. In the United States, its site lists Miami, Orlando, Tampa, and Ocala as upcoming.",
     },
     cuidado:
-      "La etapa de cada ciudad y de cada país es solo la que diga su propia página ese día: NO afirmes por tu cuenta ni que ya opera ni que todavía no opera en ningún sitio. No mencionar inversionistas ni dar cifras de pedidos, de restaurantes ni de repartidores.",
-    vigilar: {
-      url: "https://divoox.com/country/venezuela",
-      frase: "Coming soon",
-      siDesaparece:
-        "La página de Venezuela ya NO dice «próximamente»: Divoox abrió allí. Hay que releer divoox.com, su página de Venezuela y la de Flex, y reescribir los datos, el «cuidado» y la fecha de `verificado` antes de que el robot vuelva a nombrarla.",
-    },
-    verificado: "2026-11-25",
+      "La etapa por ciudad solo puede ser la que dio la empresa el 26 de noviembre de 2026 (las ciudades de arriba), siempre atribuida («según la empresa») y con su fecha; no afirmes otras ciudades ni otros países. La marca de motos para mototaxistas es un plan anunciado, no algo a la venta. No mencionar inversionistas ni dar cifras de pedidos, de restaurantes ni de repartidores.",
+    verificado: "2026-11-26",
   },
   {
     id: "pantalay",

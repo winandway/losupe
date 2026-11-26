@@ -80,7 +80,6 @@ export const en: Dict = {
       "Written with help from artificial intelligence and reviewed by the losupe editorial team.",
     fallbackNotice: "This article is available in Spanish only for now.",
     legacyNotice: "Originally published on MundosCrypto, the site that became losupe.",
-    houseLabel: "Brand content",
     sponsoredLabel: "Sponsored content",
     sponsoredNoticeTemplate:
       "Story produced on commission from {sponsor}. The company provided the information; writing and review are by losupe.",
@@ -214,7 +213,6 @@ export const en: Dict = {
     site: "Site",
     feeds: "RSS in English",
     rights: "All rights reserved.",
-    developedBy: "Developed by",
     editorial: "Editorial policy",
     privacy: "Privacy",
     terms: "Terms and conditions",
@@ -276,15 +274,6 @@ export const en: Dict = {
           ],
         },
         {
-          h: "Brand content: the From Windoce section",
-          p: [
-            "Losupe is part of Windoce LLC, a U.S. software company that also makes other products, including Pantalay, Kipuu, Beellon, QRbott, Divoox, Mercatren, YaDominios, YaPanel, Alira, and Tokiia. When we write about them, we do it in a separate section, “From Windoce,” and never among the news.",
-            "Every story in that section carries a visible label at the top and a line saying who owns the product, for example: “Brand content: Losupe and Pantalay are part of Windoce LLC.” Our system adds that disclosure, and a story without it can't be published.",
-            "The usual rules apply, plus a few more: we only state what we verified on the product's own site, with the date; if a person appears and isn't a real user who gave us permission, we present them as an example; we never make up testimonials or user numbers; we don't write ads or knock competitors; and we publish at most one brand story a day.",
-            "These stories are not submitted to Google News as news, and in our search engine data they're marked as company content, with Windoce LLC as the sponsor. Links to the product are marked as sponsored.",
-          ],
-        },
-        {
           h: "Images and rights",
           p: [
             "We use our own images, AI-generated images (labeled as such), or free stock images with credit, plus screenshots of the sites we cite, with the source indicated.",
@@ -313,7 +302,7 @@ export const en: Dict = {
         {
           h: "What data is processed",
           p: [
-            "We currently do not require an account or sign-up. The site search does not store your queries linked to you. The platform that hosts the site (YaDominios Cloud, on Cloudflare's network) processes technical data such as IP address, browser type, and country for security, performance, and aggregate visit statistics (no cookies, no individual profiles).",
+            "We currently do not require an account or sign-up. The site search does not store your queries linked to you. The platform that hosts the site (on Cloudflare's network) processes technical data such as IP address, browser type, and country for security, performance, and aggregate visit statistics (no cookies, no individual profiles).",
           ],
         },
         {
@@ -668,10 +657,6 @@ export const en: Dict = {
       discard: "Discard",
       open: "Open",
       sponsored: "Sponsored",
-      casa: "From Windoce",
-      approved:
-        "Approved. It joins the brand queue: one goes out per day, alternating with the news.",
-      sin_aviso: "Can't publish: this brand story is missing its brand content disclosure.",
       casaRedes: "Social media copy",
       casaFormato: "Format",
       universal: "Universal",

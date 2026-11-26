@@ -98,12 +98,12 @@ export async function comprobarFicha(
 /** Pasa por todas las fichas y deja en `settings` solo lo que cambió. */
 export async function vigilarFichas(
   db: D1Database,
-  opts: { fetchImpl?: typeof fetch; now?: Date } = {},
+  opts: { fetchImpl?: typeof fetch; now?: Date; productos?: readonly Producto[] } = {},
 ): Promise<FichaVencida[]> {
   const now = opts.now ?? new Date();
   const previas = await fichasVencidas(db);
   const vencidas: FichaVencida[] = [];
-  for (const p of PRODUCTOS) {
+  for (const p of opts.productos ?? PRODUCTOS) {
     const motivo = (await comprobarFicha(p, opts.fetchImpl ?? fetch)) ?? fichaCaduca(p, now);
     const antes = previas[p.id];
     const clave = CLAVE_VENCIDA(p.id);

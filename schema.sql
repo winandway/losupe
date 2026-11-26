@@ -212,6 +212,13 @@ CREATE TABLE IF NOT EXISTS candidates (
 );
 CREATE INDEX IF NOT EXISTS idx_candidates_pick ON candidates(status, section_id, score DESC, published_at DESC);
 
+-- Direcciones de Docs de Divoox ya vistas (candado 67): una dirección nueva es una función nueva y
+-- puede ser la nota nuestra del día. Una fila por guía; un día normal no escribe nada.
+CREATE TABLE IF NOT EXISTS sitemap_propio (
+  url TEXT PRIMARY KEY,
+  visto_en TEXT NOT NULL
+);
+
 -- ---------------------------------------------------------------------------
 -- LECTORES DE VERDAD
 -- Cada fila es una visita confirmada por el navegador (ver src/lib/lectores.ts).
@@ -319,7 +326,10 @@ INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('delivery
 UPDATE sections SET notes_per_day = 3 WHERE id = 'delivery' AND notes_per_day < 3;
 -- Desde Windoce: contenido de la casa. No es noticia y el robot de noticias no la escribe (candado 57).
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('windoce', 7, 0);
-UPDATE sections SET sort_order = 7 WHERE id = 'windoce' AND sort_order <> 7;
+-- «Desde Windoce» RETIRADA el 26 nov 2026 (candado 66): la sección se apaga y sus notas se archivan,
+-- sin borrar nada. Sus direcciones viejas redirigen a la portada desde el worker.
+UPDATE sections SET active = 0 WHERE id = 'windoce' AND active <> 0;
+UPDATE articles SET status = 'archived', updated_at = datetime('now') WHERE section_id = 'windoce' AND status <> 'archived';
 
 INSERT OR IGNORE INTO authors (id, name, kind, bio_es, bio_en, role_es, role_en) VALUES
   ('equipo-losupe', 'Equipo editorial de losupe', 'newsroom',
@@ -631,16 +641,15 @@ UPDATE articles SET image_url = NULL, image_credit = NULL
 -- LA FIRMA DEL SEGMENTO DE DELIVERY (25 nov 2026, candado 61). Richard pidió que lo lleve Pedro
 -- Llerena como periodista del sector, con su perfil público enlazado.
 --
--- Su biografía DICE QUE ES EL FUNDADOR DE WINDOCE, y eso no es un adorno: Windoce es dueña de
--- Losupe y también de Divoox, que es una empresa del mismo sector del que escribe. Un medio que
--- esconde eso se lo come Google (y con razón); uno que lo pone arriba y firma con nombre y perfil
--- verificable gana justo lo contrario: autoridad. Por eso va en la bio, en el rol y en `sameAs`.
+-- Su biografía habla de lo que escribe y de su oficio, no de los negocios del dueño: la línea que
+-- decía «fundador de Windoce LLC, la empresa dueña de Losupe y de Divoox» se quitó el 26 nov 2026
+-- (candado 66, Richard: «nadie nos está preguntando nada»). Perfil verificable en `linkedin_url`.
 UPDATE authors SET
   sections_json = '["delivery","cripto","ventas"]',
   role_es = 'Delivery, logística y emprendimiento',
   role_en = 'Delivery, logistics, and entrepreneurship',
-  bio_es = 'Lleva el segmento de delivery y logística de Losupe: cómo funcionan las apps de reparto, qué gana un repartidor, qué paga un restaurante y cómo se mueve la última milla en cada país. Empresario con experiencia en comercio electrónico y fundador de Windoce LLC, la empresa dueña de Losupe y de Divoox, una app de reparto. Cuando escribe sobre un producto del grupo, la nota lo dice arriba. También escribe de criptomonedas y emprendimiento.',
-  bio_en = 'Leads the delivery and logistics desk at Losupe: how delivery apps work, what a driver earns, what a restaurant pays, and how the last mile moves in each country. An entrepreneur with e-commerce experience and founder of Windoce LLC, the company that owns Losupe and Divoox, a delivery app. When he writes about a product from the group, the story says so up top. He also covers crypto and entrepreneurship.',
+  bio_es = 'Lleva el segmento de delivery y logística de Losupe: cómo funcionan las apps de reparto, qué gana un repartidor, qué paga un restaurante y cómo se mueve la última milla en cada país. Empresario con experiencia en comercio electrónico. También escribe de criptomonedas y emprendimiento.',
+  bio_en = 'Leads the delivery and logistics desk at Losupe: how delivery apps work, what a driver earns, what a restaurant pays, and how the last mile moves in each country. An entrepreneur with e-commerce experience. He also covers crypto and entrepreneurship.',
   linkedin_url = 'https://www.linkedin.com/in/pedro-llerena-montes/',
   expertise_es = 'Delivery y última milla, logística, comercio electrónico, emprendimiento',
   expertise_en = 'Delivery and last mile, logistics, e-commerce, entrepreneurship'
@@ -652,3 +661,8 @@ WHERE id = 'pedro-llerena';
 -- Richard lo baja a mano en el panel, se respeta.
 UPDATE settings SET value = '11', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
  WHERE key = 'notes_per_day' AND CAST(value AS INTEGER) < 11;
+
+-- Candado 66 (26 nov 2026): la nota del casillero llevaba un recuadro que anunciaba de quién es el
+-- medio. Se quita del texto publicado, sin tocar nada más. Idempotente: si ya no está, no escribe.
+UPDATE article_i18n SET content_html = REPLACE(content_html, '<p><em><strong>Aviso de transparencia:</strong> Mercatren, el servicio que se usa de ejemplo en esta guía, pertenece al mismo grupo empresarial que losupe. Lo decimos antes de que sigas leyendo. Los consejos de esta nota sirven con cualquier casillero: son los mismos errores que se cometen con todos.</em></p>', '') WHERE article_id = 'art-2026-09-09-casillero-miami' AND lang = 'es' AND instr(content_html, 'Aviso de transparencia:') > 0;
+UPDATE article_i18n SET content_html = REPLACE(content_html, '<p><em><strong>Disclosure:</strong> Mercatren, the service used as an example in this guide, belongs to the same business group as losupe. We are saying so before you read any further. The advice in this piece applies to any package-forwarding service: these are the same mistakes people make with all of them.</em></p>', '') WHERE article_id = 'art-2026-09-09-casillero-miami' AND lang = 'en' AND instr(content_html, '<strong>Disclosure:</strong>') > 0;

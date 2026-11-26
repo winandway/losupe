@@ -61,9 +61,9 @@ export default async function NotesPage({ searchParams }: Props) {
         <p className="font-semibold">{r.title}</p>
         <p className="text-xs text-muted">
           <span
-            className={`mr-2 rounded-full px-2 py-0.5 font-bold ${r.origin === "sponsored" ? "bg-accent/50" : r.origin === "casa" ? "bg-ink text-white" : "bg-paper"}`}
+            className={`mr-2 rounded-full px-2 py-0.5 font-bold ${r.origin === "sponsored" ? "bg-accent/50" : "bg-paper"}`}
           >
-            {r.origin === "sponsored" ? p.sponsored : r.origin === "casa" ? p.casa : p.universal}
+            {r.origin === "sponsored" ? p.sponsored : p.universal}
           </span>
           {r.format ? `${p.casaFormato}: ${r.format} · ` : ""}
           {getSection(r.section_id)?.name[lang]} · {r.created_at.slice(0, 16).replace("T", " ")} ·{" "}

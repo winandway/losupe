@@ -3,6 +3,7 @@ import { NEWS_SECTIONS as SECTIONS, type SectionId } from "@/lib/sections";
 import { revisarArchivo, type NotaDelArchivo } from "./archivo";
 import { rangoDelDiaLocal } from "./franjas";
 import { BOT_USER_AGENT, fetchPage } from "./research";
+import { FUENTE_PROPIA, propiaPermitida } from "./novedades-propias";
 import {
   bestTrendArticle,
   classifyTrend,
@@ -273,6 +274,7 @@ export type Candidate = {
 
 type CandidateRow = {
   id: string;
+  source_id?: string | null;
   section_id: string;
   url: string;
   title: string;
@@ -416,6 +418,16 @@ export async function pickCandidate(
       .catch(() => undefined);
   };
 
+  // Nuestra nota (candado 67): como mucho una al día y nunca dos días seguidos. Se pregunta una vez.
+  let propiaOk: boolean | null = null;
+  const puedePropia = async () => {
+    if (propiaOk === null) {
+      const ayer = rangoDelDiaLocal(new Date(now.getTime() - 86_400_000)).desde;
+      propiaOk = await propiaPermitida(db, ayer).catch(() => false);
+    }
+    return propiaOk;
+  };
+
   // Dos vueltas: primero SOLO lo fresco (es lo que pide un diario), y si no hay nada fresco en
   // ninguna sección, se admite lo que haya antes de dejar el turno vacío.
   for (const soloFrescas of horas > 0 ? [true, false] : [false]) {
@@ -423,7 +435,7 @@ export async function pickCandidate(
       if (sec.free <= 0) continue;
       const { results } = await db
         .prepare(
-          `SELECT id, section_id, url, title, summary, lang, published_at, score FROM candidates
+          `SELECT id, source_id, section_id, url, title, summary, lang, published_at, score FROM candidates
          WHERE status = 'new' AND section_id = ?1 AND attempts < ?2
          ${soloFrescas ? "AND published_at IS NOT NULL AND published_at >= ?4" : ""}
          ORDER BY score DESC, published_at DESC LIMIT ?3`,
@@ -436,6 +448,8 @@ export async function pickCandidate(
         .all<CandidateRow>();
 
       for (const row of results ?? []) {
+        // La nuestra espera su día: no se descarta, se salta.
+        if (row.source_id === FUENTE_PROPIA && !(await puedePropia())) continue;
         const veredicto = revisarArchivo(
           { titulo: row.title, resumen: row.summary, fuentes: [row.url] },
           archivo,

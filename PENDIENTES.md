@@ -6,7 +6,7 @@
 ## 🔴 Bloque nuevo: «Desde Windoce» (Richard, 7 nov 2026) 🤖
 
 - [x] 🤖 Construir la sección de notas de nuestros productos con su aviso de contenido de la casa, la rotación diaria y la primera semana de notas para revisión. Todo el detalle y la regla en [docs/DESDE-WINDOCE.md](docs/DESDE-WINDOCE.md). Aprobado por Richard «con el aviso». Hecho el 7 nov 2026 (candado 57).
-- [ ] 👤 **Revisar las siete notas de la primera semana** en el panel (Notas → Para revisar) y aprobar las que sirvan. Documento: [docs/DESDE-WINDOCE-SEMANA-1.md](docs/DESDE-WINDOCE-SEMANA-1.md). Sale una por día; tras cinco aprobadas el robot sigue solo.
+- [x] 🤖 **Sección retirada el 26 nov 2026** (Richard: «nos estamos delatando»). Fuera del menú, del mapa y del RSS; sus direcciones redirigen a la portada; notas archivadas sin borrar; las siete que esperaban revisión ya no esperan nada. Candado 66.
 
 ## 👤 Esperando por Richard
 
@@ -29,11 +29,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                                                              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                                                              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                                  Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                                  En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                                                              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                                                              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                                                  Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                                                  hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🔴 Segmento de delivery (Richard, 25 nov 2026)
 

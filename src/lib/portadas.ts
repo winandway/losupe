@@ -124,7 +124,6 @@ const POR_SECCION: Record<SectionId, string> = {
   cripto: "moneda",
   artistas: "musica",
   delivery: "tienda",
-  windoce: "chip",
 };
 
 /**

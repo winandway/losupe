@@ -95,15 +95,9 @@ export function Footer({ lang, dict, year }: { lang: Lang; dict: Dict; year?: nu
       </div>
       <div className="border-t border-line">
         <p className="mx-auto flex max-w-6xl flex-wrap items-center justify-center gap-x-3 gap-y-1 px-4 py-4 text-center text-xs text-muted">
-          © {y} {dict.brand.domain} | {dict.footer.rights} {dict.footer.developedBy}{" "}
-          <a
-            href="https://windoce.com"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-semibold text-ink hover:text-coral"
-          >
-            Windoce LLC
-          </a>
+          {/* Sin crédito de desarrollador ni enlace al grupo: un medio no anuncia los negocios de
+              su dueño (Richard, 26 nov 2026, candado 66). */}
+          © {y} {dict.brand.domain} | {dict.footer.rights}
           <span aria-hidden="true" className="hidden sm:inline">
             ·
           </span>

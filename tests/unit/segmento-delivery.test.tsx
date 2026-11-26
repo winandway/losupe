@@ -1,8 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { applySchema } from "@/lib/schema-guard";
 import { SCHEMA_SQL } from "@/lib/schema-sql";
-import { productoMencionado } from "@/lib/casa/aviso";
-import { getProducto } from "@/lib/casa/productos";
 import { setArticleStatus } from "@/lib/robot/publish";
 import { getSection, NEWS_SECTIONS, SECTIONS } from "@/lib/sections";
 import { seccionCoherente } from "@/lib/robot/trends";
@@ -50,8 +48,6 @@ describe("la sección existe y es periodismo del sector, no la sección de la ca
     const s = getSection("delivery");
     expect(s?.name.es).toBe("Delivery y logística");
     expect(s?.perDay).toBe(3);
-    // Esto es lo que la separa de «Desde Windoce»: va a Google Noticias como cualquier otra.
-    expect(s?.house).toBeUndefined();
     expect(NEWS_SECTIONS.map((x) => x.id)).toContain("delivery");
     // Y la dirección es la misma en los dos idiomas, que es como la busca la gente.
     expect(s?.slug).toEqual({ es: "delivery", en: "delivery" });
@@ -128,35 +124,15 @@ describe("una nota de periodismo sale sin ningún aviso nuestro", () => {
     expect(art.status).toBe("published");
   });
 
-  it("y la nota de la casa SÍ conserva el suyo: ese es otro aviso y es obligatorio", async () => {
-    // No se confunden: «Desde Windoce» es contenido de la casa, no periodismo (candado 57).
-    const { avisoHtml, tieneAviso } = await import("@/lib/casa/aviso");
-    const divoox = getProducto("divoox")!;
-    const cuerpo = `${avisoHtml(divoox, "es")}\n<p>Un texto cualquiera.</p>`;
-    expect(tieneAviso(cuerpo, divoox, "es")).toBe(true);
-    const { sinLineaDePropiedad } = await import("@/lib/casa/aviso");
-    // La limpieza existe, pero `quitarLineaDePropiedad` no la aplica a la sección de la casa.
-    expect(sinLineaDePropiedad(cuerpo)).not.toContain("aviso-casa");
-  });
-
-  it("la propiedad se declara en la cabecera del medio, no en cada nota", async () => {
+  it("ni la cabecera ni la política editorial presumen de los productos del grupo (candado 66)", async () => {
     const { es } = await import("@/i18n/es");
     const { en } = await import("@/i18n/en");
-    const textoEs = JSON.stringify(es);
-    const textoEn = JSON.stringify(en);
-    // Quién edita el medio, en el pie, en los dos idiomas.
-    expect(textoEs).toContain("Windoce LLC");
-    expect(textoEn).toContain("Windoce LLC");
-    // Y la política editorial nombra los productos, que es la declaración de verdad.
-    expect(textoEs).toContain("Divoox");
-    expect(textoEn).toContain("Divoox");
-  });
-
-  it("reconoce el nombre entero, no trozos de otra palabra", () => {
-    expect(productoMencionado("Divoox abre en Caracas")?.id).toBe("divoox");
-    expect(productoMencionado("Hablamos de kipuu y de otras")?.id).toBe("kipuu");
-    expect(productoMencionado("DoorDash y Uber Eats")).toBeUndefined();
-    expect(productoMencionado("divooxmania es otra cosa")).toBeUndefined();
+    const { PRODUCTOS } = await import("@/lib/casa/productos");
+    // Nadie lo pregunta: un medio no publica la lista de negocios de su dueño.
+    for (const texto of [JSON.stringify(es), JSON.stringify(en)]) {
+      for (const p of PRODUCTOS) expect(texto).not.toContain(p.nombre);
+      expect(texto).not.toMatch(/Desde Windoce|From Windoce|Contenido de la casa|Brand content/);
+    }
   });
 });
 
@@ -176,10 +152,9 @@ describe("la firma del segmento", () => {
     expect(JSON.parse(a.sections_json)).toContain("delivery");
     expect(a.linkedin_url).toBe("https://www.linkedin.com/in/pedro-llerena-montes/");
     expect(a.role_es).toContain("Delivery");
-    // Y la biografía DICE que es el dueño del grupo: si no lo dijera, el segmento entero sería
-    // sospechoso para Google y para cualquier lector que lo averigüe por su cuenta.
-    expect(a.bio_es).toContain("Windoce LLC");
-    expect(a.bio_es).toContain("Divoox");
+    // Y la biografía habla de su oficio, no de los negocios del dueño (candado 66).
+    expect(a.bio_es).not.toContain("Windoce");
+    expect(a.bio_es).not.toContain("Divoox");
   });
 
   it("el segmento tiene fuentes propias del sector, no prestadas de otra sección", async () => {
@@ -259,12 +234,11 @@ describe("nuestra propia app aparece en el segmento, declarada", () => {
    * únicamente cuando una noticia lo trae, y entonces el código pone la línea de transparencia
    * (candado 61, arriba). La transparencia se queda; el escaparate se va.
    */
-  it("fuera de la sección de la casa, ninguna pieza fija nombra un producto del grupo", async () => {
+  it("ninguna pieza fija nombra un producto del grupo", async () => {
     const { readFileSync, readdirSync } = await import("node:fs");
     const { PRODUCTOS } = await import("@/lib/casa/productos");
 
-    // Los componentes de la casa SÍ los nombran: ese es su trabajo, y van con su aviso.
-    const DE_LA_CASA = ["FichasCasa.tsx", "AvisoCasa.tsx"];
+    const DE_LA_CASA: string[] = [];
     const tsx = (dir: string): string[] =>
       readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
         e.isDirectory()
@@ -453,8 +427,16 @@ describe("la ficha de nuestro producto caduca sola cuando su página cambia", ()
     const { comprobarFicha, vigilarFichas, fichasVencidas } =
       await import("@/lib/casa/vigilar-ficha");
     const { getProducto } = await import("@/lib/casa/productos");
-    const divoox = getProducto("divoox")!;
-    expect(divoox.vigilar?.url).toContain("venezuela");
+    // Ninguna ficha vigila hoy una frase (la de Venezuela se retiró al abrir allí): se prueba el
+    // mecanismo con una ficha de muestra.
+    const divoox = {
+      ...getProducto("divoox")!,
+      vigilar: {
+        url: "https://divoox.com/country/venezuela",
+        frase: "Coming soon",
+        siDesaparece: "La página ya NO dice «próximamente».",
+      },
+    };
 
     // La página ya NO dice «coming soon»: abrieron.
     const abierta = (async () =>
@@ -468,10 +450,10 @@ describe("la ficha de nuestro producto caduca sola cuando su página cambia", ()
 
     const { db, d1 } = await base();
     const hoy = new Date("2026-11-25T12:00:00Z");
-    await vigilarFichas(d1, { fetchImpl: abierta, now: hoy });
+    await vigilarFichas(d1, { fetchImpl: abierta, now: hoy, productos: [divoox] });
     expect(Object.keys(await fichasVencidas(d1))).toContain("divoox");
     // Y cuando alguien relee la ficha y la página vuelve a cuadrar, la marca se va sola.
-    await vigilarFichas(d1, { fetchImpl: aun, now: hoy });
+    await vigilarFichas(d1, { fetchImpl: aun, now: hoy, productos: [divoox] });
     expect(await fichasVencidas(d1)).toEqual({});
     expect(
       db.raw.prepare(`SELECT count(*) AS n FROM settings WHERE key LIKE 'ficha_vencida_%'`).get(),
@@ -534,20 +516,19 @@ describe("una ficha también caduca por tiempo, y avisa antes de apagarse", () =
     ).toBeUndefined();
   });
 
-  it("la rotación de la casa se salta el producto con ficha vencida", async () => {
-    const { siguienteTurno } = await import("@/lib/casa/paso-diario");
-    const { PRODUCTOS } = await import("@/lib/casa/productos");
-    const primero = siguienteTurno(0)!.producto.id;
-    expect(primero).toBe("divoox");
-    // Con la ficha vencida le toca al siguiente, no se escribe con datos viejos.
-    expect(siguienteTurno(0, { divoox: "vencida" })!.producto.id).toBe(PRODUCTOS[1]!.id);
-    // Y si TODAS están vencidas, ese día no se escribe nada de la casa.
-    const todas = Object.fromEntries(PRODUCTOS.map((p) => [p.id, "vencida"]));
-    expect(siguienteTurno(0, todas)).toBeNull();
-  });
-
   it("no escribe en la base si el estado de la ficha no cambió", async () => {
     const { vigilarFichas } = await import("@/lib/casa/vigilar-ficha");
+    const { getProducto } = await import("@/lib/casa/productos");
+    const productos = [
+      {
+        ...getProducto("divoox")!,
+        vigilar: {
+          url: "https://divoox.com/country/venezuela",
+          frase: "Coming soon",
+          siDesaparece: "cambió",
+        },
+      },
+    ];
     const { d1 } = await base();
     const abierta = (async () =>
       new Response("<h1>Divoox ya está en Caracas</h1>")) as unknown as typeof fetch;
@@ -567,12 +548,12 @@ describe("una ficha también caduca por tiempo, y avisa antes de apagarse", () =
     const escrituras = () =>
       sentencias.filter((q) => /(INSERT INTO|DELETE FROM|UPDATE)\s+settings/i.test(q)).length;
 
-    await vigilarFichas(espiado, { fetchImpl: abierta, now: hoy });
+    await vigilarFichas(espiado, { fetchImpl: abierta, now: hoy, productos });
     const primera = escrituras();
     expect(primera).toBe(1);
 
     // Segunda vuelta con el mismo resultado: ni una escritura más.
-    await vigilarFichas(espiado, { fetchImpl: abierta, now: hoy });
+    await vigilarFichas(espiado, { fetchImpl: abierta, now: hoy, productos });
     expect(escrituras()).toBe(primera);
   });
 
@@ -582,19 +563,21 @@ describe("una ficha también caduca por tiempo, y avisa antes de apagarse", () =
     const divoox = getProducto("divoox")!;
     // El fallo: el «cuidado» decía «no decir que ya opera», y el modelo escribía «no opera».
     expect(divoox.cuidado).not.toMatch(/No decir que ya opera/i);
-    expect(divoox.cuidado).toMatch(/ni que ya opera ni que todav/i);
+    // Desde el 26 nov 2026 la etapa la da la empresa: se cuenta atribuida y con fecha.
+    expect(divoox.cuidado).toMatch(/atribuida/i);
+    expect(divoox.cuidado).toMatch(/26 de noviembre de 2026/);
     const bloque = bloqueCasaEnElSector("delivery");
     expect(bloque).not.toMatch(/ciudades ya funcionando/);
     expect(bloque).toMatch(/NO digas en qu[ée] etapa est[áa]/);
   });
   it("en una nota del sector, nuestra app no dice en qué etapa está en ningún país", async () => {
     const { bloqueCasaEnElSector } = await import("@/lib/robot/writer");
-    const { promptCasa } = await import("@/lib/casa/paso-diario");
     const { getProducto } = await import("@/lib/casa/productos");
     const divoox = getProducto("divoox")!;
 
     // La etapa vive aparte de los datos, para poder dársela a una y no a la otra.
-    expect(divoox.etapa?.es).toMatch(/pr[óo]ximamente/i);
+    expect(divoox.etapa?.es).toMatch(/Seg[úu]n la empresa/);
+    expect(divoox.etapa?.es).toContain("El Vigía");
     expect(divoox.datos.es.join(" ")).not.toMatch(/pr[óo]ximamente/i);
     expect(divoox.datos.en.join(" ")).not.toMatch(/coming soon/i);
 
@@ -605,10 +588,5 @@ describe("una ficha también caduca por tiempo, y avisa antes de apagarse", () =
     expect(sector).not.toMatch(/Caracas/);
     expect(sector).toMatch(/NO digas en qu[ée] etapa est[áa]/);
     expect(sector).toMatch(/por lo que hace, no por d[óo]nde est/);
-
-    // La nota de la casa (un lanzamiento) sí la cuenta: ahí la etapa es el tema.
-    expect(promptCasa(divoox, "lanzamiento")).toMatch(
-      /En qu[ée] etapa est[áa], seg[úu]n su p[áa]gina/,
-    );
   });
 });

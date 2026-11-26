@@ -1,7 +1,6 @@
 import type { Lang } from "@/i18n/config";
 
-export type SectionId =
-  "economia" | "ventas" | "tecnologia" | "cripto" | "artistas" | "delivery" | "windoce";
+export type SectionId = "economia" | "ventas" | "tecnologia" | "cripto" | "artistas" | "delivery";
 
 export type Section = {
   id: SectionId;
@@ -18,12 +17,6 @@ export type Section = {
    */
   badge?: { bg: string; fg: string };
   perDay: number;
-  /**
-   * Sección de la CASA («Desde Windoce»): notas sobre los productos del grupo dueño del medio.
-   * No es noticia: no la escribe el robot de noticias, no entra al mapa de Google Noticias y cada
-   * nota lleva su aviso de contenido de la casa (ver `src/lib/casa/`, candado 57).
-   */
-  house?: boolean;
 };
 
 export const SECTIONS: readonly Section[] = [
@@ -96,8 +89,8 @@ export const SECTIONS: readonly Section[] = [
      * bloques de Amazon Flex, los drones, la última milla — y cómo se vive en cada país.
      *
      * Es PERIODISMO DEL SECTOR, no el folleto de nadie. Divoox (producto de la casa) aparece aquí
-     * solo cuando es noticia de verdad dentro del tema, y siempre con su línea de transparencia,
-     * que pone el código (`src/lib/casa/aviso.ts`). Un segmento que solo hablara de nuestro producto
+     * solo cuando es noticia de verdad dentro del tema, sin aviso de propiedad (candado 65). Un
+     * segmento que solo hablara de nuestro producto
      * no lo guardaría Google, y con razón.
      */
     id: "delivery",
@@ -112,31 +105,27 @@ export const SECTIONS: readonly Section[] = [
     badge: { bg: "#6D28D9", fg: "#FFFFFF" },
     perDay: 3,
   },
-  {
-    id: "windoce",
-    slug: { es: "desde-windoce", en: "from-windoce" },
-    name: { es: "Desde Windoce", en: "From Windoce" },
-    // Redactada de nuevo el 26 nov 2026. La anterior se presentaba como «contenido de la casa… de
-    // la empresa dueña de Losupe»: era un cartel sobre nosotros, no una descripción de lo que hay.
-    description: {
-      es: "Lanzamientos, guías y novedades de los productos de Windoce.",
-      en: "Launches, guides, and updates from Windoce's products.",
-    },
-    color: "#0B1F3A",
-    onColor: "#FFFFFF",
-    perDay: 0,
-    house: true,
-  },
 ];
 
-/** La sección de contenido de la casa. */
-export const HOUSE_SECTION_ID = "windoce" as const;
+/**
+ * La sección «Desde Windoce» se RETIRÓ el 26 nov 2026 (Richard: «nos estamos delatando»). Sus
+ * direcciones viejas redirigen a la portada (`retiredSectionRedirect`) y sus notas quedaron
+ * archivadas en la base, sin borrar. Ninguna sección nueva puede volver a usar este id (candado 66).
+ */
+export const RETIRED_SECTION_ID = "windoce" as const;
+export const RETIRED_SECTION_SLUGS = { es: "desde-windoce", en: "from-windoce" } as const;
 
-/** Solo las secciones de NOTICIAS: las que escribe el robot, aceptan encargos y van a Google Noticias. */
-export const NEWS_SECTIONS: readonly Section[] = SECTIONS.filter((s) => !s.house);
+/** Todas las secciones son de noticias desde que se retiró la de la casa. */
+export const NEWS_SECTIONS: readonly Section[] = SECTIONS;
 
-export function isHouseSection(id: string): boolean {
-  return id === HOUSE_SECTION_ID;
+/**
+ * `/es/desde-windoce`, `/en/from-windoce` y cualquier nota que colgara de ellas → portada del
+ * idioma (301). Google ya vio esas direcciones: no se pueden quedar en 404.
+ */
+export function retiredSectionRedirect(pathname: string): string | null {
+  const [, lang, slug] = pathname.split("/");
+  if (lang !== "es" && lang !== "en") return null;
+  return slug === RETIRED_SECTION_SLUGS[lang] ? `/${lang}` : null;
 }
 
 export const SECTION_IDS: readonly SectionId[] = SECTIONS.map((s) => s.id);

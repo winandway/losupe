@@ -55,12 +55,10 @@ describe("ArticleCard", () => {
 });
 
 describe("Footer", () => {
-  it("lleva el crédito de Windoce LLC con enlace en pestaña nueva", () => {
-    render(<Footer lang="es" dict={es} year={2026} />);
-    const credit = screen.getByRole("link", { name: "Windoce LLC" });
-    expect(credit).toHaveAttribute("href", "https://windoce.com");
-    expect(credit).toHaveAttribute("target", "_blank");
-    expect(credit).toHaveAttribute("rel", "noopener noreferrer");
+  it("no anuncia al grupo dueño: ni crédito ni enlace a windoce.com (candado 66)", () => {
+    const { container } = render(<Footer lang="es" dict={es} year={2026} />);
+    expect(screen.queryByRole("link", { name: "Windoce LLC" })).toBeNull();
+    expect(container.querySelector('a[href*="windoce.com"]')).toBeNull();
     expect(screen.getByText(/© 2026 losupe.com \| All rights reserved\./)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Economía" })).toHaveAttribute("href", "/es/economia");
   });

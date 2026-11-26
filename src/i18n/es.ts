@@ -78,7 +78,6 @@ export const es = {
       "Redacción asistida por inteligencia artificial y revisada por el equipo editorial de losupe.",
     fallbackNotice: "Este artículo está disponible solo en español por ahora.",
     legacyNotice: "Publicado originalmente en MundosCrypto, el portal que dio origen a losupe.",
-    houseLabel: "Contenido de la casa",
     sponsoredLabel: "Contenido patrocinado",
     sponsoredNoticeTemplate:
       "Nota producida por encargo de {sponsor}. La empresa aportó la información; la redacción y la revisión son de losupe.",
@@ -215,7 +214,6 @@ export const es = {
     site: "Sitio",
     feeds: "RSS en español",
     rights: "All rights reserved.",
-    developedBy: "Developed by",
     editorial: "Política editorial",
     privacy: "Privacidad",
     terms: "Términos y condiciones",
@@ -277,15 +275,6 @@ export const es = {
           ],
         },
         {
-          h: "Contenido de la casa: la sección Desde Windoce",
-          p: [
-            "Losupe es de Windoce LLC, una empresa de software de Estados Unidos que también hace otros productos, como Pantalay, Kipuu, Beellon, QRbott, Divoox, Mercatren, YaDominios, YaPanel, Alira y Tokiia. Cuando escribimos sobre ellos, lo hacemos en una sección aparte, «Desde Windoce», y nunca entre las noticias.",
-            "Cada nota de esa sección lleva arriba una etiqueta visible y una línea que dice de quién es el producto, por ejemplo: «Contenido de la casa: Losupe y Pantalay son de Windoce LLC». Ese aviso lo pone el sistema y una nota sin él no se puede publicar.",
-            "Las reglas son las mismas de siempre y algunas más: solo contamos lo que comprobamos en la página del producto, con la fecha; si aparece una persona y no es un usuario real que nos dio permiso, la presentamos como ejemplo; no inventamos testimonios ni cifras de usuarios; no escribimos anuncios ni hablamos mal de la competencia; y publicamos como máximo una nota de la casa al día.",
-            "Estas notas no se envían a Google Noticias como noticias, y en los datos para buscadores se marcan como contenido de la empresa, con Windoce LLC como patrocinador. Los enlaces al producto se marcan como patrocinados.",
-          ],
-        },
-        {
           h: "Imágenes y derechos",
           p: [
             "Usamos imágenes propias, generadas con inteligencia artificial (marcadas como tales) o de bancos libres con su crédito, y capturas de los sitios que citamos, con la fuente indicada.",
@@ -314,7 +303,7 @@ export const es = {
         {
           h: "Qué datos se procesan",
           p: [
-            "Hoy no pedimos cuenta ni registro. El buscador del sitio no guarda tus consultas asociadas a tu persona. La plataforma que aloja el sitio (YaDominios Cloud, sobre la red de Cloudflare) procesa datos técnicos como la dirección IP, el tipo de navegador y el país para seguridad, rendimiento y estadísticas agregadas de visitas (sin cookies ni perfiles individuales).",
+            "Hoy no pedimos cuenta ni registro. El buscador del sitio no guarda tus consultas asociadas a tu persona. La plataforma que aloja el sitio (sobre la red de Cloudflare) procesa datos técnicos como la dirección IP, el tipo de navegador y el país para seguridad, rendimiento y estadísticas agregadas de visitas (sin cookies ni perfiles individuales).",
           ],
         },
         {
@@ -668,11 +657,6 @@ export const es = {
       discard: "Descartar",
       open: "Abrir",
       sponsored: "Patrocinada",
-      casa: "Desde Windoce",
-      approved:
-        "Aprobada. Entra a la fila de la casa: sale una por día, alternada con las noticias.",
-      sin_aviso:
-        "No se puede publicar: a esta nota de la casa le falta el aviso de contenido de la casa.",
       casaRedes: "Textos para redes",
       casaFormato: "Formato",
       universal: "Universal",

@@ -3,7 +3,10 @@
 > Dictado por Richard el 26 de noviembre de 2026, al final de una sesión que ya estaba muy larga.
 > Se arranca en una sesión nueva, en esta misma carpeta. Es lo único que hay que hacer.
 
-## 0. Quitar la sección «Desde Windoce» del sitio (lo PRIMERO de todo)
+## 0. Quitar la sección «Desde Windoce» del sitio — HECHO el 26 nov 2026 (candado 66)
+
+Hecho, y más: también salió la lista de productos de la política editorial, el patrocinador de los
+datos para buscadores y el crédito del grupo en el pie. Ver `docs/candados.md`, candado 66.
 
 Orden de Richard, el 26 de noviembre: _«esto elimínalo. Eso yo lo pedí, pero interno: tener en cuenta
 nuestros proyectos para hablar de ellos cada vez que tengamos cosas nuevas y crear tutoriales de
@@ -32,7 +35,7 @@ Qué hay que hacer, con cuidado porque la sección está indexada:
 Candado: una prueba que falla si la sección vuelve a aparecer en el menú, en el mapa del sitio o en
 el RSS, y otra que falla si una dirección vieja de la sección devuelve 404 en vez de redirigir.
 
-## 1. La cadencia de «Delivery y logística»
+## 1. La cadencia de «Delivery y logística» — HECHO el 26 nov 2026 (candado 67)
 
 Hoy el segmento rota temas uno por día. Con veintiséis empresas, nosotros saldríamos cada veintiséis
 días. Palabras de Richard: _«eso no es un SEO, no es un posicionamiento, no estamos haciendo nada»_.
@@ -54,7 +57,7 @@ entera y no se publica nada (si no, saldrían 614 notas). Con su presupuesto de 
 Candado: una prueba que falla si en un día salen dos notas nuestras en la sección, y otra que falla si
 la primera vuelta publica las 614.
 
-## 2. La nota de Venezuela (la siguiente que sale, dictada por Richard)
+## 2. La nota de Venezuela — PUBLICADA el 26 nov 2026 (semilla `2026-11-26-divoox-venezuela`)
 
 Es noticia del sector, no contenido de la casa: va en **Delivery y logística**, firmada por Pedro
 Llerena, **sin ningún aviso de propiedad** (candado 65). Lo que él dictó, palabra por palabra en

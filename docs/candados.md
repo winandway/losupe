@@ -2457,3 +2457,87 @@ un volumen (cubro el sector entero y entonces mi producto es una línea entre mu
 - **Qué NO tocar:** no vuelve ninguna pieza fija que nombre un producto del grupo fuera de la
   sección de la casa, no vuelve ningún tema nuestro a la rotación del sector, la rotación no baja de
   setenta ideas, y la línea de transparencia de las notas se queda donde está.
+
+## 66. El medio se delataba: sección de la casa, lista de empresas y crédito del grupo (26 nov 2026)
+
+**Qué se rompió y cómo se veía.** En el menú había una sección «Desde Windoce»; la política editorial
+publicaba los diez negocios del dueño por su nombre (Pantalay, Kipuu, Beellon, QRbott, Divoox,
+Mercatren, YaDominios, YaPanel, Alira, Tokiia); los datos para buscadores marcaban esas notas como
+«contenido de anunciante» con Windoce LLC de patrocinador; y el pie enlazaba a windoce.com. Richard:
+_«si pasaras la página a Google Noticias y Google viera que tenemos ese poco de empresas… nos estamos
+delatando por todos lados. Nadie nos está preguntando nada. ¿Por qué tenemos que poner algo que nadie
+nos está preguntando?»_.
+
+**La causa real.** Tratar la propiedad como algo que hay que anunciar, cuando lo que pide Google es
+que cada nota cumpla sus reglas. Un medio cuida cada palabra y cada título; no publica la lista de
+negocios de su dueño.
+
+**Qué se hizo.**
+
+- Fuera la sección `windoce` de `SECTIONS` (y con ella del menú, el pie, el mapa del sitio, el RSS, el
+  mapa de Google Noticias, el MCP y los listados). `NEWS_SECTIONS` ya es igual a `SECTIONS`.
+- **Ningún enlace se rompe:** `retiredSectionRedirect` manda `/es/desde-windoce`, `/en/from-windoce` y
+  cualquier nota que colgara de ellas a la portada del idioma con 301, desde el worker, al lado de las
+  redirecciones viejas (`legacyRedirectTarget`).
+- En la base: `sections.active = 0` y las notas de esa sección `archived`, **sin borrar nada**
+  (`schema.sql`, corre en cada publicación y es idempotente).
+- Fuera el paso diario de la casa (`src/lib/casa/paso-diario.ts`), el aviso «Contenido de la casa», la
+  etiqueta de la nota, el `AdvertiserContentArticle` con patrocinador, el párrafo de la política
+  editorial con los productos, el crédito «Developed by Windoce LLC» del pie y el nombre del
+  alojamiento en la privacidad. El candado 57 queda **superado**.
+- `aviso.ts` se queda solo con la limpieza: si una nota arrastra un párrafo de aviso viejo, se le quita
+  al publicarla.
+- **Se queda:** «Responsable de la publicación: Windoce LLC» en Contacto. Es el dato legal mínimo de
+  cualquier periódico y no nombra ningún producto.
+- Las fichas de `src/lib/casa/productos.ts` siguen, pero son internas: el redactor del sector las lee
+  para no inventar; ninguna pantalla las muestra.
+
+**Excepción a la regla global del crédito en el pie:** en este sitio no va, por orden de Richard del
+26 nov 2026. Anotado en el `CLAUDE.md` del proyecto.
+
+- **Pruebas:** `tests/unit/candado-66-sin-delatarnos.test.ts`. **Rojo comprobado** con dos mutaciones:
+  devolver el enlace a windoce.com al pie (falla «el pie no enlaza a windoce.com») y apagar la
+  redirección (falla «sus direcciones viejas redirigen»). Y en `segmento-delivery`, ninguna cadena de
+  los dos idiomas nombra un producto del grupo.
+- **Cómo se comprueba:** `curl -sI https://losupe.com/es/desde-windoce` → 301 a `/es`; el pie y la
+  política editorial no nombran ningún producto; el mapa del sitio no lleva la sección.
+- **Qué NO tocar:** la sección no vuelve, no vuelve ningún aviso de propiedad, y las redirecciones se
+  quedan para siempre (Google ya vio esas direcciones).
+
+**Añadido al candado 66, el mismo día:** la biografía de Pedro Llerena decía «fundador de Windoce
+LLC, la empresa dueña de Losupe y de Divoox… cuando escribe sobre un producto del grupo, la nota lo
+dice arriba», y salía en cada nota que firma y en su página de autor. Ahora habla de su oficio. Y la
+nota del casillero en Miami llevaba un recuadro «Aviso de transparencia»: se quitó del texto
+publicado con un `UPDATE … REPLACE` idempotente en `schema.sql`, sin cambiar su dirección. Prueba:
+ninguna nota sembrada de periodismo trae un recuadro de propiedad (rojo comprobado metiendo uno).
+
+## 67. La nota nuestra del día sale sola, y como mucho una (26 nov 2026)
+
+**Qué faltaba.** Con veintiséis empresas en la rotación, Divoox salía cada veintiséis días. Richard:
+_«eso no es un SEO, no es un posicionamiento»_. La regla: tres notas de delivery al día; dos son las
+más relevantes del sector y la tercera puede ser nuestra cuando hay material.
+
+**Qué se hizo.**
+
+- `src/lib/robot/novedades-propias.ts`: en cada turno de delivery se lee `https://divoox.com/sitemap.xml`.
+  Solo cuentan las guías en español de Docs (`/es/docs/<sección>/<guía>`), porque cada una tiene su
+  par en inglés. Se guardan en la tabla `sitemap_propio`. El `lastmod` no se usa: se regenera en cada
+  compilación. **Una dirección que antes no existía es una función nueva.**
+- La primera vez se siembra la lista entera y no se propone nada. Si de golpe aparecen más de veinte,
+  es una reorganización: se apuntan y no se propone ninguna. Como mucho tres candidatas por corrida,
+  con su título y su resumen leídos de la propia página, en la sección de delivery, con puntuación
+  alta y sin ningún aviso.
+- El freno vive en `pickCandidate`: una candidata propia se SALTA (no se descarta) si ya salió una
+  nuestra desde el comienzo de ayer. Resultado: como mucho una al día y nunca dos días seguidos.
+- Presupuesto de escrituras: un día sin guías nuevas escribe cero filas; la siembra es una sola vez.
+
+- **Pruebas:** `tests/unit/candado-67-nota-propia.test.ts`. **Rojo comprobado** dos veces: quitando el
+  freno (falla «si ayer salió una nuestra, hoy se elige la del sector») y quitando la siembra (falla
+  «la primera vez se siembra todo y NO se propone nada»).
+- **Qué NO tocar:** no se baja el umbral de reorganización, no se usa `lastmod`, y el freno no se
+  convierte en descarte (la guía nueva espera su día, no se pierde).
+
+**La nota de Venezuela** (punto 2 del paquete) salió el mismo día como nota sembrada de delivery,
+firmada por Pedro Llerena, con las ciudades atribuidas a la empresa y la marca de motos contada como
+plan anunciado. La ficha de Divoox (`productos.ts`) cambió de fuente: la etapa ya no es «próximamente»
+sino lo que dijo la empresa el 26 nov 2026, y se retiró la frase vigilada de la página de Venezuela.

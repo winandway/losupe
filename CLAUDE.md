@@ -51,3 +51,12 @@
 6. Delivery y logística — segmento diario del sector (25 nov 2026). Tres notas al día, firma Pedro
    Llerena, fuentes propias y **línea de transparencia automática** cuando una nota nombra un producto
    del grupo. Reglas: `docs/DELIVERY.md`; candado 61.
+
+## El medio no se delata (Richard, 26 nov 2026, candado 66)
+
+- Ninguna página pública nombra los negocios del dueño ni enlaza al grupo: ni sección de la casa, ni
+  lista de productos en la política editorial, ni aviso de propiedad, ni patrocinador en los datos
+  para buscadores, ni el crédito «Developed by Windoce LLC» del pie (excepción a la regla global, por
+  su orden). Solo queda «Responsable de la publicación: Windoce LLC» en Contacto.
+- Cuando un producto nuestro lanza algo, es noticia del sector y va en su sección, como una más.
+- Lo que Google ya vio no se rompe: se redirige con 301.
