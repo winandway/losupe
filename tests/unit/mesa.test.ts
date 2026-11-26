@@ -7,7 +7,13 @@ import {
   type Efemeride,
 } from "@/lib/robot/efemerides";
 import { ideasDeSeccion, siguienteIdea, temaDe, todasLasIdeas } from "@/lib/robot/ideas";
-import { elegirGenero, encargoDelTurno, RATIO_PROPIAS_POR_DEFECTO } from "@/lib/robot/mesa";
+import {
+  elegirGenero,
+  encargoDelTurno,
+  RATIO_PROPIAS_POR_DEFECTO,
+  reglasDeLaMesa,
+  RELLENO_ENCENDIDO,
+} from "@/lib/robot/mesa";
 import { FRANJAS } from "@/lib/robot/franjas";
 import { FakeD1 } from "./fake-d1";
 
@@ -105,85 +111,71 @@ describe("efemérides: qué se cumple hoy", () => {
   });
 });
 
-describe("la escaleta manda: 2 de actualidad y 2 de curiosidades", () => {
+describe("CANDADO 71: el relleno está apagado en código (26 nov 2026)", () => {
+  // Google leyó y rechazó 313 notas: efemérides, curiosidades y guías genéricas. Ninguna regla de
+  // la mesa puede volver a pedirlas, ni con las efemérides «encendidas» en un ajuste viejo.
   const F = Object.fromEntries(FRANJAS.map((f) => [f.key, f])) as Record<
     string,
     (typeof FRANJAS)[number]
   >;
+  const VIEJA_CURIOSIDADES = {
+    key: "mediodia",
+    hour: 12,
+    genero: "propia",
+    subgenero: "curiosidades",
+  } as const;
 
-  it("EL FALLO DEL 28 AGO 2026: siete notas seguidas de curiosidades, cero de actualidad", () => {
-    // La causa era aritmética: `notasHoy % 10 < 4` con tres notas al día da 0, 1 y 2 — los tres
-    // menores que 4, así que SIEMPRE salía «propia». Ahora manda la franja, y esto lo demuestra.
+  it("la constante del relleno está en falso", () => {
+    expect(RELLENO_ENCENDIDO).toBe(false);
+  });
+
+  it("todo turno del día es de actualidad, aunque haya efeméride redonda", () => {
     const dia = FRANJAS.map((f, i) => elegirGenero(f, i, REGLAS, true, true));
-    // Diez turnos de actualidad y UNA pieza propia (que con efemérides activas es efeméride). El
-    // turno de rankings de las nueve pasó a delivery el 25 nov 2026.
-    expect(dia.filter((g) => g === "actualidad")).toHaveLength(10);
-    expect(dia.filter((g) => g === "efemeride")).toHaveLength(1);
-    // Y la propia está donde manda la escaleta: al mediodía.
-    expect(dia[FRANJAS.findIndex((f) => f.key === "mediodia")]).toBe("efemeride");
+    expect(dia.every((g) => g === "actualidad")).toBe(true);
   });
 
-  it("una efeméride NO puede comerse la actualidad", () => {
-    // Antes: `if (hayEfemerideRedonda) return "efemeride"` iba antes que nada. Y hay aniversarios
-    // redondos casi a diario, así que se llevaba por delante todas las noticias.
-    expect(elegirGenero(F.manana!, 0, REGLAS, true, true)).toBe("actualidad");
-    expect(elegirGenero(F.tarde!, 2, REGLAS, true, true)).toBe("actualidad");
-    // Ni a los turnos de los dos canales: tecnología y artistas son noticia sí o sí.
-    expect(elegirGenero(F["manana-2"]!, 1, REGLAS, true, true)).toBe("actualidad");
-    expect(elegirGenero(F["noche-2"]!, 8, REGLAS, true, true)).toBe("actualidad");
-    // Ni al turno de delivery, que desde el 25 nov 2026 también es noticia sí o sí.
-    expect(elegirGenero(F["noche-3"]!, 9, REGLAS, true, true)).toBe("actualidad");
-    // En su hueco sí, porque un «diez años sin» solo se puede contar hoy.
-    expect(elegirGenero(F.mediodia!, 1, REGLAS, true, true)).toBe("efemeride");
+  it("ni una franja vieja de curiosidades vuelve a pedir una efeméride o una lista", () => {
+    expect(elegirGenero(VIEJA_CURIOSIDADES, 1, REGLAS, true, true)).toBe("actualidad");
+    expect(elegirGenero(VIEJA_CURIOSIDADES, 1, REGLAS, false, true)).toBe("actualidad");
   });
 
-  it("si toca actualidad y no hay material, se escribe una propia en vez de perder la nota", () => {
-    expect(elegirGenero(F.manana!, 0, REGLAS, false, false)).toBe("propia");
+  it("sin noticia, el turno NO se rellena con una pieza propia", () => {
+    expect(elegirGenero(F.manana!, 0, REGLAS, true, false)).toBe("actualidad");
   });
 
-  it("con las efemérides apagadas, el hueco de curiosidades sigue siendo de curiosidades", () => {
-    const sinEfemerides = { ratioPropias: 0.4, efemerides: false };
-    expect(elegirGenero(F.mediodia!, 1, sinEfemerides, true, true)).toBe("propia");
-    expect(elegirGenero(F.manana!, 0, sinEfemerides, true, true)).toBe("actualidad");
+  it("a mano, fuera de franja, ya no alterna: siempre actualidad", () => {
+    const manual = [0, 1, 2, 3].map((i) => elegirGenero(null, i, REGLAS, true, true));
+    expect(manual).toEqual(["actualidad", "actualidad", "actualidad", "actualidad"]);
   });
 
-  it("a mano, fuera de franja, también alterna 50/50", () => {
-    const manual = [0, 1, 2, 3].map((i) => elegirGenero(null, i, REGLAS, false, true));
-    expect(manual).toEqual(["actualidad", "propia", "actualidad", "propia"]);
-  });
-
-  it("es estable: la misma situación da siempre la misma decisión", () => {
-    expect(elegirGenero(F.manana!, 0, REGLAS, true, true)).toBe(
-      elegirGenero(F.manana!, 0, REGLAS, true, true),
+  it("un ajuste viejo con las efemérides en 1 no las enciende", async () => {
+    const db = new FakeD1((sql, params) =>
+      /FROM settings/.test(sql) && String(params[0]).startsWith("mesa_")
+        ? [{ value: String(params[0]) === "mesa_efemerides" ? "1" : "0.4" }]
+        : [],
     );
+    const reglas = await reglasDeLaMesa(db.asD1());
+    expect(reglas.efemerides).toBe(false);
+    expect(reglas.ratioPropias).toBe(0);
   });
 
-  it("el encargo trae el tema resuelto, no solo el género", async () => {
+  it("el encargo sin noticia es actualidad y no pide nada a Wikipedia", async () => {
     const db = new FakeD1(() => []);
-    const sinWiki: typeof fetch = async () => new Response("{}", { status: 500 });
+    let pidioWikipedia = false;
+    const espia: typeof fetch = async () => {
+      pidioWikipedia = true;
+      return new Response("{}", { status: 500 });
+    };
     const encargo = await encargoDelTurno(db.asD1(), {
       notasHoy: 0,
       hayActualidad: false,
       titularesRecientes: [],
-      seccionesConCupo: ["ventas"],
-      fetchImpl: sinWiki,
-    });
-    expect(encargo.genero).toBe("propia");
-    if (encargo.genero === "propia") {
-      expect(encargo.idea.sectionId).toBe("ventas");
-      expect(encargo.idea.titular).toMatch(/curiosidades|errores|cómo|qué/i);
-    }
-  });
-
-  it("sin secciones con cupo, cae en actualidad y no explota", async () => {
-    const db = new FakeD1(() => []);
-    const encargo = await encargoDelTurno(db.asD1(), {
-      notasHoy: 0,
-      hayActualidad: true,
-      titularesRecientes: [],
-      seccionesConCupo: [],
+      seccionesConCupo: ["ventas", "artistas"],
+      franja: VIEJA_CURIOSIDADES,
+      fetchImpl: espia,
     });
     expect(encargo.genero).toBe("actualidad");
+    expect(pidioWikipedia).toBe(false);
   });
 });
 
@@ -272,17 +264,9 @@ describe("rankings: la franja de la noche pregunta y responde", () => {
     expect(mediodia?.genero).not.toBe("ranking");
   });
 
-  it("queda UNA franja propia, la de curiosidades del mediodía", async () => {
+  it("CANDADO 71: no queda ninguna franja propia", async () => {
     const { FRANJAS } = await import("@/lib/robot/franjas");
-    const propias = FRANJAS.filter((f) => f.genero === "propia");
-    // El turno de rankings de las nueve pasó a delivery el 25 nov 2026: los rankings genéricos son
-    // justo lo que Google rastrea y no guarda (informe de indexación del 7 nov), así que ese hueco
-    // rinde más con noticia del sector. Los rankings siguen existiendo como idea propia cuando un
-    // turno de actualidad se queda sin material.
-    expect(propias).toHaveLength(1);
-    expect(propias[0]?.key).toBe("mediodia");
-    expect(propias[0]?.subgenero).toBe("curiosidades");
-    expect(FRANJAS.find((f) => f.key === "noche-3")?.seccion).toBe("delivery");
+    expect(FRANJAS.filter((f) => f.genero === "propia")).toHaveLength(0);
   });
 
   it("el encargo de un ranking pide el dato en la primera frase, sin rodeos", async () => {

@@ -2,6 +2,7 @@ import { z } from "zod";
 import { sessionFromRequest } from "@/lib/panel/auth";
 import { panelEnv } from "@/lib/panel/server";
 import { setSetting } from "@/lib/robot/budget";
+import { CUPO_DIARIO_MAXIMO } from "@/lib/robot/franjas";
 import { rescatarImagenes } from "@/lib/robot/rescate-imagenes";
 import { runScheduled } from "@/lib/robot/scheduled";
 
@@ -9,12 +10,11 @@ export const dynamic = "force-dynamic";
 
 const schema = z.object({
   op: z.enum(["pause", "resume", "auto_on", "auto_off", "run", "settings", "fotos"]),
-  notesPerDay: z.coerce.number().int().min(1).max(24).optional(),
-  evergreenPercent: z.coerce.number().int().min(0).max(100).optional(),
+  // Candado 72: el cupo nunca pasa de los turnos de la escaleta.
+  notesPerDay: z.coerce.number().int().min(1).max(CUPO_DIARIO_MAXIMO).optional(),
   dailyBudget: z.coerce.number().min(0).max(10).optional(),
   sponsorGapHours: z.coerce.number().int().min(0).max(720).optional(),
   sponsorMaxPerWeek: z.coerce.number().int().min(1).max(14).optional(),
-  mesaRatioPropias: z.coerce.number().int().min(0).max(100).optional(),
 });
 
 function back(path: string, status = 303) {
@@ -29,7 +29,6 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse({
     op: String(form.get("op") ?? ""),
     notesPerDay: form.get("notesPerDay") ?? undefined,
-    evergreenPercent: form.get("evergreenPercent") ?? undefined,
     dailyBudget: form.get("dailyBudget") ?? undefined,
     sponsorGapHours: form.get("sponsorGapHours") ?? undefined,
     sponsorMaxPerWeek: form.get("sponsorMaxPerWeek") ?? undefined,
@@ -41,9 +40,6 @@ export async function POST(request: Request) {
       const d = parsed.data;
       if (d.notesPerDay !== undefined)
         await setSetting(env.DB, "notes_per_day", String(d.notesPerDay));
-      if (d.evergreenPercent !== undefined) {
-        await setSetting(env.DB, "evergreen_ratio", String(d.evergreenPercent / 100));
-      }
       if (d.dailyBudget !== undefined) {
         await setSetting(env.DB, "daily_budget_usd", d.dailyBudget.toFixed(2));
       }
@@ -52,9 +48,6 @@ export async function POST(request: Request) {
       }
       if (d.sponsorMaxPerWeek !== undefined) {
         await setSetting(env.DB, "sponsor_max_per_week", String(d.sponsorMaxPerWeek));
-      }
-      if (d.mesaRatioPropias !== undefined) {
-        await setSetting(env.DB, "mesa_ratio_propias", String(d.mesaRatioPropias / 100));
       }
       return back("/panel?ok=settingsSaved");
     }

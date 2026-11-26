@@ -1,3 +1,4 @@
+import { CUPO_DIARIO_MAXIMO } from "@/lib/robot/franjas";
 import Link from "next/link";
 import { PanelShell } from "@/components/panel/PanelShell";
 import { flashFrom, panelDict, requirePanelSession } from "@/lib/panel/server";
@@ -262,35 +263,8 @@ export default async function PanelHome({ searchParams }: Props) {
                 name="notesPerDay"
                 type="number"
                 min={1}
-                max={24}
+                max={CUPO_DIARIO_MAXIMO}
                 defaultValue={status.quota.notesPerDay}
-                className="mt-1 w-full rounded-xl border border-line px-3 py-2 font-normal"
-              />
-            </label>
-            <label className="block font-semibold">
-              {p.dashboard.ownPieces}
-              <input
-                name="mesaRatioPropias"
-                type="number"
-                min={0}
-                max={100}
-                step={10}
-                defaultValue={Math.round(status.mesa.ratioPropias * 100)}
-                className="mt-1 w-full rounded-xl border border-line px-3 py-2 font-normal"
-              />
-              <span className="mt-1 block text-xs font-normal text-muted">
-                {p.dashboard.ownPiecesHint}
-              </span>
-            </label>
-            <label className="block font-semibold">
-              {p.dashboard.evergreenShare}
-              <input
-                name="evergreenPercent"
-                type="number"
-                min={0}
-                max={100}
-                step={10}
-                defaultValue={Math.round(status.evergreenRatio * 100)}
                 className="mt-1 w-full rounded-xl border border-line px-3 py-2 font-normal"
               />
             </label>

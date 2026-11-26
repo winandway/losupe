@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  CUPO_DIARIO_MAXIMO,
   diaLocal,
   franjaActiva,
   FRANJAS,
@@ -69,23 +70,18 @@ describe("franjas horarias del diario", () => {
   });
 
   it("cada turno sigue pendiente hasta que empieza el siguiente", () => {
+    // La escaleta de cuatro turnos del candado 72 (26 nov 2026).
     const casos: [string, string | null][] = [
       ["2026-08-24T11:00:00Z", "manana"], // 7:00 AM en punto · tecnología
-      ["2026-08-24T11:59:00Z", "manana"], // 7:59 AM, último minuto
-      // 8:00 AM: el turno de las 7 sigue pendiente hasta que abre el de las 9. Sin esto, un turno
+      // 9:00 AM: el turno de las 7 sigue pendiente hasta que abre el de las 10. Sin esto, un turno
       // sin visitas a su hora en punto se perdía (1 oct 2026).
-      ["2026-08-24T12:00:00Z", "manana"],
-      ["2026-08-24T13:00:00Z", "manana-2"], // 9:00 AM · artistas
-      ["2026-08-24T14:30:00Z", "manana-3"], // 10:30 AM · libre
-      ["2026-08-24T16:00:00Z", "mediodia"], // 12:00 PM · curiosidades
-      ["2026-08-24T17:30:00Z", "mediodia"], // 1:30 PM: el turno del mediodía sigue abierto
-      ["2026-08-24T18:00:00Z", "tarde"], // 2:00 PM · tecnología
-      ["2026-08-24T20:00:00Z", "tarde-2"], // 4:00 PM · artistas
-      ["2026-08-24T21:00:00Z", "tarde-3"], // 5:00 PM · libre
-      ["2026-08-24T23:00:00Z", "noche"], // 7:00 PM · tecnología
+      ["2026-08-24T13:00:00Z", "manana"],
+      ["2026-08-24T14:00:00Z", "manana-3"], // 10:00 AM · delivery
+      ["2026-08-24T17:30:00Z", "manana-3"], // 1:30 PM: sigue abierto
+      ["2026-08-24T19:00:00Z", "tarde-2b"], // 3:00 PM · delivery
+      ["2026-08-24T23:59:00Z", "tarde-2b"], // 7:59 PM
       ["2026-08-25T00:00:00Z", "noche-2"], // 8:00 PM · artistas
-      ["2026-08-25T01:00:00Z", "noche-3"], // 9:00 PM · rankings
-      ["2026-08-25T02:00:00Z", null], // 10:00 PM: el último turno sí se cierra a la hora
+      ["2026-08-25T01:00:00Z", null], // 9:00 PM: el último turno se cierra a la hora
       ["2026-08-25T04:00:00Z", null], // medianoche
     ];
     for (const [iso, esperado] of casos) {
@@ -93,28 +89,18 @@ describe("franjas horarias del diario", () => {
     }
   });
 
-  it("la escaleta trae TRES turnos de tecnología, TRES de artistas y TRES de delivery", () => {
-    // Es el contrato con los dos canales de video de Richard (1 oct 2026): sin tres noticias nuevas
-    // en cada una de esas secciones, no hay material que grabar. Y desde el 25 nov 2026, el mismo
-    // contrato para el segmento de delivery: «todos los días vamos a sacar nuestro segmento».
-    const deSeccion = (id: string) =>
-      FRANJAS.filter((f) => f.genero === "actualidad" && f.seccion === id);
-    expect(deSeccion("tecnologia")).toHaveLength(3);
-    expect(deSeccion("artistas")).toHaveLength(3);
-    expect(deSeccion("delivery")).toHaveLength(3);
-    // Repartidos por el día, no los tres seguidos: mañana, tarde y noche.
+  it("CANDADO 72: cuatro notas al día, la mitad de Delivery, todas de actualidad", () => {
+    // Google bajó las páginas indexadas de 236 a 63 el 26 nov 2026: el volumen juega en contra.
+    expect(FRANJAS).toHaveLength(4);
+    expect(CUPO_DIARIO_MAXIMO).toBe(4);
+    const deSeccion = (id: string) => FRANJAS.filter((f) => f.seccion === id);
+    // Delivery es lo único con información de primera mano: dos turnos, mañana y tarde.
+    expect(deSeccion("delivery")).toHaveLength(2);
     const horasDelivery = deSeccion("delivery").map((f) => f.hour);
-    expect(Math.max(...horasDelivery) - Math.min(...horasDelivery)).toBeGreaterThanOrEqual(8);
-    // Y quedan turnos libres para Economía, Ventas y Cripto, que siguen como estaban.
-    expect(FRANJAS.filter((f) => f.genero === "actualidad" && !f.seccion).length).toBeGreaterThan(
-      0,
-    );
-    // Queda UNA pieza propia, la de curiosidades del mediodía. El turno de rankings de la noche
-    // pasó a delivery el 25 nov 2026: los rankings genéricos son justo lo que Google rastrea y no
-    // guarda (informe de indexación del 7 nov), así que ese hueco rinde más con noticia del sector.
-    expect(FRANJAS.filter((f) => f.genero === "propia").map((f) => f.subgenero)).toEqual([
-      "curiosidades",
-    ]);
+    expect(Math.max(...horasDelivery) - Math.min(...horasDelivery)).toBeGreaterThanOrEqual(4);
+    // Los dos canales de video conservan un turno cada uno.
+    expect(deSeccion("tecnologia")).toHaveLength(1);
+    expect(deSeccion("artistas")).toHaveLength(1);
     // Ninguna franja puede pisar a la siguiente: si se solaparan, dos notas saldrían pegadas.
     for (let i = 1; i < FRANJAS.length; i++) {
       const previa = FRANJAS[i - 1]!;
@@ -124,12 +110,16 @@ describe("franjas horarias del diario", () => {
     for (const f of FRANJAS) expect(f.hour).toBeGreaterThanOrEqual(6);
   });
 
+  it("CANDADO 71: ninguna franja es de curiosidades, rankings ni efemérides", () => {
+    expect(FRANJAS.every((f) => f.genero === "actualidad")).toBe(true);
+    expect(FRANJAS.some((f) => f.subgenero !== undefined)).toBe(false);
+  });
+
   it("la marca del turno lleva el día local, no el UTC", () => {
-    const franja = FRANJAS.find((f) => f.key === "tarde-3")!;
-    // 23:00 UTC del 24 = 7 PM del 24 en Michigan
-    expect(marcaDeFranja(new Date("2026-08-24T23:00:00Z"), franja)).toBe("2026-08-24:tarde-3");
-    // 01:00 UTC del 25 = 9 PM del 24: el mismo día local, no el siguiente
-    expect(marcaDeFranja(new Date("2026-08-25T01:00:00Z"), franja)).toBe("2026-08-24:tarde-3");
+    const franja = FRANJAS.find((f) => f.key === "noche-2")!;
+    // 00:30 UTC del 25 = 8:30 PM del 24 en Michigan: el mismo día local, no el siguiente
+    expect(marcaDeFranja(new Date("2026-08-25T00:30:00Z"), franja)).toBe("2026-08-24:noche-2");
+    expect(marcaDeFranja(new Date("2026-08-24T23:00:00Z"), franja)).toBe("2026-08-24:noche-2");
   });
 });
 
@@ -245,13 +235,13 @@ describe("el reintento no vuelve a pagar por una nota que ya salió (28 ago 2026
 
   it("con la nota del turno YA publicada, no se reintenta aunque la corrida diga «error»", async () => {
     const { claimTick } = await import("@/lib/robot/heartbeat");
-    const d = await claimTick(base({ notasEnLaFranja: 1, marca: "2026-08-28:tarde-3" }), TARDE);
+    const d = await claimTick(base({ notasEnLaFranja: 1, marca: "2026-08-28:tarde-2b" }), TARDE);
     expect(d).toEqual({ run: false, reason: "turno_hecho" });
   });
 
   it("sin nota todavía, sí se reintenta: una corrida cortada no puede perder el turno", async () => {
     const { claimTick } = await import("@/lib/robot/heartbeat");
-    const d = await claimTick(base({ notasEnLaFranja: 0, marca: "2026-08-28:tarde-3" }), TARDE);
+    const d = await claimTick(base({ notasEnLaFranja: 0, marca: "2026-08-28:tarde-2b" }), TARDE);
     expect(d.run).toBe(true);
   });
 
@@ -264,14 +254,14 @@ describe("el reintento no vuelve a pagar por una nota que ya salió (28 ago 2026
 
   it("el inicio de la franja se calcula en hora del Este, verano e invierno", async () => {
     const { FRANJAS, inicioDeFranja } = await import("@/lib/robot/franjas");
-    const tarde = FRANJAS.find((f) => f.key === "tarde-3")!; // 17:00 ET
-    // En verano (UTC-4) las 5 PM del Este son las 21:00 UTC
-    expect(inicioDeFranja(new Date("2026-08-28T21:30:00Z"), tarde)).toBe(
-      "2026-08-28T21:00:00.000Z",
+    const tarde = FRANJAS.find((f) => f.key === "tarde-2b")!; // 15:00 ET
+    // En verano (UTC-4) las 3 PM del Este son las 19:00 UTC
+    expect(inicioDeFranja(new Date("2026-08-28T19:30:00Z"), tarde)).toBe(
+      "2026-08-28T19:00:00.000Z",
     );
-    // En invierno (UTC-5), las 22:00 UTC
-    expect(inicioDeFranja(new Date("2026-01-28T22:30:00Z"), tarde)).toBe(
-      "2026-01-28T22:00:00.000Z",
+    // En invierno (UTC-5), las 20:00 UTC
+    expect(inicioDeFranja(new Date("2026-01-28T20:30:00Z"), tarde)).toBe(
+      "2026-01-28T20:00:00.000Z",
     );
   });
 });
@@ -288,17 +278,17 @@ describe("la escaleta se adapta a relojes que llegan tarde", () => {
     // 4 de la tarde del Este, con UNA nota publicada en todo el día.
     const tarde = new Date("2026-10-01T20:30:00Z");
     const toca = franjaPendiente(tarde, 1);
-    // El segundo turno del día (9:00, artistas), que se quedó sin escribir.
-    expect(toca?.key).toBe("manana-2");
-    expect(toca?.seccion).toBe("artistas");
+    // El segundo turno del día (10:00, delivery), que se quedó sin escribir.
+    expect(toca?.key).toBe("manana-3");
+    expect(toca?.seccion).toBe("delivery");
     // Y con cero notas, el primero de todos.
     expect(franjaPendiente(tarde, 0)?.key).toBe(FRANJAS[0]!.key);
   });
 
   it("nunca se adelanta un turno que todavía no tiene hora", async () => {
     const { franjaPendiente } = await import("@/lib/robot/franjas");
-    // 8 de la mañana con una nota ya publicada: el turno de las 9 aún no toca.
-    expect(franjaPendiente(new Date("2026-10-01T12:00:00Z"), 1)).toBeNull();
+    // 9 de la mañana con una nota ya publicada: el turno de las 10 aún no toca.
+    expect(franjaPendiente(new Date("2026-10-01T13:00:00Z"), 1)).toBeNull();
   });
 
   it("y de madrugada no se publica, por muchas notas que falten", async () => {

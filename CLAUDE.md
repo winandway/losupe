@@ -48,7 +48,7 @@
 4. Desde Windoce (contenido de la casa) — hecho (7 nov 2026). Aviso en código, fuera de Google
    Noticias, una nota al día. Reglas: `docs/DESDE-WINDOCE.md`; candado 57.
 5. Suscriptores y boletín — registro, confirmación, boletín cada 4 días (Resend).
-6. Delivery y logística — segmento diario del sector (25 nov 2026). Tres notas al día, firma Pedro
+6. Delivery y logística — segmento diario del sector (25 nov 2026). Dos notas al día de las cuatro del diario (candados 72 y 74), firma Pedro
    Llerena, fuentes propias y **línea de transparencia automática** cuando una nota nombra un producto
    del grupo. Reglas: `docs/DELIVERY.md`; candado 61.
 
@@ -60,3 +60,10 @@
   su orden). Solo queda «Responsable de la publicación: Windoce LLC» en Contacto.
 - Cuando un producto nuestro lanza algo, es noticia del sector y va en su sección, como una más.
 - Lo que Google ya vio no se rompe: se redirige con 301.
+
+## Menos notas y con noticia (plan de Google, 26 nov 2026, candados 71 a 74)
+
+- Cuatro notas al día, todas de actualidad y con su fuente enlazada; dos son de Delivery. Nada de
+  efemérides, curiosidades, rankings ni guías genéricas: el relleno está apagado en código.
+- El relleno viejo lleva `noindex` y no sale en los mapas; sus enlaces siguen vivos. No se borra.
+- La cifra que manda es una: páginas indexadas en Search Console. Nueva medición el 10 dic 2026.

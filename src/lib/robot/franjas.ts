@@ -82,32 +82,31 @@ export type Franja = {
 };
 
 /**
- * LA ESCALETA DEL DÍA: diez notas, ocho de actualidad y dos piezas propias.
+ * LA ESCALETA DEL DÍA: CUATRO notas, las cuatro de actualidad (candado 72, 26 nov 2026).
  *
- * Tres turnos son de Tecnología e IA (7:00, 14:00 y 19:00) y tres de Artistas y tendencias (9:00,
- * 16:00 y 20:00): son las dos secciones de las que salen los videos, y por contrato interno tienen
- * que traer tres noticias NUEVAS cada día. Dos turnos quedan libres (10:00 y 17:00) para Economía,
- * Ventas y Cripto, que siguen funcionando igual que antes. Y las dos piezas propias se quedan donde
- * estaban: curiosidades al mediodía y rankings a las nueve de la noche.
+ * Hasta el 26 de noviembre eran once turnos y uno era de curiosidades. Ese día Search Console dijo
+ * que Google había bajado las páginas indexadas de 236 a 63 y que tenía 313 notas leídas y
+ * rechazadas: efemérides, listas de curiosidades y explicaciones genéricas. El volumen dejó de ser
+ * la palanca el día que Google dejó de indexar; ahora juega en contra (docs/REVISION-GOOGLE-2026-11-26).
  *
- * Una franja = una nota = una firma distinta.
+ * Por eso: menos notas, todas con noticia detrás y fuente nombrada, y la mitad del día para
+ * Delivery y logística, que es lo único donde tenemos información de primera mano. Uno de sus dos
+ * turnos puede ser la nota nuestra del día cuando hay material (candado 67). Tecnología y Artistas
+ * conservan un turno cada una para los dos canales de video.
+ *
+ * Las claves y sus horas son las de siempre, porque se guardan en la base (`runs.franja`).
+ * Una franja = una nota = una firma distinta. NINGUNA franja es de pieza propia: lo exige el
+ * candado 71 y lo comprueba su prueba.
  */
 export const FRANJAS: readonly Franja[] = [
   { key: "manana", hour: 7, genero: "actualidad", seccion: "tecnologia" },
-  { key: "manana-2", hour: 9, genero: "actualidad", seccion: "artistas" },
-  // El segmento de delivery (25 nov 2026): tres turnos repartidos por el día, como los de los dos
-  // canales. Salen de turnos que antes no tenían sección fija o eran piezas propias; el día sigue
-  // teniendo once notas, no se le carga más trabajo al robot.
   { key: "manana-3", hour: 10, genero: "actualidad", seccion: "delivery" },
-  { key: "mediodia", hour: 12, genero: "propia", subgenero: "curiosidades" },
-  { key: "tarde", hour: 14, genero: "actualidad", seccion: "tecnologia" },
   { key: "tarde-2b", hour: 15, genero: "actualidad", seccion: "delivery" },
-  { key: "tarde-2", hour: 16, genero: "actualidad", seccion: "artistas" },
-  { key: "tarde-3", hour: 17, genero: "actualidad" },
-  { key: "noche", hour: 19, genero: "actualidad", seccion: "tecnologia" },
   { key: "noche-2", hour: 20, genero: "actualidad", seccion: "artistas" },
-  { key: "noche-3", hour: 21, genero: "actualidad", seccion: "delivery" },
 ];
+
+/** El tope de notas del robot en un día (candado 72). El ajuste del panel nunca lo supera. */
+export const CUPO_DIARIO_MAXIMO = FRANJAS.length;
 
 /**
  * Cuánto se admite llegar tarde a una franja. El robot no tiene un reloj propio: se despierta con

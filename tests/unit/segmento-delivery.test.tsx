@@ -170,12 +170,13 @@ describe("la firma del segmento", () => {
 });
 
 describe("estrenar un turno el mismo día", () => {
-  it("el reloj acepta `?franja=` y la escaleta reconoce el turno de la noche", async () => {
+  it("el reloj acepta `?franja=` y la escaleta reconoce el turno de la tarde", async () => {
     const { FRANJAS } = await import("@/lib/robot/franjas");
     // Sin esto, una sección montada por la tarde no publica hasta el día siguiente, y un turno que
     // se pierde por una caída del proveedor se pierde entero.
-    const noche = FRANJAS.find((f) => f.key === "noche-3");
-    expect(noche?.seccion).toBe("delivery");
+    // Desde el candado 72 (26 nov 2026) delivery tiene dos turnos: 10:00 y 15:00.
+    const tarde = FRANJAS.find((f) => f.key === "tarde-2b");
+    expect(tarde?.seccion).toBe("delivery");
     const { handleScheduledRequest } = await import("@/lib/robot/scheduled");
     expect(typeof handleScheduledRequest).toBe("function");
     // El parámetro se lee de la URL, no del cuerpo: el reloj llama con GET.

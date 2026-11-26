@@ -107,16 +107,13 @@ describe("las efemérides no se comen el cupo de noticias", () => {
 });
 
 describe("la escaleta del día cubre a los dos canales", () => {
-  it("tres turnos de tecnología y tres de artistas, repartidos por el día", () => {
+  it("los dos canales conservan un turno cada uno, y en horas distintas (candado 72)", () => {
+    // Desde el 26 nov 2026 el día tiene cuatro notas, no once: Google castiga el volumen sin
+    // noticia detrás. Tecnología y Artistas siguen teniendo su nota diaria para los videos.
     const horas = (id: string) => FRANJAS.filter((f) => f.seccion === id).map((f) => f.hour);
-    expect(horas("tecnologia")).toHaveLength(3);
-    expect(horas("artistas")).toHaveLength(3);
-    // Repartidos: mañana, tarde y noche. Si salieran seguidos, el canal tendría todo el material a
-    // la misma hora y la portada se vería desequilibrada el resto del día.
-    for (const id of ["tecnologia", "artistas"]) {
-      const h = horas(id);
-      expect(Math.max(...h) - Math.min(...h)).toBeGreaterThanOrEqual(8);
-    }
+    expect(horas("tecnologia")).toHaveLength(1);
+    expect(horas("artistas")).toHaveLength(1);
+    expect(horas("tecnologia")[0]).not.toBe(horas("artistas")[0]);
   });
 });
 

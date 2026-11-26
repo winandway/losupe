@@ -804,8 +804,12 @@ test("panel: crear patrocinador, encolar ideas, ver cola y ejecutar sin llave av
   await page.goto("/panel");
   await expect(page.getByText(/encargos en cola/)).toBeVisible();
   // Ajustes del robot: se guardan y se reflejan
-  await page.getByLabel("Notas por día (robot + encargos)").fill("6");
-  await page.getByLabel("Porcentaje de notas duraderas (guías) frente a actualidad").fill("50");
+  // Candado 72: el cupo no pasa de cuatro, y el panel ya no ofrece encender el relleno (candado 71).
+  await expect(page.getByLabel("Notas por día (robot + encargos)")).toHaveAttribute("max", "4");
+  await page.getByLabel("Notas por día (robot + encargos)").fill("3");
+  await expect(
+    page.getByLabel("Porcentaje de notas duraderas (guías) frente a actualidad"),
+  ).toHaveCount(0);
   // El ritmo de los patrocinadores se ajusta desde aquí y se queda guardado
   await page.getByLabel("Horas mínimas entre notas de la misma empresa").fill("72");
   await page.getByLabel("Máximo por semana y empresa").fill("2");
@@ -813,9 +817,7 @@ test("panel: crear patrocinador, encolar ideas, ver cola y ejecutar sin llave av
   await expect(page.getByText("Ajustes guardados.")).toBeVisible();
   await expect(page.getByLabel("Horas mínimas entre notas de la misma empresa")).toHaveValue("72");
   await expect(page.getByLabel("Máximo por semana y empresa")).toHaveValue("2");
-  await expect(
-    page.getByLabel("Porcentaje de notas duraderas (guías) frente a actualidad"),
-  ).toHaveValue("50");
+  await expect(page.getByLabel("Notas por día (robot + encargos)")).toHaveValue("3");
   // Ejecutar ahora sin GEMINI_API_KEY: la corrida queda en error y lo dice
   await page.getByRole("button", { name: "Ejecutar ahora (1 nota)" }).click();
   await expect(page.getByRole("alert")).toContainText(/GEMINI_API_KEY/);

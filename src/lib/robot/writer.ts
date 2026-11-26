@@ -545,6 +545,8 @@ export function finalizeDraft(
   // Acepta las fuentes en crudo (cómodo para las pruebas y para `manual.ts`) o el índice ya
   // calculado, que es lo que usa el redactor para no rehacerlo en cada reintento.
   fuentesOIndice: readonly string[] | ReadonlySet<string>,
+  /** Candado 72: una noticia sin su fuente nombrada y enlazada no se publica. */
+  opciones: { exigirFuente?: boolean } = {},
 ): Draft {
   const fuentes =
     fuentesOIndice instanceof Set ? fuentesOIndice : sourceShingles(fuentesOIndice as string[]);
@@ -589,7 +591,37 @@ export function finalizeDraft(
   if (sonido) throw new DraftRejectedError(`suena a IA — ${sonido}`);
   const vacia = pareceNotaSobreNada(`${es.title}. ${es.excerpt} ${stripHtml(es.content_html)}`);
   if (vacia) throw new DraftRejectedError(`nota sobre nada — ${vacia}`);
+  if (opciones.exigirFuente) {
+    for (const [lang, part] of [
+      ["es", es],
+      ["en", en],
+    ] as const) {
+      if (!tieneFuenteNombrada(part.content_html))
+        throw new DraftRejectedError(`sin fuente nombrada en ${lang}`);
+    }
+  }
   return { ...d, es, en };
+}
+
+/**
+ * ¿Cita la nota al menos una fuente de fuera, con su enlace? (candado 72). Un enlace a nuestras
+ * propias notas no cuenta: eso es enlazado interno, no una fuente. Google pide saber de dónde sale
+ * cada dato, y una noticia que no lo dice es exactamente el contenido que deja fuera del índice.
+ */
+export function tieneFuenteNombrada(html: string): boolean {
+  for (const m of html.matchAll(/<a\s[^>]*href\s*=\s*["']([^"']+)["']/gi)) {
+    let host = "";
+    try {
+      host = new URL(m[1] ?? "").hostname.toLowerCase();
+    } catch {
+      continue;
+    }
+    if (!host) continue;
+    if (host === "losupe.com" || host.endsWith(".losupe.com") || host.endsWith("sitios.dev"))
+      continue;
+    return true;
+  }
+  return false;
 }
 
 export type WriteOptions = {
@@ -598,6 +630,8 @@ export type WriteOptions = {
   fetchImpl?: typeof fetch;
   /** Cuántas veces se vuelve a pedir la nota si sale copiada o mal formada (por defecto, dos). */
   retries?: number;
+  /** Candado 72: las noticias tienen que nombrar y enlazar su fuente. */
+  exigirFuente?: boolean;
 };
 
 /**
@@ -631,23 +665,26 @@ export async function writeDraft(
     const copiaba = motivo.includes("copia fuentes");
     const sonabaAMaquina = motivo.includes("suena a IA");
     const sobreNada = motivo.includes("nota sobre nada");
+    const sinFuente = motivo.includes("sin fuente nombrada");
     const aviso =
       attempt === 1
         ? ""
-        : sobreNada
-          ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque era una nota sobre nada (${motivo.replace("nota sobre nada — ", "")}). Busca en el MATERIAL lo que sí se sabe —cifras, nombres, fechas, decisiones— y escribe la nota sobre ESO. Si de verdad el material no trae ningún dato concreto, no inventes contexto ni supongas lo que dirá: escribe la nota desde el ángulo que sí tenga sustancia (qué hace esa empresa, qué está en juego en el sector, qué datos ya se conocen de antes) y no uses ni una vez «probablemente» ni «aunque no se han detallado».`
-          : sonabaAMaquina
-            ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}
+        : sinFuente
+          ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque no nombraba su fuente (${motivo}). En los DOS idiomas, nombra el medio o la institución de donde sale el dato, en la misma frase y con su enlace <a href="URL">, usando las URL del MATERIAL: «según Reuters», «como informó la compañía». Una nota sin fuente no se publica.`
+          : sobreNada
+            ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque era una nota sobre nada (${motivo.replace("nota sobre nada — ", "")}). Busca en el MATERIAL lo que sí se sabe —cifras, nombres, fechas, decisiones— y escribe la nota sobre ESO. Si de verdad el material no trae ningún dato concreto, no inventes contexto ni supongas lo que dirá: escribe la nota desde el ángulo que sí tenga sustancia (qué hace esa empresa, qué está en juego en el sector, qué datos ya se conocen de antes) y no uses ni una vez «probablemente» ni «aunque no se han detallado».`
+            : sonabaAMaquina
+              ? `\n\nAVISO IMPORTANTE: ${motivo.replace("suena a IA — ", "")}
 Esto no se arregla cambiando esas palabras por sinónimos: el problema es cómo está escrito el texto entero. Escríbelo OTRA VEZ desde cero, como se lo contarías en voz alta a un amigo que no es del sector: frases cortas, sujeto y verbo al principio, cero frases de relleno, cero adjetivos de folleto. Si una frase no se puede decir en voz alta sin sonar a comunicado de prensa, no va.${
-                attempt > 2
-                  ? "\nEs el ÚLTIMO intento: si vuelve a sonar a máquina, la nota se pierde."
-                  : ""
-              }`
-            : copiaba
-              ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
-              : motivo.includes("muy corto")
-                ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque el cuerpo era DEMASIADO CORTO (${motivo}). El mínimo son 450 palabras por idioma y lo normal son entre 700 y 1.100. Desarrolla cada punto: el dato, de dónde sale, un ejemplo y por qué le importa a quien lee. No es un resumen, es una nota de diario.`
-                : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
+                  attempt > 2
+                    ? "\nEs el ÚLTIMO intento: si vuelve a sonar a máquina, la nota se pierde."
+                    : ""
+                }`
+              : copiaba
+                ? `\n\nAVISO IMPORTANTE: el intento anterior fue rechazado porque repetía frases de las fuentes (${motivo}). Vuelve a escribirla DESDE CERO con tus propias palabras y tu propia estructura: cambia el orden de las ideas, parte y une las frases, y no copies ni una expresión de más de siete palabras seguidas. Los nombres propios y las cifras sí se mantienen.`
+                : motivo.includes("muy corto")
+                  ? `\n\nAVISO IMPORTANTE: el intento anterior se rechazó porque el cuerpo era DEMASIADO CORTO (${motivo}). El mínimo son 450 palabras por idioma y lo normal son entre 700 y 1.100. Desarrolla cada punto: el dato, de dónde sale, un ejemplo y por qué le importa a quien lee. No es un resumen, es una nota de diario.`
+                  : `\n\nAVISO IMPORTANTE: el intento anterior se rechazó por formato (${motivo}). Devuelve EXACTAMENTE el JSON pedido, con todos los campos y respetando los largos: título entre 20 y 170 caracteres, extracto entre 60 y 420, cuerpo de 700 a 1.100 palabras, meta_title entre 15 y 95, meta_description entre 50 y 180, y entre 3 y 8 etiquetas de 2 a 40 caracteres cada una. No cortes el JSON.`;
     const usage = await generateJson<unknown>({
       apiKey: opts.apiKey,
       model: opts.model ?? WRITER_MODEL,
@@ -663,7 +700,11 @@ Esto no se arregla cambiando esas palabras por sinónimos: el problema es cómo 
       fetchImpl: opts.fetchImpl,
     });
     try {
-      return { draft: finalizeDraft(usage.data, fuentes), usage, attempts: attempt };
+      return {
+        draft: finalizeDraft(usage.data, fuentes, { exigirFuente: opts.exigirFuente }),
+        usage,
+        attempts: attempt,
+      };
     } catch (error) {
       last = error;
       if (attempt === maxAttempts) throw error;

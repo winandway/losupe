@@ -29,11 +29,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                                                                  Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                                                                  En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                                                                  Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                                                                  hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🔴 Segmento de delivery (Richard, 25 nov 2026)
 
@@ -80,6 +80,9 @@
       Si se confirma, se refuerza la instrucción del inglés — nunca se baja el filtro.
 
 ## 🤖 Fila de la IA
+
+- [x] 🤖 **Plan de Google del 26 nov 2026** (candados 71 a 74): relleno apagado, cuatro notas al día con fuente, archivo de relleno fuera de los mapas con `noindex`, Delivery con la mitad del día.
+- [ ] 🤖 **10 dic 2026: volver a medir en Search Console** con el método de `docs/REVISION-GOOGLE-2026-11-26.md` (tarea programada «losupe-medicion-google-10-dic»). Cifra que decide: páginas indexadas (63 el 26 nov).
 
 - [x] 🤖 Indexación: el selector de idioma y los listados en inglés fabricaban redirecciones y copias con noindex (7 nov 2026, candado 58). Informe: [docs/INDEXACION-2026-11-07.md](docs/INDEXACION-2026-11-07.md).
 - [x] 🤖 El diario publicaba dos notas al día: el latido de las visitas quemaba los intentos del turno

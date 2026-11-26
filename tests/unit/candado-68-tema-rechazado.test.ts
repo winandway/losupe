@@ -123,45 +123,96 @@ async function base() {
 }
 
 describe("1) el tema que el modelo rechaza se aparta y la corrida sigue con otro", () => {
-  it("rechaza a la primera, escribe la segunda EN LA MISMA corrida y no la da por fallida", async () => {
+  // Desde el candado 71 (26 nov 2026) ya no hay efemérides: el tema que el modelo rechaza es una
+  // NOTICIA de la cola. La regla es la misma: se aparta para siempre y la corrida sigue con otra.
+  const RECHAZADA = "OpenAI presenta un modelo de inteligencia artificial polémico";
+  const ACEPTADA = "Google lanza un buscador nuevo con inteligencia artificial";
+
+  /** El modelo se niega a escribir la noticia `RECHAZADA`; la otra la escribe con su fuente. */
+  function redaccion() {
+    const escritas: string[] = [];
+    const conFuente = {
+      ...draft,
+      kind: "news",
+      es: {
+        ...draft.es,
+        content_html: `${draft.es.content_html}<p>Según <a href="https://medio.example/nota">Medio Ejemplo</a>, el dato es oficial.</p>`,
+      },
+      en: {
+        ...draft.en,
+        content_html: `${draft.en.content_html}<p>According to <a href="https://medio.example/nota">Medio Ejemplo</a>, the figure is official.</p>`,
+      },
+    };
+    const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) => {
+      const url = String(input instanceof Request ? input.url : input);
+      if (url.includes("generativelanguage.googleapis.com")) {
+        const cuerpo = String(init?.body ?? "");
+        if (cuerpo.includes("Eres la redacción de losupe")) {
+          escritas.push(cuerpo.includes(RECHAZADA) ? "rechazada" : "aceptada");
+          if (cuerpo.includes(RECHAZADA))
+            return Response.json({ promptFeedback: { blockReason: "PROHIBITED_CONTENT" } });
+        }
+        return Response.json({
+          candidates: [{ content: { parts: [{ text: JSON.stringify(conFuente) }] } }],
+          usageMetadata: { promptTokenCount: 6000, candidatesTokenCount: 4000 },
+        });
+      }
+      if (url.startsWith("https://medio.example/")) {
+        return new Response(
+          `<html><head><title>Nota</title></head><body><main><p>${"Texto de la fuente con datos, cifras y fechas de la noticia del día. ".repeat(30)}</p></main></body></html>`,
+          { headers: { "content-type": "text/html" } },
+        );
+      }
+      return new Response("not found", { status: 404 });
+    }) as typeof fetch;
+    return { fetchImpl, escritas };
+  }
+
+  async function conDosNoticias() {
     const { db, d1 } = await base();
-    const { fetchImpl, llamadas } = mundo("Persona Rechazada", [
-      persona("Persona Rechazada", 1951, "cantante italiana"),
-      persona("Persona Aceptada", 1976, "cantante mexicana"),
-    ]);
+    db.raw.exec(`DELETE FROM candidates`);
+    const meter = db.raw.prepare(
+      `INSERT INTO candidates (id, section_id, url, title, summary, published_at, score)
+       VALUES (?1, 'tecnologia', ?2, ?3, ?3, ?4, ?5)`,
+    );
+    meter.run("c-mala", "https://medio.example/mala", RECHAZADA, AHORA.toISOString(), 9);
+    meter.run("c-buena", "https://medio.example/buena", ACEPTADA, AHORA.toISOString(), 5);
+    return { db, d1 };
+  }
+
+  it("rechaza a la primera, escribe la segunda EN LA MISMA corrida y no la da por fallida", async () => {
+    const { db, d1 } = await conDosNoticias();
+    const { fetchImpl, escritas } = redaccion();
     const r = await runPipeline(
       { DB: d1, GEMINI_API_KEY: "k" },
-      { trigger: "cron", base: "https://losupe.com", fetchImpl, now: AHORA, franja: "mediodia" },
+      { trigger: "cron", base: "https://losupe.com", fetchImpl, now: AHORA, franja: "manana" },
     );
     expect(r.status).toBe("done");
     expect(r.notes.filter((n) => n.ok)).toHaveLength(1);
     expect(r.notes.find((n) => !n.ok)?.apartado).toBe(true);
-    // El rechazado quedó en la lista que no olvida.
+    // La rechazada quedó fuera de la cola para siempre, con su motivo.
     const fila = db.raw
-      .prepare(`SELECT value FROM settings WHERE key = 'temas_rechazados_por_contenido'`)
-      .get() as { value: string } | undefined;
-    expect(JSON.parse(fila?.value ?? "[]")).toEqual([
-      "Persona Rechazada: 75 años de su nacimiento",
-    ]);
-    expect(llamadas.length).toBeGreaterThanOrEqual(2);
+      .prepare(`SELECT status, error FROM candidates WHERE id = 'c-mala'`)
+      .get() as {
+      status: string;
+      error: string;
+    };
+    expect(fila.status).toBe("skipped");
+    expect(fila.error).toMatch(/se negó/);
+    expect(escritas).toEqual(["rechazada", "aceptada"]);
   });
 
   it("y la corrida siguiente ya ni lo intenta: no se vuelve a pagar por un no", async () => {
-    const { db, d1 } = await base();
-    db.raw.exec(
-      `INSERT OR REPLACE INTO settings (key, value) VALUES ('temas_rechazados_por_contenido', '["Persona Rechazada: 75 años de su nacimiento"]')`,
-    );
-    const { fetchImpl, llamadas } = mundo("Persona Rechazada", [
-      persona("Persona Rechazada", 1951, "cantante italiana"),
-      persona("Persona Aceptada", 1976, "cantante mexicana"),
-    ]);
+    const { db, d1 } = await conDosNoticias();
+    db.raw.exec(`UPDATE candidates SET status = 'skipped' WHERE id = 'c-mala'`);
+    const { fetchImpl, escritas } = redaccion();
     const r = await runPipeline(
       { DB: d1, GEMINI_API_KEY: "k" },
-      { trigger: "cron", base: "https://losupe.com", fetchImpl, now: AHORA, franja: "mediodia" },
+      { trigger: "cron", base: "https://losupe.com", fetchImpl, now: AHORA, franja: "manana" },
     );
     expect(r.status).toBe("done");
     expect(r.notes.every((n) => n.ok)).toBe(true);
-    expect(llamadas).toHaveLength(1);
+    expect(escritas).toEqual(["aceptada"]);
   });
 
   it("el rechazo por contenido tiene su propia clase (los demás errores siguen igual)", async () => {

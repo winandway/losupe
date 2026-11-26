@@ -89,7 +89,11 @@ repartidores, de pedidos ni de restaurantes.
 - El sector abierto a veintiséis empresas y tres fuentes nuevas.
 - Reglas: [`SEO-IMPARCIALIDAD.md`](SEO-IMPARCIALIDAD.md) y [`DELIVERY.md`](DELIVERY.md).
 
-## 4. LO ÚNICO QUE QUEDA PENDIENTE: el plan de Google del 26 de noviembre
+## 4. El plan de Google del 26 de noviembre — HECHO el 26 nov 2026 (candados 71 a 74)
+
+Hecho entero: relleno apagado en código, cuatro notas al día todas de actualidad con fuente enlazada (dos de Delivery), el relleno viejo fuera de los mapas y con `noindex` sin borrar nada, y la nueva medición programada para el 10 de diciembre. Ver `docs/candados.md`, candados 71 a 74. Lo que sigue vivo es solo esa medición.
+
+El plan original:
 
 Medido ese día en Search Console (informe completo en `docs/REVISION-GOOGLE-2026-11-26.md`): las
 páginas indexadas cayeron de 236 el 22 de octubre a **63**, las «rastreadas, actualmente sin indexar»

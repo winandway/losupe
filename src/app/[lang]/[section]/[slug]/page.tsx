@@ -65,7 +65,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     // Sin traducción todavía: la página en el otro idioma muestra el español y no se indexa aparte.
     // `undefined` aquí BORRABA el robots heredado: las notas salían sin ninguna etiqueta y sin el
     // `max-image-preview: large` que Discover necesita para la foto grande (auditoría, 17 sep 2026).
-    robots: article.fallback ? { index: false, follow: true } : ROBOTS_INDEXABLE,
+    // Candado 73: el relleno sigue respondiendo en su enlace, pero Google no lo indexa.
+    robots: article.fallback || article.noindex ? { index: false, follow: true } : ROBOTS_INDEXABLE,
     openGraph: {
       type: "article",
       title: article.title,

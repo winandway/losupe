@@ -220,9 +220,9 @@ describe("piloto automático por franjas", () => {
           bind: (...params: unknown[]) => ({
             first: async () => {
               calls.push({ sql, params });
-              // Tres notas publicadas hoy: con la escaleta nueva, el turno pendiente a las 12:30
-              // del Este es el del mediodía (el cuarto del día).
-              if (sql.includes("published_at < ?2")) return { n: 3 };
+              // Una nota publicada hoy: con la escaleta de cuatro turnos (candado 72), el turno
+              // pendiente a las 12:30 del Este es el de las 10:00 (delivery, el segundo del día).
+              if (sql.includes("published_at < ?2")) return { n: 1 };
               // Y ninguna acabada de salir, para que el turno se pueda reclamar.
               if (sql.includes("COUNT(*) AS n FROM articles")) return { n: 0 };
               return { value: "" };
@@ -252,10 +252,10 @@ describe("piloto automático por franjas", () => {
   it("corre en su franja y deja apuntado el turno del día", async () => {
     const { d1, calls } = db("0", 1);
     const r = await claimTick(d1, MEDIODIA);
-    expect(r).toEqual({ run: true, franja: "mediodia", marca: "2026-08-24:mediodia" });
+    expect(r).toEqual({ run: true, franja: "manana-3", marca: "2026-08-24:manana-3" });
     const update = calls.find((c) => c.sql.startsWith("UPDATE settings"));
     expect(update?.params[0]).toBe(TICK_KEY);
-    expect(update?.params[1]).toBe("2026-08-24:mediodia");
+    expect(update?.params[1]).toBe("2026-08-24:manana-3");
   });
 
   it("solo una visita gana el turno: la segunda encuentra la marca puesta", async () => {
@@ -375,7 +375,7 @@ describe("una corrida cortada no se lleva la nota del turno", () => {
           bind: (...params: unknown[]) => ({
             first: async () => {
               calls.push({ sql, params });
-              if (sql.includes("published_at < ?2")) return { n: 3 };
+              if (sql.includes("published_at < ?2")) return { n: 1 };
               if (sql.includes("COUNT(*) AS n FROM articles")) return { n: 0 };
               return { value: marca };
             },
@@ -396,35 +396,35 @@ describe("una corrida cortada no se lleva la nota del turno", () => {
   }
 
   it("si la corrida del turno se cortó, se vuelve a intentar en la misma franja", async () => {
-    const r = await claimTick(db("2026-08-24:mediodia", "error").d1, MEDIODIA);
-    expect(r).toEqual({ run: true, franja: "mediodia", marca: "2026-08-24:mediodia#2" });
+    const r = await claimTick(db("2026-08-24:manana-3", "error").d1, MEDIODIA);
+    expect(r).toEqual({ run: true, franja: "manana-3", marca: "2026-08-24:manana-3#2" });
   });
 
   it("si la corrida del turno salió bien, no se repite", async () => {
-    expect(await claimTick(db("2026-08-24:mediodia", "done").d1, MEDIODIA)).toEqual({
+    expect(await claimTick(db("2026-08-24:manana-3", "done").d1, MEDIODIA)).toEqual({
       run: false,
       reason: "turno_hecho",
     });
   });
 
   it("no se reintenta sin fin: llegado el tope, se acabó la franja", async () => {
-    expect(await claimTick(db("2026-08-24:mediodia#2", "error").d1, MEDIODIA)).toMatchObject({
+    expect(await claimTick(db("2026-08-24:manana-3#2", "error").d1, MEDIODIA)).toMatchObject({
       run: true,
-      marca: "2026-08-24:mediodia#3",
+      marca: "2026-08-24:manana-3#3",
     });
-    expect(await claimTick(db("2026-08-24:mediodia#4", "error").d1, MEDIODIA)).toMatchObject({
+    expect(await claimTick(db("2026-08-24:manana-3#4", "error").d1, MEDIODIA)).toMatchObject({
       run: true,
-      marca: "2026-08-24:mediodia#5",
+      marca: "2026-08-24:manana-3#5",
     });
     expect(
-      await claimTick(db(`2026-08-24:mediodia#${MAX_INTENTOS_POR_FRANJA}`, "error").d1, MEDIODIA),
+      await claimTick(db(`2026-08-24:manana-3#${MAX_INTENTOS_POR_FRANJA}`, "error").d1, MEDIODIA),
     ).toEqual({ run: false, reason: "turno_hecho" });
   });
 
   it("un turno de OTRA franja no cuenta como intento de esta", async () => {
     expect(await claimTick(db("2026-08-24:manana#3", "error").d1, MEDIODIA)).toMatchObject({
       run: true,
-      marca: "2026-08-24:mediodia",
+      marca: "2026-08-24:manana-3",
     });
   });
 });

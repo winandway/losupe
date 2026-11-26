@@ -323,7 +323,7 @@ INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES
   ('artistas', 5, 3);
 -- Delivery y logística: el segmento diario del sector (25 nov 2026, candado 61).
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('delivery', 6, 3);
-UPDATE sections SET notes_per_day = 3 WHERE id = 'delivery' AND notes_per_day < 3;
+-- (El cupo de delivery lo fija el candado 72, al final de este archivo.)
 -- Desde Windoce: contenido de la casa. No es noticia y el robot de noticias no la escribe (candado 57).
 INSERT OR IGNORE INTO sections (id, sort_order, notes_per_day) VALUES ('windoce', 7, 0);
 -- «Desde Windoce» RETIRADA el 26 nov 2026 (candado 66): la sección se apaga y sus notas se archivan,
@@ -439,7 +439,7 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('notes_per_day', '4'),
   ('languages', 'es,en'),
   ('timezone', 'America/New_York'),
-  ('evergreen_ratio', '0.5'),
+  ('evergreen_ratio', '0'),
   ('robot_auto_publish', '0'),
   ('robot_last_kind', 'universal'),
   ('robot_notes_per_run', '1'),
@@ -447,8 +447,8 @@ INSERT OR IGNORE INTO settings (key, value) VALUES
   ('sponsor_max_per_week', '2'),
   -- La mesa de redaccion: cuantas de cada diez notas propias son piezas de curiosidades y listas,
   -- y si se aprovechan las efemerides del dia (los 10 años sin Juan Gabriel, etc).
-  ('mesa_ratio_propias', '0.4'),
-  ('mesa_efemerides', '1'),
+  ('mesa_ratio_propias', '0'),
+  ('mesa_efemerides', '0'),
   -- El boletin de resumen: uno cada cuatro dias con lo mejor, en vez de un correo por nota.
   ('boletin_activo', '1'),
   ('boletin_dias', '4');
@@ -514,11 +514,11 @@ UPDATE sources SET url = 'https://blog.google/innovation-and-ai/technology/ai/rs
 
 -- El cupo diario de las dos secciones que alimentan los canales de video: tres noticias nuevas cada
 -- una. Las efemérides y las piezas atemporales NO gastan este cupo (solo cuentan las de actualidad).
-UPDATE sections SET notes_per_day = 3 WHERE id IN ('tecnologia', 'artistas');
+-- (Ese cupo de tres lo bajo el candado 72, al final de este archivo.)
 
 -- Y el tope del día entero: diez notas (seis de los dos canales, dos libres y las dos piezas
 -- propias). Estaba en cuatro, que es lo que había cuando la escaleta tenía cuatro turnos.
-UPDATE settings SET value = '10' WHERE key = 'notes_per_day' AND CAST(value AS INTEGER) < 10;
+-- (El tope del dia lo fija el candado 72, al final de este archivo.)
 
 -- Primer patrocinador real: YaDominios (la plataforma donde vive losupe). Sirve de ejemplo vivo
 -- del módulo de encargos. Se puede editar o cancelar desde el panel sin tocar este archivo.
@@ -600,8 +600,7 @@ UPDATE authors SET expertise_es = 'Criptomonedas, blockchain, emprendimiento y p
 -- La escaleta pide CUATRO notas al dia (2 de actualidad + 2 de curiosidades). El ajuste ya existia
 -- con el valor viejo y el INSERT OR IGNORE de arriba no lo pisa, asi que se sube aqui. Solo se toca
 -- si sigue en el valor anterior: si Richard lo cambia a mano en el panel, se respeta.
-UPDATE settings SET value = '4', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
- WHERE key = 'notes_per_day' AND value IN ('3', '6');
+-- (Superado por el candado 72.)
 
 -- Indice para encontrar deprisa la lectura de una persona en una pagina y un dia. NO es unico a
 -- proposito: crear un indice unico sobre datos que ya existen falla si hay repetidos, y con el se
@@ -659,8 +658,7 @@ WHERE id = 'pedro-llerena';
 -- el cupo seguía en diez: el turno de las nueve de la noche se quedaba fuera todos los días. Once
 -- notas cuestan unos dieciocho centavos de un tope de un dólar. Solo sube si está por debajo: si
 -- Richard lo baja a mano en el panel, se respeta.
-UPDATE settings SET value = '11', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now')
- WHERE key = 'notes_per_day' AND CAST(value AS INTEGER) < 11;
+-- (Superado por el candado 72: ahora son cuatro.)
 
 -- Candado 66 (26 nov 2026): la nota del casillero llevaba un recuadro que anunciaba de quién es el
 -- medio. Se quita del texto publicado, sin tocar nada más. Idempotente: si ya no está, no escribe.
@@ -676,3 +674,46 @@ UPDATE sources SET name = 'Google News: paqueteria y mensajeria en America Latin
 -- La nota de Molson Coors (combustible y fletes) es de economia, no de reparto. Se cambia de seccion
 -- y su direccion vieja de /delivery/ redirige sola a la nueva: ningun enlace se rompe.
 UPDATE articles SET section_id = 'economia', updated_at = datetime('now') WHERE section_id = 'delivery' AND id IN (SELECT article_id FROM article_i18n WHERE slug IN ('molson-coors-y-primo-brands-cubren-el-precio-del-combustible-para-reducir-costos', 'molson-coors-and-primo-brands-use-fuel-hedging-to-tackle-logistics-costs'));
+
+-- ---------------------------------------------------------------------------
+-- EL PLAN DE GOOGLE DEL 26 NOV 2026 (candados 71, 72 y 73, docs/REVISION-GOOGLE-2026-11-26.md)
+-- Google bajo las paginas indexadas de 236 a 63 y dejo 313 notas leidas y sin indexar: efemerides,
+-- listas de curiosidades y guias genericas. Todo lo de abajo es idempotente: solo escribe la fila
+-- que cambia, y un despliegue normal no escribe nada.
+-- ---------------------------------------------------------------------------
+-- Candado 71: el relleno se apaga. El codigo ya lo ignora, y aqui queda en cero para que el panel
+-- no muestre un ajuste encendido que no hace nada.
+UPDATE settings SET value = '0', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE key = 'evergreen_ratio' AND value <> '0';
+UPDATE settings SET value = '0', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE key = 'mesa_efemerides' AND value <> '0';
+UPDATE settings SET value = '0', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE key = 'mesa_ratio_propias' AND value <> '0';
+-- Candado 72: cuatro notas al dia, todas de actualidad. Dos de Delivery y logistica, una de
+-- Tecnologia y una de Artistas. Economia, Ventas y Cripto quedan de reserva por si una seccion del
+-- turno no trae nada fresco.
+UPDATE settings SET value = '4', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE key = 'notes_per_day' AND CAST(value AS INTEGER) > 4;
+UPDATE sections SET notes_per_day = 2 WHERE id = 'delivery' AND notes_per_day <> 2;
+UPDATE sections SET notes_per_day = 1 WHERE id IN ('tecnologia', 'artistas') AND notes_per_day <> 1;
+-- Las de reserva nunca pasan a Delivery: es la seccion con mas cupo del dia (candado 74).
+UPDATE sections SET notes_per_day = 1 WHERE id IN ('economia', 'ventas', 'cripto') AND notes_per_day > 1;
+-- Candado 73: el archivo se limpia sin borrar nada. La nota de relleno sigue respondiendo en su
+-- enlace, pero sale de los mapas del sitio y lleva noindex. Se conservan las tres que si trajeron
+-- impresiones en Search Console (rob james-collier, david coverdale, ecopetrol 75 anos).
+ALTER TABLE articles ADD COLUMN noindex INTEGER NOT NULL DEFAULT 0;
+-- El motivo por el que se aparto un tema. El codigo lo escribia desde el candado 68 y la columna
+-- nunca existio: el UPDATE fallaba en silencio y el tema descartado volvia a la cola.
+ALTER TABLE candidates ADD COLUMN error TEXT;
+UPDATE articles SET noindex = 1
+ WHERE noindex = 0 AND origin = 'robot'
+   AND (kind = 'evergreen' OR id IN (SELECT article_id FROM article_i18n WHERE
+        slug LIKE '%curiosidad%' OR slug LIKE '%curiosit%' OR slug LIKE '%curioso%'
+     OR slug LIKE '%fun-facts%' OR slug LIKE '%datos-sorprendentes%' OR slug LIKE '%datos-clave%'
+     OR slug LIKE '%datos-del-rgpd%' OR slug LIKE '%datos-que-quizas%' OR slug LIKE '%secretos-de%'
+     OR slug LIKE '%fascinantes%' OR slug LIKE '%errores-mas-comunes%' OR slug LIKE '%errores-mas-grandes%'
+     OR slug LIKE '%errores-comunes%' OR slug LIKE '%common-mistakes%' OR slug LIKE '%biggest-mistakes%'
+     OR slug LIKE '%anos-de-su-nacimiento%' OR slug LIKE '%anos-de-su-muerte%' OR slug LIKE '%anos-de-su-partida%'
+     OR slug LIKE '%aniversario-de-su-nacimiento%' OR slug LIKE '%years-after-h%' OR slug LIKE '%centenario%'
+     OR slug LIKE '%-anos-de-un-%' OR slug LIKE '%que-quizas-no-conocias%' OR slug LIKE '%te-sorprenderan%'
+     OR slug LIKE '%te-dejaran%' OR slug LIKE '%mas-vendidos-de%'))
+   AND id NOT IN (SELECT article_id FROM article_i18n WHERE slug IN (
+        '6-curiosidades-de-rob-james-collier-a-sus-50-anos',
+        '5-curiosidades-de-david-coverdale-a-75-anos-de-su-nacimiento',
+        'ecopetrol-cumple-75-anos-6-curiosidades-de-la-petrolera-mas-grande-de-colombia'));

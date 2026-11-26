@@ -59,13 +59,21 @@ export async function reglasDeLaMesa(db: D1Database): Promise<ReglasMesa> {
       return "";
     }
   };
-  const crudo = await leer("mesa_ratio_propias");
-  const n = crudo === "" ? NaN : Number(crudo);
-  return {
-    ratioPropias: Number.isFinite(n) && n >= 0 && n <= 1 ? n : RATIO_PROPIAS_POR_DEFECTO,
-    efemerides: (await leer("mesa_efemerides")) !== "0",
-  };
+  // Se siguen leyendo para que el panel muestre lo guardado, pero ya NO encienden nada.
+  await leer("mesa_ratio_propias");
+  await leer("mesa_efemerides");
+  return { ratioPropias: 0, efemerides: RELLENO_ENCENDIDO };
 }
+
+/**
+ * EL RELLENO ESTÁ APAGADO EN CÓDIGO (candado 71, 26 nov 2026).
+ *
+ * Efemérides, listas de curiosidades, rankings y explicaciones genéricas eran la mitad de lo que
+ * publicaba el robot, y son justo las 313 páginas que Google leyó y decidió no indexar. Apagarlas
+ * con un ajuste no basta: un ajuste se vuelve a encender desde el panel sin que nadie lo note. Por
+ * eso es una constante, y su prueba se pone roja si alguien la cambia.
+ */
+export const RELLENO_ENCENDIDO = false;
 
 /**
  * Decide qué género toca en este turno.
@@ -80,6 +88,10 @@ export function elegirGenero(
   hayEfemerideRedonda: boolean,
   hayActualidad: boolean,
 ): GeneroEncargo {
+  // 0) Candado 71: con el relleno apagado, todo turno es de actualidad. Si no hay noticia, el turno
+  //    se queda sin nota: es mejor un hueco que una lista de curiosidades más.
+  if (!RELLENO_ENCENDIDO) return "actualidad";
+
   // 1) Manda la escaleta. Si la corrida es a mano (fuera de franja), se alterna por posición del
   //    día, que da el mismo reparto: par → actualidad, impar → curiosidades.
   const toca: Franja["genero"] = franja

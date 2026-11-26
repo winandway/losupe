@@ -16,7 +16,7 @@ import { claimTick, HORAS_DE_CORTESIA_AL_RELOJ, relojVivo, TICK_KEY } from "@/li
  * minutos que tarda escribir una nota. Las del reloj, que llaman con `wait=1`, sí terminan.
  */
 
-const MEDIODIA = new Date("2026-11-10T17:30:00Z"); // 12:30 del Este, franja del mediodía
+const MEDIODIA = new Date("2026-11-10T17:30:00Z"); // 12:30 del Este, turno de las 10 (candado 72)
 
 /**
  * Base falsa. `corridaDeRelojHaceMinutos` decide si el reloj corrió hace poco; `null` = llevaba
@@ -37,7 +37,7 @@ function db(corridaDeRelojHaceMinutos: number | null, changes = 1) {
               const corrida = MEDIODIA.getTime() - corridaDeRelojHaceMinutos * 60_000;
               return { n: corrida >= desde ? 1 : 0 };
             }
-            if (sql.includes("published_at < ?2")) return { n: 3 };
+            if (sql.includes("published_at < ?2")) return { n: 1 };
             if (sql.includes("COUNT(*) AS n FROM articles")) return { n: 0 };
             return { value: "" };
           },

@@ -23,6 +23,11 @@ export type ArticleCard = {
   aiAssisted: boolean;
   /** true cuando no existe traducción y se muestra la versión en español. */
   fallback: boolean;
+  /**
+   * Candado 73: nota de relleno (efeméride, lista de curiosidades, guía genérica). Sigue viva en su
+   * enlace, pero sale del mapa del sitio y lleva `noindex`.
+   */
+  noindex: boolean;
 };
 
 export type ArticleSource = { title: string; url: string };
@@ -90,6 +95,7 @@ type CardRow = {
   title: string;
   excerpt: string;
   fallback: number;
+  noindex?: number | null;
 };
 
 type FullRow = CardRow & {
@@ -115,7 +121,7 @@ type FullRow = CardRow & {
 const CARD_COLUMNS = `
   a.id, a.section_id, a.author_id, au.name AS author_name,
   a.image_url, a.image_alt_es, a.image_alt_en, a.published_at, a.updated_at,
-  a.reading_minutes, a.kind, a.origin, a.ai_assisted,
+  a.reading_minutes, a.kind, a.origin, a.ai_assisted, a.noindex,
   COALESCE(t.lang, f.lang) AS lang,
   COALESCE(t.slug, f.slug) AS slug,
   COALESCE(t.title, f.title) AS title,
@@ -190,6 +196,7 @@ export function mapCard(row: CardRow, requested: Lang): ArticleCard {
     origin: row.origin,
     aiAssisted: row.ai_assisted === 1,
     fallback: row.fallback === 1,
+    noindex: Number(row.noindex ?? 0) === 1,
   };
 }
 
@@ -536,6 +543,7 @@ export async function listForSitemap(db: D1Database, limit = 5000): Promise<Site
               t.title, t.excerpt, a.video_url, a.video_poster
        FROM articles a JOIN article_i18n t ON t.article_id = a.id
        WHERE a.status = 'published' AND a.published_at IS NOT NULL AND a.published_at <= ?1
+         AND a.noindex = 0
        ORDER BY a.published_at DESC LIMIT ?2`,
     )
     .bind(nowIso(), limit)
@@ -555,7 +563,7 @@ export async function listRecentForNews(
       `SELECT a.id, a.section_id, t.lang, t.slug, t.title, a.published_at, a.updated_at
        FROM articles a JOIN article_i18n t ON t.article_id = a.id
        WHERE a.status = 'published' AND a.published_at IS NOT NULL
-         AND a.published_at <= ?1 AND a.published_at >= ?2
+         AND a.published_at <= ?1 AND a.published_at >= ?2 AND a.noindex = 0
        ORDER BY a.published_at DESC LIMIT ?3`,
     )
     .bind(nowIso(), sinceIso, limit)

@@ -42,6 +42,7 @@ import {
 } from "./universal";
 import { SQL_NOW } from "../sql-time";
 import {
+  CUPO_DIARIO_MAXIMO,
   FRANJAS,
   franjaActiva,
   NOMBRE_FRANJA,
@@ -70,6 +71,16 @@ import {
  * (patrocinador) y una nota UNIVERSAL (fuentes públicas). Todo queda anotado en `runs`/`run_items`;
  * nada falla en silencio: si falta una llave o se pasó el tope, la corrida lo dice.
  */
+
+/**
+ * Cuántas notas puede escribir el robot hoy (candado 72). El ajuste del panel manda solo hacia
+ * abajo: nunca pasa de los turnos de la escaleta, que desde el 26 nov 2026 son cuatro.
+ */
+export function cupoDiario(ajuste: string | null | undefined): number {
+  const n = Math.floor(Number(ajuste ?? ""));
+  if (!Number.isFinite(n) || n < 1) return CUPO_DIARIO_MAXIMO;
+  return Math.min(n, CUPO_DIARIO_MAXIMO);
+}
 
 export type RobotEnv = {
   DB: D1Database;
@@ -287,10 +298,11 @@ export async function robotStatus(env: RobotEnv, now = new Date()): Promise<Robo
       turnoHecho: (await getSetting(db, TICK_KEY)) || null,
     },
     quota: {
-      notesPerDay: Number(perDay ?? "6") || 6,
+      notesPerDay: cupoDiario(perDay),
       today: Object.values(today).reduce((a, b) => a + b, 0),
     },
-    evergreenRatio: Math.min(1, Math.max(0, Number(ratio ?? "0.5") || 0)),
+    // Candado 71: queda en 0 en la base y, aunque alguien lo cambie, ya no decide nada.
+    evergreenRatio: Math.min(1, Math.max(0, Number(ratio ?? "0") || 0)),
     mail: { configured: mailConfigured(env), recipients: parseRecipients(notifyEmails) },
     sponsorPace: pace,
     mesa: await reglasDeLaMesa(db),
@@ -741,7 +753,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
       return done("skipped", "budget", "daily_budget_reached", e.message);
     throw e;
   }
-  const perDay = Number((await getSetting(db, "notes_per_day")) ?? "6") || 6;
+  const perDay = cupoDiario(await getSetting(db, "notes_per_day"));
   const todayBySection = await robotNotesToday(db, now);
   let todayTotal = Object.values(todayBySection).reduce((a, b) => a + b, 0);
   franjaDeLaCorrida =
@@ -1178,7 +1190,8 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
         const written = await writeDraft(
           prompt,
           docs.map((d) => d.text),
-          { apiKey: env.GEMINI_API_KEY, fetchImpl },
+          // Candado 72: toda noticia nombra y enlaza su fuente, o no sale.
+          { apiKey: env.GEMINI_API_KEY, fetchImpl, exigirFuente: noteKind === "news" },
         );
         if (written.attempts > 1) result.attempts = written.attempts;
         const usage = written.usage;
