@@ -175,4 +175,30 @@ describe("el canario dice qué turno reclamó cada corrida (25 nov 2026)", () =>
     // Y los turnos salen en el orden del día, no en el que los devuelva la base.
     expect(turnos.map((t) => t.key)).toEqual(["manana-3", "tarde-2b"]);
   });
+
+  it("si la columna del turno no está en la base, el canario lo DICE (no se lo calla)", async () => {
+    const { SqliteD1 } = await import("./sqlite-d1");
+    const { buildHealthReport } = await import("@/lib/health");
+    const { applySchema } = await import("@/lib/schema-guard");
+    const { SCHEMA_SQL } = await import("@/lib/schema-sql");
+    const db = new SqliteD1();
+    await applySchema(db as unknown as D1Database, SCHEMA_SQL);
+    // Se simula el ALTER que no llegó: la tabla sin su columna nueva.
+    db.raw.prepare(`DROP TABLE runs`).run();
+    db.raw
+      .prepare(
+        `CREATE TABLE runs (id TEXT PRIMARY KEY, trigger TEXT NOT NULL, status TEXT NOT NULL,
+          step TEXT, started_at TEXT NOT NULL, finished_at TEXT, summary_json TEXT, error TEXT)`,
+      )
+      .run();
+
+    const r = await buildHealthReport(db as unknown as D1Database, null);
+    // Un canario que se calla no es un canario: el fallo se ve, con su motivo.
+    expect(r.turnosError).toBeTruthy();
+    expect(r.turnosError).toMatch(/franja/i);
+    expect(r.turnos).toBeUndefined();
+    // Y el resto del informe sigue funcionando: un turno sin leer no tumba la salud.
+    expect(r.ok).toBe(true);
+    expect(r.db.binding).toBe(true);
+  });
 });

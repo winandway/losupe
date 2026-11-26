@@ -47,6 +47,13 @@ export type HealthReport = {
    * cuál era. Aquí se ve de un vistazo: cuántos intentos lleva cada turno, si salió su nota y, si
    * no salió, el último motivo. Medir antes de creer.
    */
+  /**
+   * Por qué no se pudo leer el resumen de turnos. Va aquí porque la consulta toca una columna
+   * añadida con ALTER (`runs.franja`): si ese ALTER no llegó a la base, un `catch` vacío lo
+   * esconderia y el fallo solo se vería cuando el robot dejara de publicar. Un canario que se calla
+   * no es un canario.
+   */
+  turnosError?: string;
   turnos?: {
     key: string;
     nombre: string;
@@ -110,7 +117,7 @@ export async function buildHealthReport(
     const guiones = await leerEstadoGuiones(db);
     const fichas = await fichasVencidas(db).catch(() => ({}));
     const porCaducar = fichasPorCaducar(new Date(time));
-    const turnos = await turnosDeHoy(db, new Date(time)).catch(() => []);
+    const turnos = await turnosDeHoy(db, new Date(time));
     return {
       ok: true,
       time,
@@ -128,7 +135,8 @@ export async function buildHealthReport(
       guiones,
       ...(Object.keys(fichas).length > 0 ? { fichasVencidas: fichas } : {}),
       ...(Object.keys(porCaducar).length > 0 ? { fichasPorCaducar: porCaducar } : {}),
-      ...(turnos.length > 0 ? { turnos } : {}),
+      ...(turnos.error ? { turnosError: turnos.error } : {}),
+      ...(turnos.lista.length > 0 ? { turnos: turnos.lista } : {}),
       db: {
         binding: true,
         schema,
@@ -195,7 +203,15 @@ async function leerEstadoGuiones(db: D1Database): Promise<HealthReport["guiones"
 async function turnosDeHoy(
   db: D1Database,
   now: Date,
-): Promise<NonNullable<HealthReport["turnos"]>> {
+): Promise<{ lista: NonNullable<HealthReport["turnos"]>; error?: string }> {
+  try {
+    return { lista: await leerTurnos(db, now) };
+  } catch (e) {
+    return { lista: [], error: e instanceof Error ? e.message : String(e) };
+  }
+}
+
+async function leerTurnos(db: D1Database, now: Date): Promise<NonNullable<HealthReport["turnos"]>> {
   const { desde, hasta } = rangoDelDiaLocal(now);
   const { results } = await db
     .prepare(

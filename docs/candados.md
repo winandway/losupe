@@ -2355,8 +2355,15 @@ fuentes» fueron del borrador en **inglés**).
 - **Pruebas:** `tests/unit/reloj-del-diario.test.ts` (el canario resume los turnos) y
   `tests/unit/robot-pipeline.test.ts` (la corrida lo escribe al cerrar). **Rojo comprobado** con
   cuatro mutaciones: la corrida no apunta el turno; el canario enseña el fallo alfabético en vez del
-  último; los turnos salen en el orden de la base; y apuntar el turno con un `UPDATE` aparte, que
-  sería una escritura de más por corrida.
+  último; los turnos salen en el orden de la base; apuntar el turno con un `UPDATE` aparte, que sería
+  una escritura de más por corrida; y devolver el `catch` mudo que esconderia un ALTER que no llegó.
+  **Y el canario no se calla si el ALTER no llegó.** La primera versión envolvía la consulta de los
+  turnos en un `.catch(() => [])`: si la columna `franja` no hubiera entrado en la base de producción,
+  el canario habría devuelto «ningún turno» —exactamente igual que un día tranquilo— y el fallo solo se
+  habría visto cuando el robot dejara de publicar. Ahora el motivo sale en `turnosError`, y el resto del
+  informe sigue respondiendo: un turno que no se puede leer no tumba la salud del sitio. Ese campo es
+  además la forma de comprobar desde fuera que un `ALTER TABLE` llegó, sin token y sin entrar al panel.
+
 - **Qué NO tocar:** `franjaPendiente` indexa el array **por posición**, así que las horas de
-  `FRANJAS` tienen que seguir ordenadas de menor a mayor. Y el turno se apunta en el cierre, nunca
-  con un `UPDATE` propio.
+  `FRANJAS` tienen que seguir ordenadas de menor a mayor. El turno se apunta en el cierre, nunca con
+  un `UPDATE` propio. Y la consulta de turnos **no se vuelve a envolver en un `catch` mudo**.
