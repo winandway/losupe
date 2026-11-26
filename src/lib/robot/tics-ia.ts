@@ -154,22 +154,32 @@ export function contarTics(
 ): ConteoTics {
   const plano = normalizar(texto);
   const palabras = plano.split(/\s+/).filter(Boolean).length;
-  const encontrados: string[] = [];
-  let total = 0;
+  // Una palabra cuenta UNA vez (candado 69): «underscores» contiene «underscore» y antes sumaba
+  // dos, lo que inflaba la densidad y tiraba notas que estaban bien. Se juntan todas las
+  // apariciones, se ordenan por posición (la más larga primero) y se descarta la que se monta
+  // sobre otra ya contada.
+  const hallazgos: { inicio: number; fin: number; tic: string }[] = [];
   for (const tic of lista) {
     let desde = 0;
-    let veces = 0;
     for (;;) {
       const i = plano.indexOf(tic, desde);
       if (i < 0) break;
-      veces += 1;
+      hallazgos.push({ inicio: i, fin: i + tic.length, tic });
       desde = i + tic.length;
     }
-    if (veces > 0) {
-      encontrados.push(tic);
-      total += veces;
-    }
   }
+  hallazgos.sort((a, b) => a.inicio - b.inicio || b.fin - a.fin);
+  let hasta = 0;
+  let total = 0;
+  for (const h of hallazgos) {
+    if (h.inicio < hasta) continue;
+    hasta = h.fin;
+    total += 1;
+  }
+  // El aviso nombra todas las que aparecieron (también la que quedó tapada por otra), para que el
+  // redactor sepa qué frase reescribir; lo que no se duplica es la cuenta.
+  const vistos = new Set(hallazgos.map((h) => h.tic));
+  const encontrados = lista.filter((tic) => vistos.has(tic));
   const densidad = palabras > 0 ? (total * 1000) / palabras : 0;
   return { encontrados, total, palabras, densidad, excede: densidad > maxPorMil };
 }

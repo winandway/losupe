@@ -2588,3 +2588,15 @@ UTC del 26 nov 2026, todas con `Gemini no devolvió texto (PROHIBITED_CONTENT)` 
   corridas cada quince minutos y las de las franjas terminan `done`; de madrugada salen `skipped`.
 - **Qué NO tocar:** no se reintenta un rechazo de contenido, no se vacía la lista de rechazados, no
   se vuelve a poner un `exit` dentro del bucle de la guardia, y el reloj no publica fuera de franja.
+
+## 69. Una muletilla dentro de otra ya no cuenta doble (26 nov 2026)
+
+**Qué se rompió.** La nota de las nueve de la mañana del 26 de noviembre (Rauw Alejandro y Rockstar Games) se perdió en los tres intentos por «suena a IA», con el aviso «underscore, underscores, elevate».
+
+**Causa real.** `contarTics` (en `src/lib/robot/tics-ia.ts`) buscaba cada muletilla por separado como trozo de texto. Varias están contenidas en otras: «underscores» contiene «underscore», «seamlessly» contiene «seamless», «revolucionario» contiene «revolucionar», «transformadora» contiene «transformador», y «en el panorama actual» activa dos. Una sola palabra sumaba dos y la densidad pasaba del umbral (tres por cada mil palabras) aunque la nota estuviera bien.
+
+**Qué se hizo.** Se juntan todas las apariciones con su posición, se ordenan (la más larga primero) y la que se monta sobre otra ya contada no suma. El aviso sigue nombrando todas las que aparecieron, para que el redactor sepa qué frase cambiar. El umbral no se tocó.
+
+**Cómo se comprueba.** `tests/unit/candado-69-tic-doble.test.ts`: «underscores» cuenta uno, dos apariciones distintas siguen contando dos, tres muletillas en mil palabras no pasan del umbral. Comprobado en rojo con el código anterior (las cuatro fallan).
+
+**Qué NO tocar.** No volver a contar cada muletilla por separado con `indexOf` sin descartar solapes. No subir el umbral para «arreglar» esto: el umbral estaba bien, la cuenta no.
