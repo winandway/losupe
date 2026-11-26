@@ -1,4 +1,4 @@
-import { assertAvisoCasa, ponerTransparencia } from "@/lib/casa/aviso";
+import { assertAvisoCasa, quitarLineaDePropiedad } from "@/lib/casa/aviso";
 import { stripHtml } from "@/lib/html";
 import { indexArticle } from "@/lib/search";
 import type { SectionId } from "@/lib/sections";
@@ -124,8 +124,9 @@ export async function saveArticle(db: D1Database, input: PublishInput): Promise<
  * turno (sale una por día). Una nota de la casa sin su aviso NO pasa a `published` ni a `approved`:
  * `assertAvisoCasa` lanza antes de tocar la base (candado 57).
  *
- * Y si la nota es de otra sección pero nombra un producto del grupo (pasa a diario en el segmento de
- * delivery), la línea de transparencia se le pone sola antes de comprobarla (candado 61).
+ * Y si una nota de periodismo arrastra un aviso nuestro de los dos días que los llevaron, se le
+ * quita antes de publicarla: la propiedad se declara en la política editorial, no en cada nota
+ * (candado 65).
  */
 export async function setArticleStatus(
   db: D1Database,
@@ -134,7 +135,7 @@ export async function setArticleStatus(
   now = new Date(),
 ): Promise<void> {
   if (status === "published" || status === "approved") {
-    await ponerTransparencia(db, articleId);
+    await quitarLineaDePropiedad(db, articleId);
     await assertAvisoCasa(db, articleId);
   }
   const iso = now.toISOString();

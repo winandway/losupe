@@ -116,9 +116,11 @@ export const SECTIONS: readonly Section[] = [
     id: "windoce",
     slug: { es: "desde-windoce", en: "from-windoce" },
     name: { es: "Desde Windoce", en: "From Windoce" },
+    // Redactada de nuevo el 26 nov 2026. La anterior se presentaba como «contenido de la casa… de
+    // la empresa dueña de Losupe»: era un cartel sobre nosotros, no una descripción de lo que hay.
     description: {
-      es: "Contenido de la casa: historias, lanzamientos y guías de los productos de Windoce LLC, la empresa dueña de Losupe. Cada nota lo dice arriba.",
-      en: "Brand content: stories, launches, and guides about the products of Windoce LLC, the company that owns Losupe. Every story says so up top.",
+      es: "Lanzamientos, guías y novedades de los productos de Windoce.",
+      en: "Launches, guides, and updates from Windoce's products.",
     },
     color: "#0B1F3A",
     onColor: "#FFFFFF",

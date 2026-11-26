@@ -95,11 +95,6 @@ export const es = {
     count: (n: number) => (n === 1 ? "1 nota" : `${n} notas`),
     empty: "Todavía no hay notas en esta sección. El robot redactor empieza a publicar muy pronto.",
     page: (n: number) => `Página ${n}`,
-    houseProductsTitle: "Los productos de los que hablamos aquí",
-    houseProductsHint:
-      "Losupe es de Windoce LLC. En esta sección contamos historias y guías de sus productos, siempre con el aviso arriba. Estos son, con lo que comprobamos en sus páginas:",
-    houseChecked: (fecha: string) => `Datos comprobados en su página el ${fecha}`,
-    houseVisit: "Ir a la página",
   },
   search: {
     title: "Buscar en losupe",

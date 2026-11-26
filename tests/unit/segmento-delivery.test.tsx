@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { applySchema } from "@/lib/schema-guard";
 import { SCHEMA_SQL } from "@/lib/schema-sql";
-import {
-  assertTransparencia,
-  AVISO_RELACION,
-  CasaSinAvisoError,
-  conTransparencia,
-  productoMencionado,
-  tieneTransparencia,
-} from "@/lib/casa/aviso";
+import { productoMencionado } from "@/lib/casa/aviso";
 import { getProducto } from "@/lib/casa/productos";
 import { setArticleStatus } from "@/lib/robot/publish";
 import { getSection, NEWS_SECTIONS, SECTIONS } from "@/lib/sections";
@@ -84,90 +77,85 @@ describe("la sección existe y es periodismo del sector, no la sección de la ca
   });
 });
 
-describe("si una nota nombra un producto de la casa, lo dice — o no se publica", () => {
-  it("al publicarla, la línea se le pone SOLA en los dos idiomas", async () => {
-    // Un candado que solo rechazara dejaría sin publicar justo las notas que Richard quiere (las
-    // que comparan a Divoox con el resto del sector). Así que primero se pone y después se exige.
+/**
+ * CANDADO 65 — una nota de periodismo no lleva ningún aviso nuestro (26 nov 2026).
+ *
+ * Durante dos días, toda nota que nombrara un producto del grupo salía con un párrafo arriba
+ * diciendo de quién era la empresa. Richard lo tumbó: _«no hay imparcialidad en eso, estás
+ * diciendo: mira, somos los dueños… no veo a Bing poniendo una etiqueta porque Windows es de la
+ * casa. Me parece ridículo»_. Tenía razón: un recuadro que anuncia la propiedad llama más la
+ * atención sobre el vínculo que la propia mención.
+ *
+ * La propiedad se declara donde la declara un periódico: en la cabecera. La página de política
+ * editorial la dice entera, con todos los productos por su nombre, y el pie dice quién edita el
+ * medio. Estas pruebas fijan las dos cosas: que la nota sale limpia y que la cabecera no se queda
+ * muda.
+ */
+describe("una nota de periodismo sale sin ningún aviso nuestro", () => {
+  it("y si arrastra uno de los dos días que los llevaron, se le quita al publicarla", async () => {
     const { db, d1 } = await base();
-    nota(
-      db,
-      "n-sin-aviso",
-      "<p>En la región compiten Rappi, PedidosYa y Divoox.</p>",
-      "<p>Rappi, PedidosYa and Divoox compete in the region.</p>",
-    );
-    await setArticleStatus(d1, "n-sin-aviso", "published");
-    const divoox = getProducto("divoox")!;
+    const viejo =
+      '<p class="aviso-casa"><strong>Transparencia:</strong> Divoox es de Windoce LLC, la empresa dueña de Losupe.</p>\n<p>En la región compiten Rappi, PedidosYa y Divoox.</p>';
+    nota(db, "n-con-aviso-viejo", viejo, viejo);
+    await setArticleStatus(d1, "n-con-aviso-viejo", "published");
     for (const lang of ["es", "en"] as const) {
       const fila = db.raw
         .prepare(`SELECT content_html FROM article_i18n WHERE article_id = ? AND lang = ?`)
-        .get("n-sin-aviso", lang) as { content_html: string };
-      expect(tieneTransparencia(fila.content_html, divoox, lang), lang).toBe(true);
+        .get("n-con-aviso-viejo", lang) as { content_html: string };
+      expect(fila.content_html, lang).not.toContain("aviso-casa");
+      expect(fila.content_html, lang).not.toContain("Windoce LLC");
+      // Pero el texto de la nota no se toca.
+      expect(fila.content_html, lang).toContain("Rappi");
     }
   });
 
-  it("y si alguien la quitara a mano, esa nota ya no se publica", async () => {
+  it("una nota que nos nombra se publica tal cual, sin que nadie le añada nada", async () => {
     const { db, d1 } = await base();
     nota(
       db,
-      "n-pelada",
+      "n-nombra",
       "<p>En la región compiten Rappi, PedidosYa y Divoox.</p>",
       "<p>Rappi, PedidosYa and Divoox compete in the region.</p>",
     );
-    await expect(assertTransparencia(d1, "n-pelada")).rejects.toBeInstanceOf(CasaSinAvisoError);
-    const fila = db.raw.prepare(`SELECT status FROM articles WHERE id = ?`).get("n-pelada") as {
+    await setArticleStatus(d1, "n-nombra", "published");
+    const fila = db.raw
+      .prepare(`SELECT content_html FROM article_i18n WHERE article_id = ? AND lang = 'es'`)
+      .get("n-nombra") as { content_html: string };
+    expect(fila.content_html).toBe("<p>En la región compiten Rappi, PedidosYa y Divoox.</p>");
+    const art = db.raw.prepare(`SELECT status FROM articles WHERE id = ?`).get("n-nombra") as {
       status: string;
     };
-    expect(fila.status).toBe("draft");
+    expect(art.status).toBe("published");
   });
 
-  it("con la línea puesta, sale sin problema", async () => {
-    const { db, d1 } = await base();
-    nota(
-      db,
-      "n-con-aviso",
-      conTransparencia(
-        "<p>En la región compiten Rappi, PedidosYa y Divoox.</p>",
-        { nombre: "Divoox" } as never,
-        "es",
-      ),
-      conTransparencia(
-        "<p>Rappi, PedidosYa and Divoox compete in the region.</p>",
-        { nombre: "Divoox" } as never,
-        "en",
-      ),
-    );
-    await setArticleStatus(d1, "n-con-aviso", "published");
-    const fila = db.raw.prepare(`SELECT status FROM articles WHERE id = ?`).get("n-con-aviso") as {
-      status: string;
-    };
-    expect(fila.status).toBe("published");
+  it("y la nota de la casa SÍ conserva el suyo: ese es otro aviso y es obligatorio", async () => {
+    // No se confunden: «Desde Windoce» es contenido de la casa, no periodismo (candado 57).
+    const { avisoHtml, tieneAviso } = await import("@/lib/casa/aviso");
+    const divoox = getProducto("divoox")!;
+    const cuerpo = `${avisoHtml(divoox, "es")}\n<p>Un texto cualquiera.</p>`;
+    expect(tieneAviso(cuerpo, divoox, "es")).toBe(true);
+    const { sinLineaDePropiedad } = await import("@/lib/casa/aviso");
+    // La limpieza existe, pero `quitarLineaDePropiedad` no la aplica a la sección de la casa.
+    expect(sinLineaDePropiedad(cuerpo)).not.toContain("aviso-casa");
   });
 
-  it("una nota del sector que no nombra nada nuestro sale tal cual", async () => {
-    const { db, d1 } = await base();
-    nota(
-      db,
-      "n-neutra",
-      "<p>DoorDash y Uber Eats cambian sus comisiones.</p>",
-      "<p>DoorDash and Uber Eats change their fees.</p>",
-    );
-    await setArticleStatus(d1, "n-neutra", "published");
-    const fila = db.raw.prepare(`SELECT status FROM articles WHERE id = ?`).get("n-neutra") as {
-      status: string;
-    };
-    expect(fila.status).toBe("published");
-  });
-
-  it("el aviso dice de quién es la empresa, en los dos idiomas", () => {
-    expect(AVISO_RELACION.es("Divoox")).toContain("Windoce LLC, la empresa dueña de Losupe");
-    expect(AVISO_RELACION.en("Divoox")).toContain("Windoce LLC, the company that owns Losupe");
+  it("la propiedad se declara en la cabecera del medio, no en cada nota", async () => {
+    const { es } = await import("@/i18n/es");
+    const { en } = await import("@/i18n/en");
+    const textoEs = JSON.stringify(es);
+    const textoEn = JSON.stringify(en);
+    // Quién edita el medio, en el pie, en los dos idiomas.
+    expect(textoEs).toContain("Windoce LLC");
+    expect(textoEn).toContain("Windoce LLC");
+    // Y la política editorial nombra los productos, que es la declaración de verdad.
+    expect(textoEs).toContain("Divoox");
+    expect(textoEn).toContain("Divoox");
   });
 
   it("reconoce el nombre entero, no trozos de otra palabra", () => {
     expect(productoMencionado("Divoox abre en Caracas")?.id).toBe("divoox");
     expect(productoMencionado("Hablamos de kipuu y de otras")?.id).toBe("kipuu");
     expect(productoMencionado("DoorDash y Uber Eats")).toBeUndefined();
-    // Nada de falsos positivos por una palabra que CONTIENE el nombre.
     expect(productoMencionado("divooxmania es otra cosa")).toBeUndefined();
   });
 });

@@ -97,11 +97,6 @@ export const en: Dict = {
     count: (n: number) => (n === 1 ? "1 story" : `${n} stories`),
     empty: "No stories in this section yet. Our newsroom robot starts publishing very soon.",
     page: (n: number) => `Page ${n}`,
-    houseProductsTitle: "The products we cover here",
-    houseProductsHint:
-      "Losupe is part of Windoce LLC. In this section we share stories and guides about its products, always with a disclosure up top. Here they are, with what we verified on their own sites:",
-    houseChecked: (date: string) => `Details verified on its site on ${date}`,
-    houseVisit: "Visit the site",
   },
   search: {
     title: "Search losupe",

@@ -12,7 +12,6 @@ import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listPaged } from "@/lib/queries";
-import { FichasCasa } from "@/components/FichasCasa";
 import { sectionByAnySlug, sectionBySlug } from "@/lib/sections";
 import { breadcrumbJsonLd, itemListJsonLd, sectionAlternates } from "@/lib/seo";
 import { getBaseUrl } from "@/lib/site";
@@ -137,10 +136,9 @@ export default async function SectionPage({ params, searchParams }: Props) {
         dict={dict}
       />
 
-      {/* Las fichas de los productos del grupo SOLO viven en la sección de la casa, que lo dice en
-          cada nota. Fuera de ahí, una pieza fija que nombre un producto nuestro convierte la sección
-          en su escaparate: candado 64 y `docs/SEO-IMPARCIALIDAD.md`. */}
-      {section.house && page === 1 ? <FichasCasa lang={lang} dict={dict} /> : null}
+      {/* Aquí había la parrilla de fichas con los logos de todos nuestros negocios. Richard la quitó
+          el 26 de noviembre: «poner todos esos negocios ahí no es imparcialidad». Ninguna sección,
+          ni siquiera la de la casa, lleva una vitrina de productos: candado 64. */}
     </Container>
   );
 }
