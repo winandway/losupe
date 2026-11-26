@@ -1,7 +1,8 @@
 # Siguiente paquete: la cadencia del segmento y la nota de Venezuela
 
 > Dictado por Richard el 26 de noviembre de 2026, al final de una sesión que ya estaba muy larga.
-> Se arranca en una sesión nueva, en esta misma carpeta. Es lo único que hay que hacer.
+> Los puntos 0, 1 y 2 quedaron hechos ese mismo día. **Lo que queda vivo es el punto 4**: el plan de
+> Google del 26 de noviembre, que es ahora lo más importante del proyecto.
 
 ## 0. Quitar la sección «Desde Windoce» del sitio — HECHO el 26 nov 2026 (candado 66)
 
@@ -87,3 +88,23 @@ repartidores, de pedidos ni de restaurantes.
   y en el pie del medio.
 - El sector abierto a veintiséis empresas y tres fuentes nuevas.
 - Reglas: [`SEO-IMPARCIALIDAD.md`](SEO-IMPARCIALIDAD.md) y [`DELIVERY.md`](DELIVERY.md).
+
+## 4. LO ÚNICO QUE QUEDA PENDIENTE: el plan de Google del 26 de noviembre
+
+Medido ese día en Search Console (informe completo en `docs/REVISION-GOOGLE-2026-11-26.md`): las
+páginas indexadas cayeron de 236 el 22 de octubre a **63**, las «rastreadas, actualmente sin indexar»
+subieron a **313**, y Google Noticias lleva **cero impresiones en tres meses**. No hay penalización
+ni fallo técnico: Google lee las notas y decide que no valen. La mitad de lo que publicamos son
+efemérides y listas de curiosidades, que es justo lo que rechaza.
+
+El trabajo, en este orden, y cada punto con su candado:
+
+1. **Apagar las efemérides y el contenido de relleno.** `evergreenRatio` a 0, `mesa.efemerides` en
+   falso, y el género «Curiosidades» fuera de la escaleta. Prueba que falla si vuelven a encenderse.
+2. **Bajar el cupo de 11 notas al día a 3 o 4**, todas de actualidad con fuente nombrada. Ajustar la
+   escaleta de once turnos a cuatro.
+3. **Limpiar el archivo:** las notas que Google rastreó y no indexó (efemérides y listas) salen del
+   mapa del sitio y se marcan `noindex`, sin borrar datos. Medir cuántas son antes de tocar.
+4. **Apoyarse en el segmento de delivery**, que es lo único con información de primera mano.
+5. **Volver a medir el 10 de diciembre** con el mismo método del informe. Lo que tiene que dejar de
+   caer es una sola cifra: las páginas indexadas.
