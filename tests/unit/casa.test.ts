@@ -91,7 +91,7 @@ describe("las siete notas de la primera semana", () => {
   it("son siete, una por producto, rotando los cuatro formatos", () => {
     expect(SEMILLAS_CASA).toHaveLength(7);
     for (let i = 0; i < 7; i++) {
-      const { producto, formato } = siguienteTurno(i);
+      const { producto, formato } = siguienteTurno(i)!;
       const semilla = SEMILLAS_CASA[i]!;
       expect(semilla.id).toContain(producto.id);
       expect(semilla.statements.join("\n")).toContain(`'${formato}'`);
@@ -210,11 +210,11 @@ describe("el paso diario", () => {
   });
 
   it("la rotación sigue con los productos que faltan", () => {
-    expect(siguienteTurno(7).producto.id).toBe("yadominios");
-    expect(siguienteTurno(8).producto.id).toBe("aliramoney");
-    expect(siguienteTurno(9).producto.id).toBe("tokiia");
-    expect(siguienteTurno(10).producto.id).toBe("divoox");
-    expect(siguienteTurno(10).formato).toBe("tendencia");
+    expect(siguienteTurno(7)!.producto.id).toBe("yadominios");
+    expect(siguienteTurno(8)!.producto.id).toBe("aliramoney");
+    expect(siguienteTurno(9)!.producto.id).toBe("tokiia");
+    expect(siguienteTurno(10)!.producto.id).toBe("divoox");
+    expect(siguienteTurno(10)!.formato).toBe("tendencia");
   });
 });
 

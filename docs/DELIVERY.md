@@ -104,21 +104,37 @@ Lo que se cuenta sale de lo que dice su propia página, leída el 25 de noviembr
 - En Venezuela, su página dice **«próximamente»**, y nombra Caracas, Maracaibo y Valencia como
   primeras ciudades.
 
-**Lo que NO se escribe:** nada que la página no sostenga. Ni número de usuarios, ni pedidos, ni
-ciudades ya funcionando, ni comparaciones de las que no haya fuente. El plan de largo plazo (ser la
-red de reparto de paquetes de otras empresas) **no se publica como un hecho**: hasta que exista, es
-un plan.
+**Lo que NO se escribe:** nada que la página no sostenga. Ni número de usuarios, ni de pedidos, ni
+comparaciones de las que no haya fuente. El plan de largo plazo (ser la red de reparto de paquetes de
+otras empresas) **no se publica como un hecho**: hasta que exista, es un plan.
 
-> **Ojo, 25 nov 2026:** la página pública de Venezuela dice «coming soon» y Richard avisó de que van
-> a quitarlo porque ya abrieron. Mientras diga eso, las notas no pueden afirmar lo contrario; y en
-> cuanto deje de decirlo, tampoco pueden seguir diciendo que no opera.
+**Y tampoco se afirma al revés.** La etapa de cada ciudad y de cada país es la que diga su propia
+página ese día, y está en la ficha como un dato más. El redactor no puede escribir «ya opera» ni
+«todavía no opera» por su cuenta: las dos cosas son una afirmación nuestra sobre nuestra propia
+empresa, y las dos se equivocan igual de rápido.
+
+> **Ojo, 25 nov 2026:** Richard avisó de que en Venezuela ya se está repartiendo comida y mandó
+> quitar el «próximamente» de la página. Ese día la página **todavía decía «Coming soon»**: la orden
+> no había llegado al sitio. Por eso la ficha solo cuenta lo que la página sostiene, y nadie —ni el
+> robot ni nosotros— afirma la etapa por su cuenta.
 >
-> **Eso ya no depende de que nadie se acuerde.** La ficha declara una frase que vigila
-> (`vigilar: { url, frase, siDesaparece }`) y el robot la comprueba en cada corrida: si «Coming soon»
-> desaparece de esa página, la ficha queda **vencida**, sale en `/__health` y el redactor deja de
-> recibir sus datos hasta que una persona relea la página y actualice la ficha. Decir de menos de
-> nuestro propio producto es el mismo error que decir de más. Si la página no responde, no se
-> concluye nada: una caída de red no es un cambio de contenido.
+> **Y eso no depende de que nadie se acuerde**, por los dos lados:
+>
+> - **La frase.** La ficha declara una frase que vigila (`vigilar: { url, frase, siDesaparece }`) y
+>   el robot la comprueba en cada corrida. Si «Coming soon» desaparece de esa página, la ficha queda
+>   **vencida**.
+> - **El tiempo.** Toda ficha caduca a los **30 días** de leída, aunque no vigile ninguna frase,
+>   porque la realidad puede moverse antes que la página — como pasó aquí. El canario avisa una
+>   semana antes, con los días que le quedan.
+>
+> Una ficha vencida sale en `/__health`, el redactor deja de nombrar ese producto en el segmento, y
+> la rotación de «Desde Windoce» se salta ese producto hasta que una persona relea su página. Decir
+> de menos de nuestro propio producto es el mismo error que decir de más. Si la página no responde,
+> no se concluye nada: una caída de red no es un cambio de contenido.
+>
+> **Lo que sí es Divoox Flex** (leído ese día en su página): el servicio de logística y última milla
+> para empresas — la empresa pone los vehículos y los repartidores, Divoox pone la tecnología. No son
+> bloques de trabajo tipo Amazon Flex; eso estaba mal de nuestro lado y está corregido.
 
 ## 4 bis. El fallo del día del estreno (25 nov 2026)
 

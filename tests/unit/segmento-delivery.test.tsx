@@ -250,7 +250,7 @@ describe("nuestra propia app aparece en el segmento, declarada", () => {
     const { bloqueCasaEnElSector } = await import("@/lib/robot/writer");
     const b = bloqueCasaEnElSector("delivery");
     // Lo que hunde a un medio nuevo es decir de su producto más de lo que se puede comprobar.
-    expect(b).toMatch(/Nada de usuarios, pedidos, ciudades ya funcionando/);
+    expect(b).toMatch(/Nada de usuarios, de pedidos ni de planes futuros/);
     expect(b).toMatch(/Si no encaja, NO lo menciones/);
     expect(b).toMatch(/Nunca en el titular/);
     // El aviso lo pone el código, siempre. Si lo escribiera el modelo, un día se le olvidaría.
@@ -432,10 +432,11 @@ describe("la ficha de nuestro producto caduca sola cuando su página cambia", ()
     expect(await comprobarFicha(divoox, aun)).toBeNull();
 
     const { db, d1 } = await base();
-    await vigilarFichas(d1, { fetchImpl: abierta });
+    const hoy = new Date("2026-11-25T12:00:00Z");
+    await vigilarFichas(d1, { fetchImpl: abierta, now: hoy });
     expect(Object.keys(await fichasVencidas(d1))).toContain("divoox");
     // Y cuando alguien relee la ficha y la página vuelve a cuadrar, la marca se va sola.
-    await vigilarFichas(d1, { fetchImpl: aun });
+    await vigilarFichas(d1, { fetchImpl: aun, now: hoy });
     expect(await fichasVencidas(d1)).toEqual({});
     expect(
       db.raw.prepare(`SELECT count(*) AS n FROM settings WHERE key LIKE 'ficha_vencida_%'`).get(),
@@ -458,5 +459,97 @@ describe("la ficha de nuestro producto caduca sola cuando su página cambia", ()
     expect(bloqueCasaEnElSector("delivery")).toContain("Divoox");
     // Antes que escribir datos viejos de nuestro propio producto, no se nombra.
     expect(bloqueCasaEnElSector("delivery", { divoox: "su página cambió" })).toBe("");
+  });
+});
+
+describe("una ficha también caduca por tiempo, y avisa antes de apagarse", () => {
+  it("vale un mes desde que se leyó su página, y una fecha ilegible cuenta como vencida", async () => {
+    const { fichaCaduca, DIAS_DE_VIDA_DE_UNA_FICHA } = await import("@/lib/casa/vigilar-ficha");
+    const { getProducto } = await import("@/lib/casa/productos");
+    const p = getProducto("divoox")!;
+    const leida = new Date(`${p.verificado}T00:00:00Z`).getTime();
+    const dia = 86_400_000;
+
+    // Recién leída y el día antes de cumplir el mes: sirve.
+    expect(fichaCaduca(p, new Date(leida + dia))).toBeNull();
+    expect(fichaCaduca(p, new Date(leida + (DIAS_DE_VIDA_DE_UNA_FICHA - 1) * dia))).toBeNull();
+    // El día que cumple el mes: vencida, y el motivo dice qué hacer.
+    const motivo = fichaCaduca(p, new Date(leida + DIAS_DE_VIDA_DE_UNA_FICHA * dia));
+    expect(motivo).toContain("volver a leer");
+    expect(motivo).toContain(p.url);
+    // Una ficha sin fecha legible no se da por buena.
+    expect(fichaCaduca({ ...p, verificado: "cuando sea" }, new Date(leida))).toContain("no dice");
+  });
+
+  it("avisa una semana antes, para releerla sin urgencia", async () => {
+    const { fichasPorCaducar, DIAS_DE_VIDA_DE_UNA_FICHA, DIAS_DE_AVISO } =
+      await import("@/lib/casa/vigilar-ficha");
+    const { getProducto } = await import("@/lib/casa/productos");
+    const leida = new Date(`${getProducto("divoox")!.verificado}T00:00:00Z`).getTime();
+    const dia = 86_400_000;
+
+    // Recién leída, nadie en la lista de aviso.
+    expect(fichasPorCaducar(new Date(leida + dia)).divoox).toBeUndefined();
+    // En la ventana de aviso, sale con los días que le quedan.
+    const casi = new Date(leida + (DIAS_DE_VIDA_DE_UNA_FICHA - DIAS_DE_AVISO) * dia);
+    expect(fichasPorCaducar(casi).divoox).toBe(DIAS_DE_AVISO);
+    // Ya vencida, deja de ser un aviso: es un fallo, y lo cuenta `fichaCaduca`.
+    expect(
+      fichasPorCaducar(new Date(leida + (DIAS_DE_VIDA_DE_UNA_FICHA + 5) * dia)).divoox,
+    ).toBeUndefined();
+  });
+
+  it("la rotación de la casa se salta el producto con ficha vencida", async () => {
+    const { siguienteTurno } = await import("@/lib/casa/paso-diario");
+    const { PRODUCTOS } = await import("@/lib/casa/productos");
+    const primero = siguienteTurno(0)!.producto.id;
+    expect(primero).toBe("divoox");
+    // Con la ficha vencida le toca al siguiente, no se escribe con datos viejos.
+    expect(siguienteTurno(0, { divoox: "vencida" })!.producto.id).toBe(PRODUCTOS[1]!.id);
+    // Y si TODAS están vencidas, ese día no se escribe nada de la casa.
+    const todas = Object.fromEntries(PRODUCTOS.map((p) => [p.id, "vencida"]));
+    expect(siguienteTurno(0, todas)).toBeNull();
+  });
+
+  it("no escribe en la base si el estado de la ficha no cambió", async () => {
+    const { vigilarFichas } = await import("@/lib/casa/vigilar-ficha");
+    const { d1 } = await base();
+    const abierta = (async () =>
+      new Response("<h1>Divoox ya está en Caracas</h1>")) as unknown as typeof fetch;
+    const hoy = new Date("2026-11-25T12:00:00Z");
+
+    // Se cuentan las sentencias que ESCRIBEN: mirar la fecha no sirve, las dos vueltas caen en el
+    // mismo segundo. Con diez productos y once corridas al día, un borrado a ciegas por producto
+    // serían más de cien escrituras diarias para no decir nada.
+    const sentencias: string[] = [];
+    const original = d1.prepare.bind(d1);
+    const espiado = Object.assign(Object.create(Object.getPrototypeOf(d1) as object), d1, {
+      prepare: (sql: string) => {
+        sentencias.push(sql);
+        return original(sql);
+      },
+    }) as D1Database;
+    const escrituras = () =>
+      sentencias.filter((q) => /(INSERT INTO|DELETE FROM|UPDATE)\s+settings/i.test(q)).length;
+
+    await vigilarFichas(espiado, { fetchImpl: abierta, now: hoy });
+    const primera = escrituras();
+    expect(primera).toBe(1);
+
+    // Segunda vuelta con el mismo resultado: ni una escritura más.
+    await vigilarFichas(espiado, { fetchImpl: abierta, now: hoy });
+    expect(escrituras()).toBe(primera);
+  });
+
+  it("la ficha ya no obliga a decir que todavía no opera en ningún sitio", async () => {
+    const { getProducto } = await import("@/lib/casa/productos");
+    const { bloqueCasaEnElSector } = await import("@/lib/robot/writer");
+    const divoox = getProducto("divoox")!;
+    // El fallo: el «cuidado» decía «no decir que ya opera», y el modelo escribía «no opera».
+    expect(divoox.cuidado).not.toMatch(/No decir que ya opera/i);
+    expect(divoox.cuidado).toMatch(/ni que ya opera ni que todav/i);
+    const bloque = bloqueCasaEnElSector("delivery");
+    expect(bloque).not.toMatch(/ciudades ya funcionando/);
+    expect(bloque).toMatch(/NO afirmes por tu cuenta en qu/);
   });
 });

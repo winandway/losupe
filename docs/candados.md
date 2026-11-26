@@ -2281,8 +2281,42 @@ Divoox va a quitar el «próximamente» de Venezuela en cuanto abra. Cada ficha 
 `/__health` y `bloqueCasaEnElSector` deja de pasarle sus datos al redactor. Si la página no
 responde, no se concluye nada: una caída de red no es un cambio de contenido.
 
-- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con doce mutaciones
+### h) Decir de MENOS de nuestro producto es el mismo error que decir de más
+
+El mismo día del estreno, Richard avisó de que en Venezuela ya se está repartiendo comida, cuando
+nuestra ficha decía que no. Dos fallos distintos, los dos nuestros:
+
+**1. El «cuidado» obligaba a afirmar lo contrario.** La ficha decía textualmente _«No decir que ya
+opera en Miami ni en ninguna ciudad: la página dice próximamente»_. Leído por el modelo en una nota
+sobre Venezuela, eso no es una prohibición: es un dato, y lo escribe — «todavía no opera». La regla
+del redactor remataba con «Nada de … ciudades ya funcionando». Resultado: afirmábamos sobre el estado
+de nuestra propia empresa, que es justo lo que no toca.
+
+Ahora la ficha dice la etapa de cada sitio **como dato comprobado en su página**, y el `cuidado` y la
+regla del redactor prohíben afirmar en las DOS direcciones: ni que ya opera, ni que todavía no.
+
+**2. La realidad puede moverse antes que la página.** Vigilar una frase (apartado g) solo detecta
+que la página cambie. No detecta que una ficha no se relea nunca. Por eso toda ficha caduca también
+**por tiempo**: `DIAS_DE_VIDA_DE_UNA_FICHA = 30`, para todos los productos, aunque no vigilen ninguna
+frase. Una ficha vencida sale en `/__health`, el redactor deja de nombrar ese producto en el segmento
+del sector, y `siguienteTurno` **se salta ese producto** en la rotación de «Desde Windoce» en vez de
+escribir con datos viejos. Y para que no se apague de golpe, `fichasPorCaducar` las enseña en el
+canario **una semana antes**, con los días que les quedan.
+
+De paso se arregló una fuga de escrituras que había dejado el apartado g: `vigilarFichas` borraba la
+marca a ciegas en cada corrida y por cada producto — diez productos por once corridas, más de cien
+escrituras diarias para no decir nada. Ahora lee el estado anterior y **solo escribe lo que cambió**.
+
+Lo que se leyó en vivo el 25 de noviembre: la página de Venezuela **sigue diciendo «Coming soon»**
+(la orden de Richard no había llegado al sitio todavía) y Divoox Flex **no** son bloques tipo Amazon
+Flex, sino el servicio de logística y última milla para empresas. Las dos cosas estaban mal de
+nuestro lado y están corregidas en la ficha.
+
+- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con diecisiete mutaciones
   (quitar el candado, quitar la regla de clasificación, borrar el LinkedIn, quitar el `rel=sponsored`,
-  vaciar el mapa de producto por sección, quitar la prioridad de fuentes, volver a dos intentos…).
-- **Qué NO tocar:** `ponerTransparencia` no debe tocar las notas de la casa, y el aviso de
-  transparencia no lo escribe nunca el modelo.
+  vaciar el mapa de producto por sección, quitar la prioridad de fuentes, volver a dos intentos,
+  anular la caducidad por tiempo, anular el aviso previo, ignorar la ficha vencida en la rotación,
+  escribir aunque no cambie nada, borrar a ciegas, devolver el «cuidado» que forzaba la frase falsa).
+- **Qué NO tocar:** `ponerTransparencia` no debe tocar las notas de la casa; el aviso de
+  transparencia no lo escribe nunca el modelo; y ninguna prueba de fichas puede depender del reloj
+  real — se les pasa `now`, porque si no caducan solas el día que pasa el mes.

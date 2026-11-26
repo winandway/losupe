@@ -1,4 +1,4 @@
-import { fichasVencidas } from "./casa/vigilar-ficha";
+import { fichasPorCaducar, fichasVencidas } from "./casa/vigilar-ficha";
 import type { SchemaStatus } from "./schema-guard";
 
 export type HealthReport = {
@@ -38,6 +38,8 @@ export type HealthReport = {
    * decir de más (25 nov 2026).
    */
   fichasVencidas?: Record<string, string>;
+  /** Fichas que caducan dentro de una semana, con los días que les quedan, para releerlas a tiempo. */
+  fichasPorCaducar?: Record<string, number>;
   db: {
     binding: boolean;
     schema: SchemaStatus | null;
@@ -92,6 +94,7 @@ export async function buildHealthReport(
     const filas = relojes.results ?? [];
     const guiones = await leerEstadoGuiones(db);
     const fichas = await fichasVencidas(db).catch(() => ({}));
+    const porCaducar = fichasPorCaducar(new Date(time));
     return {
       ok: true,
       time,
@@ -108,6 +111,7 @@ export async function buildHealthReport(
       },
       guiones,
       ...(Object.keys(fichas).length > 0 ? { fichasVencidas: fichas } : {}),
+      ...(Object.keys(porCaducar).length > 0 ? { fichasPorCaducar: porCaducar } : {}),
       db: {
         binding: true,
         schema,

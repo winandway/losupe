@@ -9,6 +9,7 @@ import { saveArticle, setArticleStatus } from "@/lib/robot/publish";
 import { cleanEditorialHtml, WRITER_MODEL, type Draft } from "@/lib/robot/writer";
 import { conAviso } from "./aviso";
 import { PRODUCTOS, type Producto } from "./productos";
+import { fichasVencidas } from "./vigilar-ficha";
 
 /**
  * EL PASO DIARIO DE «DESDE WINDOCE» (docs/DESDE-WINDOCE.md, candado 57).
@@ -39,12 +40,24 @@ const GUIA_FORMATO: Record<Formato, string> = {
   como: "EL CÓMO. Una guía útil paso a paso («cómo grabar tu pantalla gratis», «cómo respaldar las fotos de tu negocio»). El producto es UNA de las opciones, no la única: los pasos sirven aunque el lector use otra herramienta. Sin nombrar a la competencia.",
 };
 
-export function siguienteTurno(n: number): { producto: Producto; formato: Formato } {
-  const i = Math.max(0, Math.floor(n));
-  return {
-    producto: PRODUCTOS[i % PRODUCTOS.length] as Producto,
-    formato: FORMATOS[i % FORMATOS.length] as Formato,
-  };
+/**
+ * El producto y el formato que tocan. Se SALTA los productos con la ficha vencida (su página cambió
+ * o se leyó hace más de un mes): antes de escribir de nuestro propio producto con datos viejos, le
+ * toca al siguiente. Si todos están vencidos devuelve `null` y ese día no se escribe nada de la
+ * casa: el canario ya lo está diciendo con nombre y apellido.
+ */
+export function siguienteTurno(
+  n: number,
+  vencidas: Record<string, string> = {},
+): { producto: Producto; formato: Formato } | null {
+  const desde = Math.max(0, Math.floor(n));
+  for (let salto = 0; salto < PRODUCTOS.length; salto++) {
+    const i = desde + salto;
+    const producto = PRODUCTOS[i % PRODUCTOS.length] as Producto;
+    if (vencidas[producto.id]) continue;
+    return { producto, formato: FORMATOS[i % FORMATOS.length] as Formato };
+  }
+  return null;
 }
 
 const SYSTEM_CASA = `Eres redactor de losupe.com, un medio bilingüe. Escribes la sección «Desde Windoce»: contenido de la casa sobre los productos de Windoce LLC, la empresa dueña del medio. El estilo es «vender sin vender»: se cuenta una historia útil, no se escribe un anuncio.
@@ -288,7 +301,9 @@ export async function pasoCasa(
   await assertBudget(db, 0.02, now);
 
   const total = await db.prepare(`SELECT COUNT(*) AS n FROM house_notes`).first<{ n: number }>();
-  const { producto, formato } = siguienteTurno(Number(total?.n ?? 0));
+  const turno = siguienteTurno(Number(total?.n ?? 0), await fichasVencidas(db).catch(() => ({})));
+  if (!turno) return { publicada, escrita: null, motivo: "fichas_vencidas" };
+  const { producto, formato } = turno;
   const usage = await generateJson<unknown>({
     apiKey: env.GEMINI_API_KEY,
     model: WRITER_MODEL,

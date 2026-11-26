@@ -29,11 +29,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                                              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                                              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                  Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                  En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                                              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                                              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                                  Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                                  hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🔴 Segmento de delivery (Richard, 25 nov 2026)
 
@@ -41,11 +41,18 @@
       Llerena con su LinkedIn y línea de transparencia automática (candado 61). Plan:
       [docs/DELIVERY.md](docs/DELIVERY.md).
 - [x] 👤 La página de Divoox dice «próximamente» en Venezuela: la sesión de Divoox lo va a quitar
-      porque ya abrieron (Richard, 25 nov 2026). **Ya no hace falta avisar a mano:** la ficha vigila
-      esa frase y, cuando desaparezca, queda marcada como vencida en `/__health` y el redactor deja
-      de usar sus datos hasta que se relea la página (candado 61 g).
-- [ ] 🤖 **Cuando el canario marque la ficha de Divoox como vencida:** releer divoox.com, actualizar
-      sus datos, su «cuidado» y la fecha de verificación en `src/lib/casa/productos.ts`.
+      porque ya abrieron (Richard, 25 nov 2026). Comprobado en vivo el 25 de noviembre a las 20:50:
+      **la página todavía dice «Coming soon»**, el cambio no había llegado al sitio. No hace falta
+      avisar a mano: la ficha vigila esa frase y, cuando desaparezca, queda marcada como vencida en
+      `/__health` (candado 61 g).
+- [x] 🤖 La ficha ya no obliga a decir lo contrario: el «cuidado» decía «no decir que ya opera» y el
+      modelo escribía «todavía no opera». Ahora la etapa es un dato de la ficha y no se afirma en
+      ninguna de las dos direcciones. Ficha releída el 25 de noviembre, con Flex bien contado
+      (logística para empresas, no bloques tipo Amazon Flex). Candado 61 h.
+- [ ] 🤖 **Cuando el canario marque una ficha como vencida** (por la frase o por cumplir 30 días):
+      releer la página de ese producto y actualizar sus datos, su «cuidado» y la fecha de
+      `verificado` en `src/lib/casa/productos.ts`. El canario avisa una semana antes en
+      `fichasPorCaducar`. Las nueve fichas del 7 de noviembre caducan el **7 de diciembre**.
 - [ ] 🤖 Vigilar la primera semana del segmento: que salgan las tres al día y que ninguna se vaya a
       otra sección.
 

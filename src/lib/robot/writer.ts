@@ -354,7 +354,10 @@ ${sourcesBlock(b.sources)}${internalLinksBlock(b.internalLinks ?? [])}`;
  *  1. **Solo cuando encaje de verdad.** En una comparativa de apps de la región, en una nota sobre
  *     Venezuela, en una sobre comisiones o sobre lo que gana un repartidor en América Latina. Nunca
  *     metido con calzador en una noticia de Nueva York, y nunca en el titular de algo que no es suyo.
- *  2. **Solo lo que su página sostiene.** Ni usuarios, ni pedidos, ni ciudades funcionando. Una nota
+ *  2. **Solo lo que su página sostiene, y nada por nuestra cuenta en ninguna dirección.** Ni usuarios,
+ *     ni pedidos, ni planes. Tampoco al revés: la ficha del 7 de noviembre decía «no decir que ya
+ *     opera en ninguna ciudad» y eso hacía que el modelo escribiera «todavía no opera» — una
+ *     afirmación nuestra sobre el estado de nuestra propia empresa, que es justo lo que no toca. Una nota
  *     que dice de nuestro producto más de lo que se puede comprobar es la forma más rápida de que
  *     no nos crea nadie — ni el lector ni Google.
  *
@@ -387,7 +390,7 @@ CÓMO SE USA ESTO:
 - Si no encaja, NO lo menciones. Una mención forzada se nota y resta.
 - Nunca en el titular de una noticia que no es suya, y nunca como protagonista de algo que hizo otra empresa.
 - Una sola mención, dentro del texto, tratado igual que a Rappi o a DoorDash.
-- SOLO los datos de la lista de arriba. Nada de usuarios, pedidos, ciudades ya funcionando ni planes futuros.${p.cuidado ? `\n- Cuidado: ${p.cuidado}` : ""}
+- SOLO los datos de la lista de arriba. Nada de usuarios, de pedidos ni de planes futuros. Y NO afirmes por tu cuenta en qué etapa está en un país o en una ciudad: la etapa es la que diga la lista, ni más ni menos.${p.cuidado ? `\n- Cuidado: ${p.cuidado}` : ""}
 - NO escribas ningún aviso de transparencia: lo pone el sistema solo.
 `;
 }
