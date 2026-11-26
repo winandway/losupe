@@ -390,7 +390,8 @@ CÓMO SE USA ESTO:
 - Si no encaja, NO lo menciones. Una mención forzada se nota y resta.
 - Nunca en el titular de una noticia que no es suya, y nunca como protagonista de algo que hizo otra empresa.
 - Una sola mención, dentro del texto, tratado igual que a Rappi o a DoorDash.
-- SOLO los datos de la lista de arriba. Nada de usuarios, de pedidos ni de planes futuros. Y NO afirmes por tu cuenta en qué etapa está en un país o en una ciudad: la etapa es la que diga la lista, ni más ni menos.${p.cuidado ? `\n- Cuidado: ${p.cuidado}` : ""}
+- SOLO los datos de la lista de arriba. Nada de usuarios, de pedidos ni de planes futuros.
+- NO digas en qué etapa está en ningún país ni en ninguna ciudad: ni que ya opera, ni que todavía no, ni «próximamente», ni «está por abrir». Aquí se nombra por lo que hace, no por dónde está.${p.cuidado ? `\n- Cuidado: ${p.cuidado}` : ""}
 - NO escribas ningún aviso de transparencia: lo pone el sistema solo.
 `;
 }

@@ -83,6 +83,7 @@ FICHA (comprobada en su página el ${p.verificado}; es lo ÚNICO que puedes afir
 - Para quién: ${p.paraQuien.es}
 - Datos:
 ${p.datos.es.map((d) => `  · ${d}`).join("\n")}
+${p.etapa ? `- En qué etapa está, según su página: ${p.etapa.es}` : ""}
 ${p.cuidado ? `- CUIDADO: ${p.cuidado}` : ""}
 
 Escribe la nota en español y en inglés, con título, extracto, cuerpo en HTML, meta título, meta descripción y de 3 a 6 etiquetas, más los textos para redes.`;

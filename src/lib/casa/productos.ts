@@ -34,6 +34,15 @@ export type Producto = {
   paraQuien: { es: string; en: string };
   /** Datos verdaderos leídos en su página (con la fecha de `verificado`). */
   datos: { es: readonly string[]; en: readonly string[] };
+  /**
+   * EN QUÉ ETAPA ESTÁ, tal como lo dice su propia página (25 nov 2026).
+   *
+   * Va aparte de `datos` a propósito. En una nota de «Desde Windoce» —un lanzamiento— la etapa es
+   * el tema, y se cuenta. En una nota del SECTOR, nuestra app se nombra por lo que hace (comisiones,
+   * pago al repartidor, logística), no por dónde está: la página y la realidad pueden no coincidir
+   * el mismo día, y un diario no se pone a arbitrar eso con su propio dueño.
+   */
+  etapa?: { es: string; en: string };
   /** Lo que el redactor NO puede decir de este producto (promesas sin comprobar, temas delicados). */
   cuidado?: string;
   /**
@@ -76,7 +85,6 @@ export const PRODUCTOS: readonly Producto[] = [
         "Abre ciudad por ciudad, y cada ciudad arranca con una franquicia local que paga las motos, el entrenamiento de los repartidores y una tableta para cada restaurante.",
         "Divoox Flex es su servicio de logística y última milla para empresas: la empresa pone los vehículos y los repartidores, y Divoox pone la tecnología — registro de paquetes uno a uno o por hoja de cálculo, etiqueta con código QR y plus code, el destinatario marca su casa por WhatsApp sin crear cuenta, y el repartidor escanea cada caja al cargar.",
         "Las tiendas (mercados, farmacias, ferreterías) pueden subir su catálogo con una hoja de cálculo o por código de barras.",
-        "En su propia página, Miami, Orlando, Tampa y Ocala figuran como «próximamente», igual que Venezuela, que arrancaría por Caracas, Maracaibo y Valencia con precios en bolívares.",
       ],
       en: [
         "There are three apps: one to order, Divoox Driver to deliver, and Divoox Restaurants for the restaurant. You can also order and deliver from a browser.",
@@ -85,11 +93,14 @@ export const PRODUCTOS: readonly Producto[] = [
         "It opens city by city, and every city launches with a local franchise that pays for the motorbikes, driver training, and a tablet for each restaurant.",
         "Divoox Flex is its logistics and last-mile service for companies: the company brings the vehicles and the drivers, Divoox brings the technology — packages registered one by one or by spreadsheet, a label with a QR code and a plus code, the recipient pinning their home over WhatsApp with no account, and the driver scanning every box while loading.",
         "Stores (grocery, pharmacy, hardware) can upload their catalog with a spreadsheet or by barcode.",
-        "On its own site, Miami, Orlando, Tampa, and Ocala are listed as “coming soon,” as is Venezuela, which would start with Caracas, Maracaibo, and Valencia, with prices in bolívars.",
       ],
     },
+    etapa: {
+      es: "En su propia página, Miami, Orlando, Tampa y Ocala figuran como «próximamente», igual que Venezuela, que arrancaría por Caracas, Maracaibo y Valencia con precios en bolívares.",
+      en: "On its own site, Miami, Orlando, Tampa, and Ocala are listed as “coming soon,” as is Venezuela, which would start with Caracas, Maracaibo, and Valencia, with prices in bolívars.",
+    },
     cuidado:
-      "La etapa de cada ciudad y de cada país es la que diga su propia página ese día, y ya está en la lista de arriba: NO afirmes por tu cuenta ni que ya opera ni que todavía no opera en ningún sitio. No mencionar inversionistas ni dar cifras de pedidos, de restaurantes ni de repartidores.",
+      "La etapa de cada ciudad y de cada país es solo la que diga su propia página ese día: NO afirmes por tu cuenta ni que ya opera ni que todavía no opera en ningún sitio. No mencionar inversionistas ni dar cifras de pedidos, de restaurantes ni de repartidores.",
     vigilar: {
       url: "https://divoox.com/country/venezuela",
       frase: "Coming soon",

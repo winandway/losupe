@@ -108,10 +108,12 @@ Lo que se cuenta sale de lo que dice su propia página, leída el 25 de noviembr
 comparaciones de las que no haya fuente. El plan de largo plazo (ser la red de reparto de paquetes de
 otras empresas) **no se publica como un hecho**: hasta que exista, es un plan.
 
-**Y tampoco se afirma al revés.** La etapa de cada ciudad y de cada país es la que diga su propia
-página ese día, y está en la ficha como un dato más. El redactor no puede escribir «ya opera» ni
-«todavía no opera» por su cuenta: las dos cosas son una afirmación nuestra sobre nuestra propia
-empresa, y las dos se equivocan igual de rápido.
+**Y tampoco se afirma al revés.** En una nota del sector, Divoox **no dice en qué etapa está en
+ningún país ni en ninguna ciudad**: ni que ya opera, ni que todavía no, ni «próximamente». Aquí se
+nombra por lo que hace —comisiones, pago al repartidor, logística de última milla, franquicias—, no
+por dónde está. La etapa vive en su propio campo de la ficha (`etapa`), que solo recibe la nota de
+«Desde Windoce» —un lanzamiento, donde la etapa es el tema—, nunca el redactor del sector. La página
+y la realidad pueden no coincidir el mismo día, y un diario no se pone a arbitrar eso con su dueño.
 
 > **Ojo, 25 nov 2026:** Richard avisó de que en Venezuela ya se está repartiendo comida y mandó
 > quitar el «próximamente» de la página. Ese día la página **todavía decía «Coming soon»**: la orden

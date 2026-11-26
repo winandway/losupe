@@ -550,6 +550,30 @@ describe("una ficha también caduca por tiempo, y avisa antes de apagarse", () =
     expect(divoox.cuidado).toMatch(/ni que ya opera ni que todav/i);
     const bloque = bloqueCasaEnElSector("delivery");
     expect(bloque).not.toMatch(/ciudades ya funcionando/);
-    expect(bloque).toMatch(/NO afirmes por tu cuenta en qu/);
+    expect(bloque).toMatch(/NO digas en qu[ée] etapa est[áa]/);
+  });
+  it("en una nota del sector, nuestra app no dice en qué etapa está en ningún país", async () => {
+    const { bloqueCasaEnElSector } = await import("@/lib/robot/writer");
+    const { promptCasa } = await import("@/lib/casa/paso-diario");
+    const { getProducto } = await import("@/lib/casa/productos");
+    const divoox = getProducto("divoox")!;
+
+    // La etapa vive aparte de los datos, para poder dársela a una y no a la otra.
+    expect(divoox.etapa?.es).toMatch(/pr[óo]ximamente/i);
+    expect(divoox.datos.es.join(" ")).not.toMatch(/pr[óo]ximamente/i);
+    expect(divoox.datos.en.join(" ")).not.toMatch(/coming soon/i);
+
+    // El sector: la frase de la etapa no llega, y se prohíbe decirla en cualquier dirección.
+    const sector = bloqueCasaEnElSector("delivery");
+    expect(sector).not.toContain(divoox.etapa!.es);
+    expect(sector).not.toMatch(/Miami, Orlando, Tampa/);
+    expect(sector).not.toMatch(/Caracas/);
+    expect(sector).toMatch(/NO digas en qu[ée] etapa est[áa]/);
+    expect(sector).toMatch(/por lo que hace, no por d[óo]nde est/);
+
+    // La nota de la casa (un lanzamiento) sí la cuenta: ahí la etapa es el tema.
+    expect(promptCasa(divoox, "lanzamiento")).toMatch(
+      /En qu[ée] etapa est[áa], seg[úu]n su p[áa]gina/,
+    );
   });
 });

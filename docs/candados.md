@@ -2292,8 +2292,12 @@ sobre Venezuela, eso no es una prohibición: es un dato, y lo escribe — «toda
 del redactor remataba con «Nada de … ciudades ya funcionando». Resultado: afirmábamos sobre el estado
 de nuestra propia empresa, que es justo lo que no toca.
 
-Ahora la ficha dice la etapa de cada sitio **como dato comprobado en su página**, y el `cuidado` y la
-regla del redactor prohíben afirmar en las DOS direcciones: ni que ya opera, ni que todavía no.
+Ahora la etapa vive en su **propio campo** de la ficha (`etapa`), separada de `datos`, y va solo a la
+nota de «Desde Windoce» —un lanzamiento, donde la etapa es el tema—. El redactor del **sector** no la
+recibe nunca y tiene la orden expresa de no decirla en ninguna dirección: ni que ya opera, ni que
+todavía no, ni «próximamente». En una nota del sector nuestra app se nombra por lo que hace, no por
+dónde está; la página y la realidad pueden no coincidir el mismo día, y un diario no se pone a
+arbitrar eso con su propio dueño.
 
 **2. La realidad puede moverse antes que la página.** Vigilar una frase (apartado g) solo detecta
 que la página cambie. No detecta que una ficha no se relea nunca. Por eso toda ficha caduca también
@@ -2312,11 +2316,12 @@ Lo que se leyó en vivo el 25 de noviembre: la página de Venezuela **sigue dici
 Flex, sino el servicio de logística y última milla para empresas. Las dos cosas estaban mal de
 nuestro lado y están corregidas en la ficha.
 
-- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con diecisiete mutaciones
+- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con diecinueve mutaciones
   (quitar el candado, quitar la regla de clasificación, borrar el LinkedIn, quitar el `rel=sponsored`,
   vaciar el mapa de producto por sección, quitar la prioridad de fuentes, volver a dos intentos,
   anular la caducidad por tiempo, anular el aviso previo, ignorar la ficha vencida en la rotación,
-  escribir aunque no cambie nada, borrar a ciegas, devolver el «cuidado» que forzaba la frase falsa).
+  escribir aunque no cambie nada, borrar a ciegas, devolver el «cuidado» que forzaba la frase
+  falsa, colar la etapa en el bloque del sector, quitársela a la nota de la casa).
 - **Qué NO tocar:** `ponerTransparencia` no debe tocar las notas de la casa; el aviso de
   transparencia no lo escribe nunca el modelo; y ninguna prueba de fichas puede depender del reloj
   real — se les pasa `now`, porque si no caducan solas el día que pasa el mes.
