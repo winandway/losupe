@@ -12,7 +12,6 @@ import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listPaged } from "@/lib/queries";
-import { DirectorioDelSector } from "@/components/DirectorioDelSector";
 import { FichasCasa } from "@/components/FichasCasa";
 import { sectionByAnySlug, sectionBySlug } from "@/lib/sections";
 import { breadcrumbJsonLd, itemListJsonLd, sectionAlternates } from "@/lib/seo";
@@ -138,11 +137,10 @@ export default async function SectionPage({ params, searchParams }: Props) {
         dict={dict}
       />
 
+      {/* Las fichas de los productos del grupo SOLO viven en la sección de la casa, que lo dice en
+          cada nota. Fuera de ahí, una pieza fija que nombre un producto nuestro convierte la sección
+          en su escaparate: candado 64 y `docs/SEO-IMPARCIALIDAD.md`. */}
       {section.house && page === 1 ? <FichasCasa lang={lang} dict={dict} /> : null}
-      {/* El directorio del sector, con la nuestra dentro y declarada (candado 63). */}
-      {!section.house && page === 1 ? (
-        <DirectorioDelSector sectionId={section.id} lang={lang} dict={dict} />
-      ) : null}
     </Container>
   );
 }

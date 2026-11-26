@@ -100,17 +100,6 @@ export const es = {
       "Losupe es de Windoce LLC. En esta sección contamos historias y guías de sus productos, siempre con el aviso arriba. Estos son, con lo que comprobamos en sus páginas:",
     houseChecked: (fecha: string) => `Datos comprobados en su página el ${fecha}`,
     houseVisit: "Ir a la página",
-    // El directorio del sector, con la nuestra dentro y en su sitio (candado 63).
-    sectorDirTitle: "Quién es quién en el reparto",
-    sectorDirHint:
-      "Las apps que mueven el sector, con las mismas casillas para todas: qué hacen, dónde operan, qué paga el restaurante y cómo cobra quien reparte. Van ordenadas de la más grande a la más nueva, y cada ficha dice de dónde salen sus datos y cuándo los comprobamos. Cuando una empresa no publica algo, lo decimos.",
-    sectorDirWhere: "Dónde opera",
-    sectorDirMerchant: "Qué paga el restaurante",
-    sectorDirCourier: "Cómo cobra quien reparte",
-    sectorDirOursTag: "De la casa",
-    sectorDirOurs: (nombre: string) =>
-      `${nombre} es de Windoce LLC, la empresa dueña de Losupe. Lo decimos aquí para que lo sepas: la contamos con las mismas casillas y las mismas exigencias que a las demás.`,
-    sectorDirSource: (fuente: string, fecha: string) => `${fuente} · comprobado el ${fecha}`,
   },
   search: {
     title: "Buscar en losupe",

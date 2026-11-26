@@ -52,45 +52,54 @@ Delivery, con su línea.
 
 ## 2 bis. Dónde aparece Divoox, en concreto
 
-No es casualidad ni depende de que el redactor se acuerde. Son tres sitios, y los tres están en
-código:
+Un solo sitio, y lo decide la noticia:
 
-1. **El redactor sabe que existe.** En cada encargo de una nota de delivery va la ficha de Divoox con
-   lo que su página sostiene, y la instrucción de nombrarlo **solo cuando encaje**: una comparativa
-   de apps de la región, una nota sobre Venezuela o América Latina, una sobre comisiones o sobre lo
-   que gana un repartidor. Si no encaja, no lo menciona: una mención forzada se nota y resta. Nunca
-   en el titular de algo que hizo otra empresa, y nunca un dato que no esté en la ficha.
-2. **Al pie de la sección va el DIRECTORIO del sector**, no una ficha sola de la nuestra: Uber Eats,
-   DoorDash, Instacart, Rappi, Spark Driver y Divoox, con las mismas casillas para todas —qué es,
-   dónde opera, qué paga el restaurante, cómo cobra quien reparte—, ordenadas de la más grande a la
-   más nueva, con su fuente y su fecha. Divoox sale **la última**, con su línea de transparencia
-   dentro de SU ficha y el enlace marcado `rel="sponsored"`; los de las demás van `nofollow`.
-   Una ficha sola de la nuestra le decía a Google para qué existe la sección: ver
-   [`SEO-IMPARCIALIDAD.md`](SEO-IMPARCIALIDAD.md) y el candado 63.
-3. **Está en la rotación de temas** del segmento, como una empresa más de la lista, junto a DoorDash
-   y a Rappi.
+**Dentro de una nota del sector, cuando encaja.** En cada encargo de delivery va la ficha de Divoox
+con lo que su página sostiene, y la instrucción de nombrarlo **solo si la noticia lo pide**: una
+comparativa de apps de la región, una nota sobre comisiones, sobre lo que gana un repartidor, sobre
+soporte o sobre franquicias. Si no encaja, no se menciona: una mención forzada se nota y resta.
+Nunca en el titular de algo que hizo otra empresa, nunca un dato que no esté en la ficha, y nunca
+su etapa en un país. Cuando aparece, el código pone la línea de transparencia (candado 61).
 
-Y encima de todo eso, la línea de transparencia automática del punto 2. Un medio que esconde de
-quién es se lo come Google; uno que lo pone arriba y escribe del sector entero con el mismo rasero
-gana autoridad **y** le da a su producto el sitio donde la gente lo conoce. Eso es lo que estamos
-haciendo.
+**Y en ningún sitio más.** El 26 de noviembre de 2026 se quitó la última pieza fija que lo nombraba:
+
+- Primero hubo una ficha sola de Divoox al pie de la sección. Mal: le decía a Google para qué existe
+  la sección.
+- Después un directorio de seis empresas con la nuestra la última. También mal, y Richard lo vio:
+  _«no necesitamos tener una ficha de cada una de ellas… cualquier empresa puede ser DoorDash»_. Una
+  tabla que escribimos nosotros, donde nos ponemos nosotros, no es imparcial porque tenga cinco
+  competidores — y encima encierra un sector de decenas de empresas en seis.
+- Y se quitó la etiqueta «De la casa» que llevaba la ficha. La transparencia es una línea de texto
+  dentro de la nota, nunca un sello en una vitrina: _«me parece absurdo, me parece vanidoso»_.
+- También salieron de la rotación del sector los dos temas que eran sobre Divoox. Sus lanzamientos
+  propios van a «Desde Windoce», que es su sitio.
+
+Reglas completas en [`SEO-IMPARCIALIDAD.md`](SEO-IMPARCIALIDAD.md); candados 63 y 64.
 
 ## 3. El plan editorial
 
 La rotación la hace el propio sistema con los temas de `src/lib/robot/ideas.ts`, sección `delivery`:
 
-- **Las empresas, una por día:** DoorDash, Uber Eats, Instacart, Rappi, Amazon Flex, Deliveroo,
-  Glovo, iFood, PedidosYa, DiDi Food, Wolt, Grubhub.
+- **Las empresas, una por día, y son muchas más que cinco:** DoorDash, Uber Eats, Instacart, Rappi,
+  Amazon Flex, Deliveroo, Glovo, iFood, PedidosYa, DiDi Food, Wolt, Grubhub, inDrive, Bolt Food,
+  Just Eat, Grab, Gojek, Swiggy, Zomato, Meituan, Gopuff, Getir, Lalamove, Shopee Food, 99Food y
+  Spark Driver.
+- **Lo que lanzan, que es de lo que sale noticia de verdad** (Richard, 26 nov 2026: _«inDrive
+  inventa un carro autónomo y lo lanza en Bolivia: eso es una noticia»_): funciones nuevas,
+  actualizaciones, carros sin conductor, robots y drones, soporte por WhatsApp, billeteras y
+  recargas, seguros, verificación de identidad, huelgas y leyes.
 - **Cómo funciona cada cosa:** las comisiones, la propina, los bloques, la última milla, el código de
   recogida, qué pasa cuando un producto se agota, cómo se abre una ciudad.
 - **País por país:** Estados Unidos, México, Colombia, Venezuela, Perú, Chile, Argentina, Brasil.
 - **Y los rankings:** las apps más usadas en cada país, las comisiones comparadas, las ciudades donde
   más se pide.
 
-Las notas de actualidad salen de nueve fuentes propias del sector, todas comprobadas vivas el 25 de
-noviembre de 2026: Food On Demand, Restaurant Dive, Supply Chain Dive, Modern Retail, TechCrunch
-Transportation y cuatro búsquedas de Google News (apps de reparto, última milla y trabajo por
-encargo, reparto a domicilio en español, y logística en América Latina).
+Las notas de actualidad salen de **doce** fuentes propias del sector, todas comprobadas vivas antes
+de sembrarlas: Food On Demand, Restaurant Dive, Supply Chain Dive, Modern Retail, TechCrunch
+Transportation y siete búsquedas de Google News — apps de reparto, última milla y trabajo por
+encargo, reparto a domicilio en español, logística en América Latina y, desde el 26 de noviembre,
+lanzamientos y funciones nuevas (EN), las apps de América Latina y Asia (ES: inDrive, DiDi Food,
+Glovo, iFood, PedidosYa) y el reparto autónomo con robots y drones (EN).
 
 ## 4. Lo que se puede decir de Divoox, y lo que no
 

@@ -29,11 +29,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                                                          Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                                                          En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                              Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                              En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                                                          Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                                                          hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                                              Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                                              hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🔴 Segmento de delivery (Richard, 25 nov 2026)
 
@@ -56,9 +56,21 @@
 - [x] 🤖 El pie de la sección pasa de una ficha sola de Divoox al directorio del sector, con seis
       empresas y las mismas casillas (Richard, 25 nov 2026). Regla escrita en
       [docs/SEO-IMPARCIALIDAD.md](docs/SEO-IMPARCIALIDAD.md); candado 63.
-- [ ] 🤖 Releer los datos del directorio del sector cada tres meses (o antes si cambia una tarifa):
-      las comisiones de Uber Eats y DoorDash se mueven y una cifra vieja de un competidor es peor que
-      no ponerla. Próxima revisión: 25 de febrero de 2027.
+- [x] 🤖 **El directorio se quitó entero el 26 de noviembre** y con él la etiqueta «De la casa»
+      (Richard: «no necesitamos tener una ficha de cada una de ellas… me parece vanidoso»). Fuera de
+      «Desde Windoce» ya no hay ninguna pieza fija que nombre un producto del grupo. Candado 64.
+- [x] 🤖 El sector se abre: de doce empresas a veintiséis en la rotación, con los temas de los que
+      sale noticia (lanzamientos, carros sin conductor, robots, drones, soporte por WhatsApp,
+      recargas, seguros, huelgas y leyes) y tres fuentes nuevas comprobadas vivas (26 nov 2026).
+- [ ] 👤 **Avisar cuando el soporte por WhatsApp de Divoox esté funcionando de verdad** (canal
+      autorizado por Meta). Ese día: nota de lanzamiento en «Desde Windoce» y, aparte, el tema del
+      sector «cómo dan soporte las apps de reparto por WhatsApp», donde Divoox es una más. Hasta
+      que no esté vivo no se publica: un diario que anuncia lo que su dueño todavía no lanzó deja
+      de ser un diario.
+- [ ] 👤 **Lo mismo con «Reserva»** (recargar el saldo con un clic y pagarlo en la próxima recarga,
+      para no quedarse sin carreras a mitad del turno). Richard dice que la directiva lo aprobó; en
+      cuanto esté en la app se escribe. Tema del sector ya listo en la rotación: «cómo recarga su
+      saldo un repartidor sin parar de trabajar».
 - [ ] 🤖 Vigilar la primera semana del segmento: que salgan las tres al día y que ninguna se vaya a
       otra sección. **Medido el 25 de noviembre: salió UNA de tres** (trece notas en total ese día,
       el ritmo bien, el reparto mal). El canario ahora enseña `turnos` con los intentos y el motivo

@@ -208,13 +208,23 @@ const TEMAS: Record<
     ],
   },
   /**
-   * DELIVERY Y LOGÍSTICA (25 nov 2026). El plan editorial que pidió Richard: «un día una empresa,
-   * otro día otra», cómo funciona cada cosa, y el reparto país por país. Son temas del SECTOR —las
-   * empresas grandes del mundo, lo que cobra cada una, lo que gana un repartidor— porque un
-   * segmento que solo hablara de nuestro producto no lo guardaría Google, y con razón. Cuando una
-   * nota nombra a Divoox, el aviso de transparencia lo pone el código (`src/lib/casa/aviso.ts`).
+   * DELIVERY Y LOGÍSTICA (25 nov 2026, ampliado el 26). El plan editorial que pidió Richard: «un día
+   * una empresa, otro día otra», cómo funciona cada cosa, y el reparto país por país.
+   *
+   * El 26 de noviembre lo corrigió, y tenía razón: esto no va de porcentajes. «Inventa supongamos
+   * algo nuevo, un carro autónomo, y lo lanza en Bolivia. Eso es una noticia.» El sector son todas
+   * las empresas que mueven un pedido en el mundo —inDrive, Grab, Meituan, Swiggy, iFood, las que
+   * vengan— y los temas son lo que lanzan, lo que cambian, lo que les prohíben y lo que inventan.
+   *
+   * Por eso aquí NO hay ningún tema sobre un producto nuestro. Una guía de Divoox dentro de la
+   * sección del sector es un folleto, por muy bien escrita que esté. Divoox aparece cuando la
+   * noticia lo trae, como una empresa más, y entonces el aviso de transparencia lo pone el código
+   * (`src/lib/casa/aviso.ts`). Sus lanzamientos propios van a «Desde Windoce», que es su sitio.
    */
   delivery: {
+    // El sector es mucho más grande que cinco apps y mucho más que sus comisiones. Aquí entra todo
+    // el que mueve un pedido en el mundo, y los temas de los que de verdad sale noticia: lo que
+    // lanzan, lo que cambian, lo que les prohíben y lo que inventan (candado 64).
     curiosidades: [
       "DoorDash",
       "Uber Eats",
@@ -228,17 +238,35 @@ const TEMAS: Record<
       "DiDi Food",
       "Wolt",
       "Grubhub",
+      "inDrive",
+      "Bolt Food",
+      "Just Eat Takeaway",
+      "Grab",
+      "Gojek",
+      "Swiggy",
+      "Zomato",
+      "Meituan",
+      "Gopuff",
+      "Getir",
+      "Lalamove",
+      "Shopee Food",
+      "99Food",
+      "Spark Driver, el reparto de Walmart",
       "los drones de reparto",
       "los robots de acera que reparten comida",
+      "los carros sin conductor que reparten comida",
       "las cocinas fantasma",
       "la propina en las apps de reparto",
       "los repartidores en bicicleta",
       "la última milla",
       "los casilleros de paquetes",
       "el reparto en moto en América Latina",
-      // Nuestra propia app, en la rotación como una más del sector: es la sección donde la gente
-      // la va a conocer. La línea de transparencia la pone el código al publicar (candado 61).
-      "Divoox",
+      "las huelgas de repartidores",
+      "el soporte por WhatsApp en las apps de reparto",
+      "las billeteras y las recargas de saldo de los repartidores",
+      "los seguros para repartidores",
+      "la verificación de identidad en las apps de reparto",
+      "las tabletas que las apps ponen en los restaurantes",
     ],
     errores: [
       "pedir comida a domicilio",
@@ -249,6 +277,10 @@ const TEMAS: Record<
       "mandar un paquete a otro país",
       "elegir la dirección de entrega",
       "manejar los pedidos en hora pico",
+      "quedarse sin saldo a mitad del turno repartiendo",
+      "pedir soporte a una app de reparto",
+      "escoger la moto para repartir",
+      "abrir una franquicia de reparto",
     ],
     guia: [
       "cómo funciona DoorDash",
@@ -266,8 +298,12 @@ const TEMAS: Record<
       "cómo funciona el reparto de paquetes de una empresa",
       "qué es un código plus y por qué importa en direcciones sin número",
       "cómo se paga a un repartidor en un país sin tarjetas",
-      "cómo funciona Divoox, la app de reparto de Windoce",
-      "qué es Divoox Flex y para qué le sirve a una empresa de logística",
+      "cómo recarga su saldo un repartidor sin parar de trabajar",
+      "cómo dan soporte las apps de reparto por WhatsApp",
+      "cómo funciona un canal de WhatsApp aprobado por Meta para atender clientes",
+      "cómo reparten los carros sin conductor y dónde ya lo hacen",
+      "cómo se verifica la identidad de un repartidor",
+      "qué cambia para un repartidor cuando una ley lo vuelve empleado",
     ],
     ranking: [
       "las apps de reparto más usadas en Estados Unidos",
@@ -278,6 +314,12 @@ const TEMAS: Record<
       "las comisiones que cobran las apps de reparto",
       "las ciudades donde más se pide comida a domicilio",
       "las formas de repartir un paquete en la última milla",
+      "las apps de reparto que más funciones nuevas lanzaron este año",
+      "los países donde ya reparten carros sin conductor",
+      "las apps de reparto más usadas en Brasil",
+      "las apps de reparto más usadas en Argentina",
+      "las apps de reparto más usadas en Perú",
+      "las empresas de reparto más grandes de Asia",
     ],
   },
 };

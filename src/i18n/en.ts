@@ -102,17 +102,6 @@ export const en: Dict = {
       "Losupe is part of Windoce LLC. In this section we share stories and guides about its products, always with a disclosure up top. Here they are, with what we verified on their own sites:",
     houseChecked: (date: string) => `Details verified on its site on ${date}`,
     houseVisit: "Visit the site",
-    // El directorio del sector, con la nuestra dentro y en su sitio (candado 63).
-    sectorDirTitle: "Who's who in delivery",
-    sectorDirHint:
-      "The apps that move this industry, with the same boxes filled in for every one: what they do, where they operate, what the restaurant pays, and how the courier is paid. They run from the largest to the newest, and each card says where its facts come from and when we checked them. When a company doesn't publish something, we say so.",
-    sectorDirWhere: "Where it operates",
-    sectorDirMerchant: "What the restaurant pays",
-    sectorDirCourier: "How the courier is paid",
-    sectorDirOursTag: "Ours",
-    sectorDirOurs: (nombre: string) =>
-      `${nombre} is owned by Windoce LLC, the company that owns Losupe. We say so here: we cover it with the same boxes and the same standards as the rest.`,
-    sectorDirSource: (fuente: string, fecha: string) => `${fuente} · checked on ${fecha}`,
   },
   search: {
     title: "Search losupe",

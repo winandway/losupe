@@ -257,40 +257,64 @@ describe("nuestra propia app aparece en el segmento, declarada", () => {
     expect(b).toMatch(/NO escribas ningún aviso de transparencia/);
   });
 
-  it("al pie va el DIRECTORIO del sector, no una ficha sola de la nuestra", async () => {
-    const { renderToStaticMarkup } = await import("react-dom/server");
-    const { DirectorioDelSector } = await import("@/components/DirectorioDelSector");
-    const { DIRECTORIO } = await import("@/lib/sector/directorio");
-    const { es } = await import("@/i18n/es");
-    const html = renderToStaticMarkup(
-      <DirectorioDelSector sectionId="delivery" lang="es" dict={es as never} />,
-    );
+  /**
+   * CANDADO 64 — fuera de la sección de la casa, ninguna pieza fija nombra un producto nuestro.
+   *
+   * Al pie de «Delivery y logística» hubo primero una ficha sola de Divoox, y después un directorio
+   * de seis empresas con la nuestra dentro. Richard tumbó las dos, y con el mejor argumento: «no
+   * necesitamos tener una ficha de cada una de ellas… esa etiqueta de la casa no me interesa que
+   * esté allí, me parece vanidoso». Una tabla que escribimos nosotros, donde nos ponemos nosotros,
+   * repetida en toda la sección, es el escaparate — y encima nos delata ante Google sola.
+   *
+   * Lo que queda es lo correcto: las fichas de los productos del grupo viven SOLO en «Desde
+   * Windoce», que avisa en cada nota; en las secciones de periodismo nuestro producto aparece
+   * únicamente cuando una noticia lo trae, y entonces el código pone la línea de transparencia
+   * (candado 61, arriba). La transparencia se queda; el escaparate se va.
+   */
+  it("fuera de la sección de la casa, ninguna pieza fija nombra un producto del grupo", async () => {
+    const { readFileSync, readdirSync } = await import("node:fs");
+    const { PRODUCTOS } = await import("@/lib/casa/productos");
 
-    // Están TODAS, con las mismas casillas. Una pieza fija que solo hable de la nuestra le dice a
-    // Google que la sección existe para promocionarla (docs/SEO-IMPARCIALIDAD.md).
-    for (const e of DIRECTORIO) expect(html).toContain(e.nombre);
-    expect(DIRECTORIO.filter((e) => !e.nuestra).length).toBeGreaterThanOrEqual(5);
+    // Los componentes de la casa SÍ los nombran: ese es su trabajo, y van con su aviso.
+    const DE_LA_CASA = ["FichasCasa.tsx", "AvisoCasa.tsx"];
+    const archivos = [
+      "src/app/[lang]/[section]/page.tsx",
+      ...readdirSync("src/components")
+        .filter((f) => f.endsWith(".tsx") && !DE_LA_CASA.includes(f))
+        .map((f) => `src/components/${f}`),
+    ];
 
-    // La nuestra NO va primero, y el titular de la sección no es nuestro producto.
-    expect(DIRECTORIO[0]!.nuestra).toBeFalsy();
-    expect(html.indexOf("Divoox")).toBeGreaterThan(html.indexOf("DoorDash"));
-    expect(html).not.toMatch(/Nuestra propia app/i);
-    expect(es.section.sectorDirTitle).not.toMatch(/divoox|nuestra/i);
+    for (const archivo of archivos) {
+      const fuente = readFileSync(archivo, "utf8");
+      // Solo el código, no los comentarios: este candado se explica nombrando a Divoox.
+      const codigo = fuente.replace(/\/\*[\s\S]*?\*\//g, "").replace(/^\s*\/\/.*$/gm, "");
+      for (const p of PRODUCTOS) {
+        expect(codigo, `${archivo} nombra ${p.nombre} en una pieza fija`).not.toContain(p.nombre);
+      }
+    }
 
-    // Pero la transparencia sigue, dentro de SU ficha.
-    expect(html).toContain("Windoce LLC");
-    // Enlaces: la nuestra marcada como de la casa, las demás sin pasar autoridad.
-    expect(html).toMatch(/rel="sponsored noopener"/);
-    expect(html).toMatch(/rel="nofollow noopener"/);
-    // Cada ficha dice de dónde salen sus datos.
-    for (const e of DIRECTORIO) expect(html).toContain(e.fuente.es);
+    // Y el directorio del pie no vuelve por la puerta de atrás.
+    expect(readdirSync("src/components")).not.toContain("DirectorioDelSector.tsx");
+  });
 
-    // En una sección que no es la del sector, no se pinta nada.
-    expect(
-      renderToStaticMarkup(
-        <DirectorioDelSector sectionId="artistas" lang="es" dict={es as never} />,
-      ),
-    ).toBe("");
+  it("y la sección del sector no tiene ni un tema sobre un producto nuestro", async () => {
+    const { ideasDeSeccion } = await import("@/lib/robot/ideas");
+    const { PRODUCTOS } = await import("@/lib/casa/productos");
+    const ideas = ideasDeSeccion("delivery");
+    for (const p of PRODUCTOS) {
+      for (const idea of ideas) {
+        expect(
+          `${idea.titular} ${idea.busqueda}`,
+          `el tema «${idea.titular}» es un folleto, no una noticia del sector`,
+        ).not.toContain(p.nombre);
+      }
+    }
+    // Pero el sector sí es ancho: no son cinco apps y sus comisiones.
+    expect(ideas.length).toBeGreaterThanOrEqual(70);
+    const todo = ideas.map((i) => i.titular).join(" | ");
+    for (const empresa of ["inDrive", "Grab", "Meituan", "Swiggy"]) {
+      expect(todo, `falta ${empresa} en el sector`).toContain(empresa);
+    }
   });
 });
 

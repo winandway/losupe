@@ -2370,6 +2370,11 @@ fuentes» fueron del borrador en **inglés**).
 
 ## 63. Una ficha sola de nuestro producto le decía a Google para qué existe la sección (25 nov 2026)
 
+> **SUPERADO por el candado 64 (26 nov 2026).** El directorio que arregló este fallo duró un día:
+> Richard lo tumbó entero, y con razón. Se deja escrito porque el razonamiento sigue siendo válido
+> —una pieza fija que solo habla de lo nuestro nos delata— pero **hoy manda el candado 64**: fuera
+> de «Desde Windoce» no hay ninguna pieza fija que nombre un producto del grupo.
+
 **Qué se vio.** Al pie de «Delivery y logística», en las dos portadas de idioma, había UNA ficha: la
 de Divoox, bajo el título **«Nuestra propia app de reparto»**. Estaba declarada, era verdad y estaba
 bien escrita. Richard la miró y dijo lo que nadie había dicho: _«le estás diciendo a Google: mira,
@@ -2403,3 +2408,52 @@ que la sostienen y las ocho reglas que seguimos en toda sección donde el grupo 
   posición, el título de una pieza fija no lleva nuestro nombre ni la palabra «nuestra», y ninguna
   ficha se queda sin fuente. Los datos de las demás empresas salen de sus propias páginas o de prensa
   del sector citada: **jamás una cifra inventada de un competidor**, que ahí sí nos hunden de verdad.
+
+---
+
+## 64. La vitrina entera se cierra: ni ficha, ni directorio, ni etiqueta (26 nov 2026)
+
+**Qué se rompió.** Nada, técnicamente. Lo que falló fue el criterio, dos veces seguidas, y lo vio
+Richard las dos. El candado 63 cambió la ficha sola de Divoox por un directorio de seis empresas con
+la nuestra la última, declarada, con fuentes y con los enlaces marcados. Parecía impecable. Al día
+siguiente lo tumbó entero, y con dos argumentos que estaban por encima del anterior:
+
+1. _«No necesitamos tener una ficha de cada una de ellas… cualquier empresa puede ser DoorDash.
+   inDrive inventa un carro autónomo y lo lanza en Bolivia: eso es una noticia.»_ Un directorio de
+   seis encierra un sector de decenas de empresas en una lista que elegimos nosotros, con las
+   casillas que elegimos nosotros, y con nosotros dentro. Cinco competidores no vuelven imparcial
+   una tabla que es nuestra.
+2. _«Esa etiqueta de la casa no me interesa que esté allí… me parece absurdo, me parece vanidoso.»_
+   Y tenía razón en la distinción, que es fina: un **sello** al lado del nombre es presumir de
+   dueño; una **línea** dentro de la nota es cumplir. Lo primero sobra; lo segundo no se toca.
+
+**La causa real.** Pensar la imparcialidad como una declaración (lo digo, luego vale) en vez de como
+un volumen (cubro el sector entero y entonces mi producto es una línea entre muchas).
+
+**Qué se hizo.**
+
+- Fuera el directorio (`src/lib/sector/directorio.ts` y `DirectorioDelSector.tsx`, borrados), fuera
+  sus textos de los dos idiomas y fuera la etiqueta «De la casa».
+- Fuera los dos temas sobre Divoox del banco de ideas del sector: una guía de nuestro producto
+  dentro de la sección de delivery es un folleto, por bien escrita que esté.
+- Las fichas de los productos del grupo quedan **solo** en «Desde Windoce» (`section.house`).
+- El sector se abre: de doce empresas a veintiséis en la rotación, con los temas de los que sale
+  noticia de verdad (lanzamientos, carros sin conductor, robots, drones, soporte por WhatsApp,
+  recargas, seguros, huelgas y leyes), y tres fuentes nuevas comprobadas vivas ese día — Google News
+  de lanzamientos (EN, 12 artículos), apps de América Latina y Asia (ES, 26) y reparto autónomo
+  (EN, 90).
+- **Lo que NO se quitó:** la línea de transparencia dentro de cada nota que nos nombra (candado 61).
+  Quitarla no sería más imparcial: sería ocultar un vínculo material, que es lo que sanciona Google
+  Noticias y lo que persigue la FTC en Estados Unidos, nuestro mercado.
+
+**En qué commit quedó funcionando:** el de este candado, en `main`.
+
+- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`, dos pruebas nuevas. **Rojo comprobado** con
+  dos mutaciones: meter «Divoox» en el pie del sitio (falla: «Footer.tsx nombra Divoox en una pieza
+  fija») y devolver un tema de Divoox a la rotación del sector (falla: «el tema “10 curiosidades
+  sobre Divoox…” es un folleto, no una noticia del sector»).
+- **Cómo se comprueba que sigue funcionando:** abrir cualquier sección de periodismo y mirar el pie:
+  no hay fichas de empresas. Abrir «Desde Windoce»: ahí sí están, con su aviso.
+- **Qué NO tocar:** no vuelve ninguna pieza fija que nombre un producto del grupo fuera de la
+  sección de la casa, no vuelve ningún tema nuestro a la rotación del sector, la rotación no baja de
+  setenta ideas, y la línea de transparencia de las notas se queda donde está.

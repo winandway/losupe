@@ -486,6 +486,14 @@ INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VA
   ('gnews-reparto-es', 'delivery', 'Google News: reparto a domicilio (ES)', 'https://news.google.com/rss/search?q=reparto+a+domicilio+OR+domicilios+OR+%22apps+de+delivery%22+OR+repartidores+when:3d&hl=es-419&gl=US&ceid=US:es-419', 'rss', 'es', 3),
   ('gnews-latam-logistica-es', 'delivery', 'Google News: logística en América Latina (ES)', 'https://news.google.com/rss/search?q=log%C3%ADstica+OR+mensajer%C3%ADa+OR+paqueter%C3%ADa+Venezuela+OR+Colombia+OR+M%C3%A9xico+when:7d&hl=es-419&gl=US&ceid=US:es-419', 'rss', 'es', 2);
 
+-- Tres fuentes más (26 nov 2026). Richard: «no se trata solo de los porcentajes... inDrive inventa
+-- un carro autónomo y lo lanza en Bolivia, eso es una noticia». Las tres apuntan a lo que el sector
+-- LANZA, no a lo que cobra. Comprobadas vivas ese día: 12, 26 y 90 artículos.
+INSERT OR IGNORE INTO sources (id, section_id, name, url, kind, lang, weight) VALUES
+  ('gnews-lanzamientos-en', 'delivery', 'Google News: delivery launches and features (EN)', 'https://news.google.com/rss/search?q=%22delivery+app%22+launch+OR+feature+OR+update+OR+%22rolls+out%22+when:3d&hl=en-US&gl=US&ceid=US:en', 'rss', 'en', 3),
+  ('gnews-apps-latam-es', 'delivery', 'Google News: apps de reparto de América Latina y Asia (ES)', 'https://news.google.com/rss/search?q=inDrive+OR+%22DiDi+Food%22+OR+Glovo+OR+iFood+OR+PedidosYa+when:3d&hl=es-419&gl=US&ceid=US:es-419', 'rss', 'es', 3),
+  ('gnews-autonomo-en', 'delivery', 'Google News: autonomous delivery, robots and drones (EN)', 'https://news.google.com/rss/search?q=%22autonomous+delivery%22+OR+%22delivery+robot%22+OR+%22sidewalk+robot%22+OR+%22drone+delivery%22+when:7d&hl=en-US&gl=US&ceid=US:en', 'rss', 'en', 2);
+
 -- Feeds que se murieron o se quedaron secos. Se arreglan en su sitio en vez de dejar filas muertas:
 -- un feed roto no da error, simplemente deja de traer noticias, y la sección se queda vieja.
 UPDATE sources SET name = 'Google Noticias: inteligencia artificial (ES)', url = 'https://news.google.com/rss/search?q=inteligencia+artificial+when:2d&hl=es-419&gl=US&ceid=US:es', weight = 3 WHERE id = 'bing-ia-es';

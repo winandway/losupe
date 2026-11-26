@@ -42,66 +42,90 @@ medio o diría que es el folleto de Divoox?** Si lo segundo, está mal, aunque c
 
 ## Las reglas, y dónde están puestas en el código
 
-### 1. Nuestro producto nunca es el único de una pieza fija
+### 1. En una sección de periodismo, NINGUNA pieza fija nombra un producto nuestro
 
-Una pieza que se repite en toda la sección —un pie, una barra, una caja lateral— **no puede hablar
-solo de lo nuestro**. Si va una ficha, va el directorio del sector: nuestro producto y al menos
-**cinco competidores**, con las mismas casillas rellenas para todos.
+Ni una ficha, ni un directorio, ni una tabla comparativa, ni una caja al pie o al lado. Nada que se
+repita en toda la sección y que nos nombre.
 
-Fue el fallo exacto del 25 de noviembre: al pie de «Delivery y logística» había una ficha sola, de
-Divoox, con el título «Nuestra propia app de reparto». Era honesta y estaba declarada, y aun así le
-decía a Google para qué existe la sección.
+Esto costó dos intentos. El 25 de noviembre, al pie de «Delivery y logística» había una ficha sola
+de Divoox, con el título «Nuestra propia app de reparto». Se cambió por un directorio de seis
+empresas, con la nuestra la última. El 26 Richard tumbó también el directorio, y con el argumento
+correcto: _«no necesitamos tener una ficha de cada una de ellas… cualquier empresa puede ser
+DoorDash. inDrive inventa un carro autónomo y lo lanza en Bolivia: eso es una noticia»_. Tenía
+razón por partida doble:
 
-- **Dónde:** `src/lib/sector/directorio.ts` y `src/components/DirectorioDelSector.tsx`.
+- Una tabla **que escribimos nosotros**, con las casillas que elegimos nosotros, donde nos ponemos
+  nosotros, no es imparcial porque haya cinco competidores. Es nuestra tabla.
+- Y encima encierra un sector de decenas de empresas en seis, una de ellas la nuestra. Eso se ve.
 
-### 2. El orden lo decide un criterio neutro, y se escribe en la página
+Las fichas de los productos del grupo viven **solo en «Desde Windoce»**, que avisa en cada nota y
+está fuera de Google Noticias a propósito. En las secciones de periodismo, nuestro producto aparece
+cuando una noticia lo trae, y nada más.
 
-Nuestro producto no va primero por ser nuestro. El directorio va **de la empresa más grande a la más
-nueva**, el criterio está impreso arriba, y por eso Divoox sale **la última**: es la verdad.
+- **Dónde:** `src/app/[lang]/[section]/page.tsx` (las fichas solo si `section.house`) y el candado 64
+  en `tests/unit/segmento-delivery.test.tsx`, que recorre el código de todas las piezas fijas y se
+  pone en rojo si una nombra un producto del grupo.
 
-### 3. Las mismas casillas para todos, y lo que no se publica se dice
+### 2. Y tampoco un TEMA sobre un producto nuestro en la rotación del sector
 
-De cada empresa: qué es, dónde opera, qué paga el comercio y cómo cobra quien reparte. Si una no
-publica su comisión, la ficha dice que no la publica — eso informa igual, y demuestra que la tabla no
-está hecha para que gane uno. Nada de contar de la nuestra lo que no se cuenta de las demás.
+«Cómo funciona Divoox» dentro de la sección de delivery es un folleto, por muy bien escrita que esté
+la pieza. El banco de temas del sector (`src/lib/robot/ideas.ts`) no tiene ni uno. Los lanzamientos
+de nuestros productos van a «Desde Windoce», que es su sitio.
 
-### 4. Cada dato con su fuente y su fecha, a la vista
+### 3. La transparencia es una línea de texto, nunca una etiqueta
 
-Cada ficha enseña de dónde salieron sus datos y cuándo se comprobaron. Un dato sin fuente en una
-tabla donde estamos nosotros no es un descuido: parece un favor.
+Esta es la frontera fina, y hay que saber de qué lado se está:
 
-### 5. Los enlaces no se pasan autoridad
+- **Etiqueta = vanidad.** Un sello «DE LA CASA» al lado del nombre, en una vitrina, es presumir de
+  dueño. Richard: _«me parece absurdo, me parece vanidoso»_. Se quitó.
+- **Línea = obligación.** Un párrafo pequeño al principio de la nota que dice de quién es la
+  empresa, igual que _The New York Times_ escribe «The Athletic, que pertenece a The New York Times
+  Company» cada vez que la nombra. **Esa se queda, y no se toca.**
 
-A lo nuestro, `rel="sponsored"`. A los competidores, `rel="nofollow"`. Ninguno de los dos pasa
-autoridad, y el primero además le dice a Google quiénes somos antes de que lo averigüe solo.
+Quitarla no nos haría más imparciales: nos haría un medio que oculta un vínculo material. Es
+exactamente lo que sanciona Google Noticias y lo que persigue la FTC en Estados Unidos, que es
+nuestro mercado. La ventaja de que la ponga el código es que ya casi no se ve: solo aparece cuando
+la noticia de verdad nombra a Divoox.
 
-### 6. El titular de una sección nunca lleva nuestro nombre ni «nuestro»
+- **Dónde:** `src/lib/casa/aviso.ts` (`AVISO_RELACION`, `assertTransparencia`), candado 61.
 
-Ni en el encabezado, ni en el título de una pieza fija, ni en el nombre de la sección. La
-transparencia va **dentro** de la ficha de nuestro producto, que es donde corresponde, no como
-rótulo de todo lo que publicamos.
+### 4. Los enlaces no se pasan autoridad
 
-### 7. En una NOTA, nuestro producto se nombra solo si encaja, y nunca dice su etapa
+A un producto del grupo, `rel="sponsored"`. A cualquier enlace que no queramos respaldar con nuestra
+autoridad, `rel="nofollow"`. Un enlace normal hacia lo propio es pasarse autoridad a uno mismo.
+
+### 5. El titular de una sección nunca lleva nuestro nombre ni «nuestro»
+
+Ni en el encabezado, ni en el título de una pieza fija, ni en el nombre de la sección.
+
+### 6. En una NOTA, nuestro producto se nombra solo si encaja, y nunca dice su etapa
 
 Lo de siempre (candado 61): una mención como una empresa más, nunca en el titular de algo que no es
-suyo, nunca como protagonista de lo que hizo otro, y el aviso de transparencia lo pone el código.
-Desde el 25 de noviembre, además, en una nota del sector **no se dice en qué país o en qué etapa
-está**: ni que ya opera ni que todavía no. Se nombra por lo que hace.
+suyo, nunca como protagonista de lo que hizo otro. Y desde el 25 de noviembre, en una nota del
+sector **no se dice en qué país o en qué etapa está**: ni que ya opera ni que todavía no. Se nombra
+por lo que hace.
 
-### 8. La sección de la casa es otra cosa, y se queda aparte
+### 7. La sección de la casa es otra cosa, y se queda aparte
 
 «Desde Windoce» es contenido de la casa, lo dice en cada nota, está fuera de Google Noticias y no se
 mezcla con las secciones de periodismo. Esa separación es la que hace creíble todo lo demás
 (candado 57).
 
+### 8. La cobertura de un sector donde competimos se escribe ANCHA
+
+Un sector contado con cinco empresas y sus comisiones es un sector elegido. Se cubre entero —las
+grandes y las que vienen, Asia y América Latina, lo que lanzan y lo que les prohíben— y entonces
+nuestro producto, cuando aparece, es una línea entre muchas. Esa es la imparcialidad de verdad: no
+la declaración, el volumen.
+
 ---
 
 ## El candado
 
-`tests/unit/segmento-delivery.test.tsx` se pone en rojo si el directorio se queda con menos de cinco
-competidores, si nuestro producto pasa a ser el primero, si el título de la pieza lleva nuestro
-nombre o la palabra «nuestra», si desaparece la línea de transparencia de su ficha, si un enlace deja
-de ir marcado o si una ficha se queda sin fuente.
+`tests/unit/segmento-delivery.test.tsx` se pone en rojo si una pieza fija de una sección de
+periodismo nombra un producto del grupo, si vuelve el directorio del pie, si entra un tema sobre un
+producto nuestro en la rotación del sector, si la rotación se estrecha, o si desaparece la línea de
+transparencia de una nota que nos nombra. Comprobado en rojo con mutaciones las dos veces.
 
 Antes de añadir cualquier pieza fija que hable de un producto del grupo, se lee este documento y se
 contesta la pregunta de Richard: _¿esto parece un medio o parece un folleto?_
