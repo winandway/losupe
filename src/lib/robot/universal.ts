@@ -348,6 +348,16 @@ export async function limpiarCandidatosFueraDeTema(db: D1Database): Promise<numb
     // Lo que ya estaba en la cola con la sección de su fuente equivocada se cambia de sección: solo
     // se escribe la fila que cambia, nunca la cola entera.
     const correcta = c.section_id ? seccionCoherente(c.section_id as SectionId, texto) : null;
+    // Lo que ya no encaja en ninguna sección (p. ej. carga pesada en Delivery, candado 70) se aparta.
+    if (c.section_id && correcta === null) {
+      fuera += 1;
+      await db
+        .prepare(`UPDATE candidates SET status = 'skipped' WHERE id = ?1`)
+        .bind(c.id)
+        .run()
+        .catch((e: unknown) => console.error("[candidatos] no se pudo apartar", c.id, e));
+      continue;
+    }
     if (correcta && correcta !== c.section_id) {
       await db
         .prepare(`UPDATE candidates SET section_id = ?2 WHERE id = ?1`)

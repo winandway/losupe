@@ -2600,3 +2600,20 @@ UTC del 26 nov 2026, todas con `Gemini no devolvió texto (PROHIBITED_CONTENT)` 
 **Cómo se comprueba.** `tests/unit/candado-69-tic-doble.test.ts`: «underscores» cuenta uno, dos apariciones distintas siguen contando dos, tres muletillas en mil palabras no pasan del umbral. Comprobado en rojo con el código anterior (las cuatro fallan).
 
 **Qué NO tocar.** No volver a contar cada muletilla por separado con `indexOf` sin descartar solapes. No subir el umbral para «arreglar» esto: el umbral estaba bien, la cuenta no.
+
+## 70. Delivery es solo última milla: nada de camiones, carga pesada ni petróleo (26 nov 2026)
+
+**Qué se rompió.** En «Delivery y logística» salió «Molson Coors y Primo Brands cubren el precio del combustible para reducir costos»: una nota de fletes y combustible. Richard: la logística que cubrimos es la de entrega de paquetes, comida y viajes (DoorDash, Uber, Amazon Flex, Divoox), no la de camiones, gandolas, cabilla o petróleo.
+
+**Causa real.** `seccionCoherente` dejaba en la sección de su fuente todo lo que no encajaba en otra. La fuente de Supply Chain Dive (cadena de suministro) traía sobre todo fletes, y nada la sacaba de Delivery. La de América Latina buscaba «logística» a secas.
+
+**Qué se hizo.**
+
+- `src/lib/robot/trends.ts`: `esCargaPesada` (camiones, fletes, diésel, combustible cubierto, contenedores, puertos, ferrocarril, petróleo, cadena de suministro, almacenes), salvo que la nota hable de reparto de verdad (DoorDash, Uber, Amazon Flex, última milla, repartidores, paquetería, Divoox).
+- Delivery pasa a ser estricta: una nota de sus fuentes solo se queda ahí si habla de reparto o transporte de última milla y no es carga pesada. Si no, va a la sección que le toque o no entra. La regla de delivery suma Uber, Lyft, inDrive, DiDi, Cabify, Waymo, robotaxis, mototaxis, drones (Zipline, Wing), robots de acera y Divoox.
+- `limpiarCandidatosFueraDeTema` aparta lo que ya estaba en la cola y ya no encaja.
+- `schema.sql`: se apaga la fuente de Supply Chain Dive (sin borrar), la de América Latina busca paquetería, mensajería y última milla, y la nota de Molson Coors pasa a Economía. Su dirección vieja de `/delivery/` redirige sola a `/economia/` (redirección canónica de la página de nota): ningún enlace se rompe.
+
+**Cómo se comprueba.** `tests/unit/candado-70-solo-ultima-milla.test.ts`: ocho titulares de carga pesada no entran en Delivery y ocho de reparto sí. Rojo comprobado antes del arreglo (nueve fallaban). En vivo: la dirección vieja de la nota de Molson Coors responde con redirección a Economía.
+
+**Qué NO tocar.** No volver a dejar en Delivery lo que «viene de una fuente de delivery» sin hablar de reparto. No reactivar Supply Chain Dive.

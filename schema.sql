@@ -666,3 +666,13 @@ UPDATE settings SET value = '11', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ','no
 -- medio. Se quita del texto publicado, sin tocar nada más. Idempotente: si ya no está, no escribe.
 UPDATE article_i18n SET content_html = REPLACE(content_html, '<p><em><strong>Aviso de transparencia:</strong> Mercatren, el servicio que se usa de ejemplo en esta guía, pertenece al mismo grupo empresarial que losupe. Lo decimos antes de que sigas leyendo. Los consejos de esta nota sirven con cualquier casillero: son los mismos errores que se cometen con todos.</em></p>', '') WHERE article_id = 'art-2026-09-09-casillero-miami' AND lang = 'es' AND instr(content_html, 'Aviso de transparencia:') > 0;
 UPDATE article_i18n SET content_html = REPLACE(content_html, '<p><em><strong>Disclosure:</strong> Mercatren, the service used as an example in this guide, belongs to the same business group as losupe. We are saying so before you read any further. The advice in this piece applies to any package-forwarding service: these are the same mistakes people make with all of them.</em></p>', '') WHERE article_id = 'art-2026-09-09-casillero-miami' AND lang = 'en' AND instr(content_html, '<strong>Disclosure:</strong>') > 0;
+
+-- SOLO ULTIMA MILLA EN DELIVERY (candado 70, 26 nov 2026). Richard: la logistica que cubrimos es la
+-- de entrega de paquetes, comida y viajes, no la de camiones, carga pesada ni petroleo.
+-- La fuente de cadena de suministro traia sobre todo fletes y camiones: se apaga, no se borra.
+UPDATE sources SET active = 0 WHERE id = 'supplychaindive' AND active <> 0;
+-- La de America Latina buscaba «logistica» a secas y traia carga: ahora busca paqueteria y reparto.
+UPDATE sources SET name = 'Google News: paqueteria y mensajeria en America Latina (ES)', url = 'https://news.google.com/rss/search?q=paqueter%C3%ADa+OR+mensajer%C3%ADa+OR+%22%C3%BAltima+milla%22+OR+%22env%C3%ADos+a+domicilio%22+when:7d&hl=es-419&gl=US&ceid=US:es-419' WHERE id = 'gnews-latam-logistica-es' AND url NOT LIKE '%ltima+milla%';
+-- La nota de Molson Coors (combustible y fletes) es de economia, no de reparto. Se cambia de seccion
+-- y su direccion vieja de /delivery/ redirige sola a la nueva: ningun enlace se rompe.
+UPDATE articles SET section_id = 'economia', updated_at = datetime('now') WHERE section_id = 'delivery' AND id IN (SELECT article_id FROM article_i18n WHERE slug IN ('molson-coors-y-primo-brands-cubren-el-precio-del-combustible-para-reducir-costos', 'molson-coors-and-primo-brands-use-fuel-hedging-to-tackle-logistics-costs'));

@@ -82,7 +82,7 @@ const SECTION_RULES: [SectionId, RegExp][] = [
     "delivery",
     // Escrita sin alternancias que se solapen (`app|apps`, `driver|drivers`): con ellas el lint
     // avisa de retroceso catastrófico, y un titular largo puede colgar la corrida entera.
-    /\b(?:doordash|dasher|ubereats|uber\seats|instacart|rappi|deliveroo|glovo|ifood|pedidosya|didi\sfood|wolt|grubhub|gopuff|getir|just\seat|amazon\sflex|food\sdelivery|delivery\s(?:apps?|drivers?|fees?|service)|last[-\s]mile|[uú]ltima\smilla|repartidor\w*|reparto\sa\sdomicilio|domicilios?|mensajer[ií]a|paqueter[ií]a|courier|ghost\skitchens?|cocinas?\sfantasma|dark\sstores?|gig\s(?:economy|workers?)|drone\sdelivery|drones?\sde\sreparto|sidewalk\srobots?)\b/i,
+    /\b(?:doordash|dasher|ubereats|uber\seats|instacart|rappi|deliveroo|glovo|ifood|pedidosya|didi\sfood|wolt|grubhub|gopuff|getir|just\seat|amazon\sflex|food\sdelivery|delivery\s(?:apps?|drivers?|fees?|service)|last[-\s]mile|[uú]ltima\smilla|repartidor\w*|reparto\sa\sdomicilio|domicilios?|mensajer[ií]a|paqueter[ií]a|courier|ghost\skitchens?|cocinas?\sfantasma|dark\sstores?|gig\s(?:economy|workers?)|drone\sdelivery|drones?\sde\sreparto|sidewalk\srobots?|uber|lyft|indrive|didi|cabify|waymo|zoox|robotaxis?|ride[-\s]hailing|mototaxis?|moto[-\s]taxis?|zipline|wing\saviation|starship\stechnologies|serve\srobotics|divoox|package\sdelivery|parcels?|paquetes?|deliver(?:y|ies)|env[ií]os?\sa\sdomicilio|entregas?\sa\sdomicilio)\b/i,
   ],
   [
     "tecnologia",
@@ -103,6 +103,26 @@ const SECTION_RULES: [SectionId, RegExp][] = [
     /\b(cantante|singer|m[uú]sic\w*|music|[aá]lbum|album|canci[oó]n|song|gira|tour|concierto|concert|pel[ií]cula|movie|film|serie|series|netflix|disney|hbo|prime video|estreno|premiere|tr[aá]iler|trailer|actor|actriz|actress|artista|artist|celebridad|celebrity|famos\w*|grammy|[oó]scar|oscars|emmy|billboard|moda|fashion|influencer|viral|tiktoker|youtuber|podcast|libro|book|autor|author)\b/i,
   ],
 ];
+
+/**
+ * CARGA PESADA (candado 70, 26 nov 2026). Delivery y logística es la entrega de ÚLTIMA MILLA:
+ * comida, paquetes, mensajería, viajes en carro y en moto (DoorDash, Uber, Amazon Flex, Divoox).
+ * Richard: «no tiene nada que ver con logística de camiones, de carga pesada, de gandolas, cosas que
+ * cargan cabilla… o petróleo». Salió «Molson Coors y Primo Brands cubren el precio del combustible»
+ * en Delivery porque venía de una fuente de cadena de suministro y nada la sacaba de ahí.
+ * Escrita sin alternancias que se solapen, por la misma razón que la regla de delivery.
+ */
+const CARGA_PESADA =
+  /\b(?:trucking|truckload|truckers?|freight|ltl|class\s8|tractor[-\s]trailers?|semi[-\s]trucks?|18[-\s]wheelers?|fuel\shedg\w*|diesel|di[eé]sel|carga\spesada|gandolas?|cabillas?|petr[oó]leo|crudo|crude|oil|pipelines?|oleoductos?|tankers?|containers?|contenedores|port\scongestion|ocean\s(?:shipping|freight|rates?)|shipping\srates?|railroads?|rail\sfreight|ferrocarril\w*|transportistas?\sde\scarga|camiones\sde\scarga|flotas?\sde\scamiones|supply\schains?|cadenas?\sde\ssuministro|logistics\scosts?|warehous\w*|almacenes)\b/i;
+
+/** Lo que sí es última milla aunque mencione un camión («repartidores de DoorDash en furgoneta»). */
+const ULTIMA_MILLA_FUERTE =
+  /\b(?:doordash|dasher|uber|instacart|rappi|glovo|ifood|pedidosya|amazon\sflex|last[-\s]mile|[uú]ltima\smilla|repartidor\w*|food\sdelivery|package\sdelivery|mensajer[ií]a|paqueter[ií]a|courier|divoox)\b/i;
+
+/** ¿Es logística de carga pesada (camiones, fletes, combustible, petróleo, contenedores)? */
+export function esCargaPesada(texto: string): boolean {
+  return CARGA_PESADA.test(texto) && !ULTIMA_MILLA_FUERTE.test(texto);
+}
 
 /**
  * ¿Es un tema que no tocamos (deportes, apuestas, sucesos)? Se usa también para limpiar candidatos
@@ -130,7 +150,10 @@ export function esTemaVetado(texto: string): boolean {
  */
 export function classifyTrend(text: string): SectionId | null {
   if (SKIP.some((re) => re.test(text))) return null;
-  for (const [section, re] of SECTION_RULES) if (re.test(text)) return section;
+  for (const [section, re] of SECTION_RULES) {
+    if (section === "delivery" && esCargaPesada(text)) continue;
+    if (re.test(text)) return section;
+  }
   return null;
 }
 
@@ -148,6 +171,12 @@ export function classifyTrend(text: string): SectionId | null {
 export function seccionCoherente(seccionFuente: SectionId, texto: string): SectionId | null {
   if (esTemaVetado(texto)) return null;
   const propia = SECTION_RULES.find(([id]) => id === seccionFuente)?.[1];
+  // Delivery es estricta (candado 70): sus fuentes (cadena de suministro, restaurantes, comercio)
+  // traen de todo, y lo que no habla de reparto de última milla no se queda ahí aunque venga de ellas.
+  if (seccionFuente === "delivery") {
+    if (!esCargaPesada(texto) && propia?.test(texto)) return "delivery";
+    return classifyTrend(texto);
+  }
   if (!propia || propia.test(texto)) return seccionFuente;
   return classifyTrend(texto) ?? seccionFuente;
 }
