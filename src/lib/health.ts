@@ -1,3 +1,4 @@
+import { fichasVencidas } from "./casa/vigilar-ficha";
 import type { SchemaStatus } from "./schema-guard";
 
 export type HealthReport = {
@@ -31,6 +32,12 @@ export type HealthReport = {
    * 19 oct 2026: «hay que medir cuántos quedan sin guion al final del día».
    */
   guiones?: { sinGuion24h: number; ultimoError: { t: string; error: string } | null } | null;
+  /**
+   * Fichas de productos de la casa cuya página cambió y nadie ha releído. Mientras estén aquí, el
+   * redactor no usa sus datos: decir de menos de nuestro propio producto es el mismo error que
+   * decir de más (25 nov 2026).
+   */
+  fichasVencidas?: Record<string, string>;
   db: {
     binding: boolean;
     schema: SchemaStatus | null;
@@ -84,6 +91,7 @@ export async function buildHealthReport(
     ]);
     const filas = relojes.results ?? [];
     const guiones = await leerEstadoGuiones(db);
+    const fichas = await fichasVencidas(db).catch(() => ({}));
     return {
       ok: true,
       time,
@@ -99,6 +107,7 @@ export async function buildHealthReport(
           .map((r) => ({ t: r.started_at, error: String(r.error).slice(0, 300) })),
       },
       guiones,
+      ...(Object.keys(fichas).length > 0 ? { fichasVencidas: fichas } : {}),
       db: {
         binding: true,
         schema,

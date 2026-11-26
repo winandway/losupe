@@ -109,10 +109,16 @@ ciudades ya funcionando, ni comparaciones de las que no haya fuente. El plan de 
 red de reparto de paquetes de otras empresas) **no se publica como un hecho**: hasta que exista, es
 un plan.
 
-> **Ojo, 25 nov 2026:** Richard dice que en Venezuela ya hay pruebas en varias ciudades con carreras
-> gratuitas, pero la página pública sigue diciendo «coming soon». Mientras diga eso, las notas no
-> pueden afirmar lo contrario: una nota que diga más que la fuente es exactamente lo que hunde a un
-> medio nuevo. Se arregla actualizando la página de Divoox, no el texto de la nota.
+> **Ojo, 25 nov 2026:** la página pública de Venezuela dice «coming soon» y Richard avisó de que van
+> a quitarlo porque ya abrieron. Mientras diga eso, las notas no pueden afirmar lo contrario; y en
+> cuanto deje de decirlo, tampoco pueden seguir diciendo que no opera.
+>
+> **Eso ya no depende de que nadie se acuerde.** La ficha declara una frase que vigila
+> (`vigilar: { url, frase, siDesaparece }`) y el robot la comprueba en cada corrida: si «Coming soon»
+> desaparece de esa página, la ficha queda **vencida**, sale en `/__health` y el redactor deja de
+> recibir sus datos hasta que una persona relea la página y actualice la ficha. Decir de menos de
+> nuestro propio producto es el mismo error que decir de más. Si la página no responde, no se
+> concluye nada: una caída de red no es un cambio de contenido.
 
 ## 4 bis. El fallo del día del estreno (25 nov 2026)
 

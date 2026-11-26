@@ -37,6 +37,16 @@ export type Producto = {
   /** Lo que el redactor NO puede decir de este producto (promesas sin comprobar, temas delicados). */
   cuidado?: string;
   /**
+   * UNA FRASE QUE TIENE QUE SEGUIR ESTANDO EN SU PÁGINA (25 nov 2026).
+   *
+   * Las fichas se escriben leyendo la página del producto un día concreto, y luego la página
+   * cambia. Divoox va a quitar el «próximamente» de Venezuela en cuanto abra, y si nadie se entera
+   * seguiríamos escribiendo «todavía no opera» cuando ya opera — que es el mismo error que decir de
+   * más, al revés. El robot comprueba esta frase a diario: si desaparece, la ficha queda marcada
+   * como vencida en `/__health` y el redactor deja de usar los datos viejos.
+   */
+  vigilar?: { url: string; frase: string; siDesaparece: string };
+  /**
    * Cómo se cuenta la relación con Losupe en el aviso. Por defecto «Losupe y X son de Windoce LLC».
    * Mercatren la opera otra sociedad (Mercatren LLC) y la desarrolla Windoce: se dice así.
    */
@@ -76,6 +86,12 @@ export const PRODUCTOS: readonly Producto[] = [
     },
     cuidado:
       "No decir que ya opera en Miami ni en ninguna ciudad: la página dice «próximamente». No mencionar inversionistas, cifras de pedidos ni de restaurantes.",
+    vigilar: {
+      url: "https://divoox.com/country/venezuela",
+      frase: "Coming soon",
+      siDesaparece:
+        "La página de Venezuela ya NO dice «próximamente»: Divoox abrió. Hay que releer su página y actualizar la ficha (los datos, el «cuidado» y la fecha de verificación) antes de que el robot vuelva a escribir de ella.",
+    },
     verificado: "2026-11-07",
   },
   {

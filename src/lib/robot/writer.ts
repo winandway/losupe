@@ -281,6 +281,8 @@ export type UniversalBrief = {
   seguimiento?: { de: string; novedades: readonly string[] };
   /** Titulares publicados estos días: para no titular parecido a algo que ya está en la portada. */
   yaPublicado?: readonly string[];
+  /** Fichas de la casa cuya página cambió y nadie ha releído: no se le pasan sus datos al modelo. */
+  fichasVencidas?: Record<string, string>;
 };
 
 /** Bloque de notas nuestras para enlazar (rutas relativas, sin dominio). */
@@ -301,6 +303,7 @@ export function internalLinksBlock(links: readonly InternalLink[]): string {
  * se escriben las que haya. Mejor siete comprobadas que diez inventadas.
  */
 export function buildPiezaPropiaPrompt(b: {
+  fichasVencidas?: Record<string, string>;
   titularPropuesto: string;
   genero: "curiosidades" | "errores" | "guia" | "ranking";
   sectionId: SectionId;
@@ -317,7 +320,7 @@ export function buildPiezaPropiaPrompt(b: {
     ranking:
       "Es un RANKING con datos: responde la pregunta del titular con una lista ordenada, y **cada puesto lleva su cifra y de dónde sale**. Empieza contestando la pregunta en la primera frase, sin rodeos ni suspense — quien entra quiere el dato, no que se lo escondan. Después explica POR QUÉ es así, que es lo que hace que la nota valga la pena: qué hay detrás de ese número, desde cuándo, y qué está cambiando. Si el dato tiene matices (una cosa es lo más vendido en unidades y otra en dinero), dilo: ahí está la parte interesante.",
   }[b.genero];
-  return `ENCARGO: pieza propia para la sección "${section?.name.es ?? b.sectionId}".${bloqueCasaEnElSector(b.sectionId)}
+  return `ENCARGO: pieza propia para la sección "${section?.name.es ?? b.sectionId}".${bloqueCasaEnElSector(b.sectionId, b.fichasVencidas)}
 TITULAR PROPUESTO: ${b.titularPropuesto}
 FORMA: ${forma}
 
@@ -362,10 +365,16 @@ export const PRODUCTO_DE_LA_CASA_POR_SECCION: Partial<Record<SectionId, Producto
   delivery: "divoox",
 };
 
-export function bloqueCasaEnElSector(sectionId: SectionId): string {
+export function bloqueCasaEnElSector(
+  sectionId: SectionId,
+  fichasVencidas: Record<string, string> = {},
+): string {
   const id = PRODUCTO_DE_LA_CASA_POR_SECCION[sectionId];
   const p = id ? getProducto(id) : undefined;
   if (!p) return "";
+  // Ficha vencida = su página cambió y nadie la ha releído. Antes que escribir datos viejos de
+  // nuestro propio producto, no se nombra: el aviso ya está en `/__health` esperando a una persona.
+  if (id && fichasVencidas[id]) return "";
   return `
 NUESTRA PROPIA APP DEL SECTOR (léelo antes de escribir):
 Losupe es de Windoce LLC, y Windoce LLC también es dueña de ${p.nombre} (${p.url}).
@@ -393,7 +402,7 @@ export function buildUniversalPrompt(b: UniversalBrief): string {
 TEMA: ${b.topicTitle}
 ${b.topicSummary ? `RESUMEN DEL TEMA: ${b.topicSummary}` : ""}
 TIPO: ${kindText}
-${bloqueSeguimiento(b.seguimiento)}${bloqueYaPublicado(b.yaPublicado ?? [])}${bloqueCasaEnElSector(b.sectionId)}
+${bloqueSeguimiento(b.seguimiento)}${bloqueYaPublicado(b.yaPublicado ?? [])}${bloqueCasaEnElSector(b.sectionId, b.fichasVencidas)}
 Usa SOLO el material de abajo. Si las fuentes se contradicen, dilo. Cita cada fuente con enlace donde uses su dato.
 
 MATERIAL:

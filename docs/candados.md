@@ -2272,7 +2272,16 @@ tendencias…». Una nota sobre un anuncio del que no se sabe nada, rellenada co
 puede ser legítima —«no se conoce el monto» en una nota llena de cifras—; las dos a la vez son
 relleno. El reintento le dice que busque en el material lo que sí se sabe.
 
-- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con diez mutaciones
+### g) Y la ficha caduca sola cuando su página cambia
+
+Las fichas se escriben leyendo la página del producto un día concreto, y luego la página cambia.
+Divoox va a quitar el «próximamente» de Venezuela en cuanto abra. Cada ficha puede declarar
+`vigilar: { url, frase, siDesaparece }`; el robot comprueba esa frase en cada corrida
+(`vigilarFichas`), y si desaparece marca la ficha como **vencida** en `settings`, la saca en
+`/__health` y `bloqueCasaEnElSector` deja de pasarle sus datos al redactor. Si la página no
+responde, no se concluye nada: una caída de red no es un cambio de contenido.
+
+- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con doce mutaciones
   (quitar el candado, quitar la regla de clasificación, borrar el LinkedIn, quitar el `rel=sponsored`,
   vaciar el mapa de producto por sección, quitar la prioridad de fuentes, volver a dos intentos…).
 - **Qué NO tocar:** `ponerTransparencia` no debe tocar las notas de la casa, y el aviso de

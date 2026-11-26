@@ -8,6 +8,7 @@ import { pasoCasa, type PasoCasaResultado } from "@/lib/casa/paso-diario";
 import { isRobotPaused, runPipeline, type RobotEnv, type RunSummary } from "./pipeline";
 import { rescatarGuiones } from "./guion";
 import { rehacerImagenesPesadas, rescatarImagenes } from "./rescate-imagenes";
+import { vigilarFichas } from "@/lib/casa/vigilar-ficha";
 import { rescatarVideos } from "./rescate-video";
 
 export type RunTrigger = "cron" | "manual";
@@ -32,6 +33,8 @@ export type RunResult = {
   guionesFallidos?: number;
   videosNuevos?: number;
   videosSinTema?: number;
+  /** Fichas de la casa cuya página cambió: hay que releerlas antes de volver a escribir de ellas. */
+  fichasVencidas?: string[];
   /** El primer motivo del rechazo, para no tener que adivinar por qué falta un guion. */
   guionPorQue?: string | null;
   /** «Desde Windoce»: qué nota de la casa salió hoy y cuál quedó escrita (candado 57). */
@@ -82,6 +85,12 @@ export async function runScheduled(
     () => ({ revisadas: 0, pesadas: 0, rehechas: 0, errores: ["fotos pesadas: fallo inesperado"] }),
   );
 
+  // ¿Siguen siendo verdad las fichas de nuestros propios productos? Su página cambia y la ficha se
+  // queda vieja; desde aquí se entera el diario solo (25 nov 2026, candado 61).
+  const fichas = await vigilarFichas(env.DB, { fetchImpl: opts.fetchImpl }).catch(
+    () => [] as { producto: string; motivo: string; desde: string }[],
+  );
+
   // Y el video que acompaña la lectura (19 oct 2026). Igual que la foto: va detrás, nunca frena una
   // publicación, y en las notas delicadas no se pone ninguno.
   const videos = await rescatarVideos(env.DB, env, { fetchImpl: opts.fetchImpl }).catch(() => ({
@@ -128,6 +137,9 @@ export async function runScheduled(
       : {}),
     ...(videos.encontradas > 0
       ? { videosNuevos: videos.conVideo, videosSinTema: videos.sinTema }
+      : {}),
+    ...(fichas.length > 0
+      ? { fichasVencidas: fichas.map((f) => `${f.producto}: ${f.motivo}`) }
       : {}),
     ...(guiones.encontradas > 0
       ? {

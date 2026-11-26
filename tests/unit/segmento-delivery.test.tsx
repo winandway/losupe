@@ -412,3 +412,51 @@ describe("una nota sobre nada no se publica", () => {
     expect(pareceNotaSobreNada("Uber Eats llega a Maracaibo con 300 restaurantes.")).toBeNull();
   });
 });
+
+describe("la ficha de nuestro producto caduca sola cuando su página cambia", () => {
+  it("si la frase vigilada desaparece, la ficha queda marcada como vencida", async () => {
+    const { comprobarFicha, vigilarFichas, fichasVencidas } =
+      await import("@/lib/casa/vigilar-ficha");
+    const { getProducto } = await import("@/lib/casa/productos");
+    const divoox = getProducto("divoox")!;
+    expect(divoox.vigilar?.url).toContain("venezuela");
+
+    // La página ya NO dice «coming soon»: abrieron.
+    const abierta = (async () =>
+      new Response("<h1>Divoox ya está en Caracas</h1>")) as unknown as typeof fetch;
+    expect(await comprobarFicha(divoox, abierta)).toContain("ya NO dice");
+
+    // Y mientras diga «coming soon», no se marca nada.
+    const aun = (async () =>
+      new Response("<h1>Coming soon to Venezuela</h1>")) as unknown as typeof fetch;
+    expect(await comprobarFicha(divoox, aun)).toBeNull();
+
+    const { db, d1 } = await base();
+    await vigilarFichas(d1, { fetchImpl: abierta });
+    expect(Object.keys(await fichasVencidas(d1))).toContain("divoox");
+    // Y cuando alguien relee la ficha y la página vuelve a cuadrar, la marca se va sola.
+    await vigilarFichas(d1, { fetchImpl: aun });
+    expect(await fichasVencidas(d1)).toEqual({});
+    expect(
+      db.raw.prepare(`SELECT count(*) AS n FROM settings WHERE key LIKE 'ficha_vencida_%'`).get(),
+    ).toEqual({ n: 0 });
+  });
+
+  it("si la página no responde, NO se concluye nada (una caída no es un cambio)", async () => {
+    const { comprobarFicha } = await import("@/lib/casa/vigilar-ficha");
+    const { getProducto } = await import("@/lib/casa/productos");
+    const caida = (async () => {
+      throw new Error("sin red");
+    }) as unknown as typeof fetch;
+    expect(await comprobarFicha(getProducto("divoox")!, caida)).toBeNull();
+    const error500 = (async () => new Response("", { status: 500 })) as unknown as typeof fetch;
+    expect(await comprobarFicha(getProducto("divoox")!, error500)).toBeNull();
+  });
+
+  it("con la ficha vencida, el redactor deja de recibir sus datos", async () => {
+    const { bloqueCasaEnElSector } = await import("@/lib/robot/writer");
+    expect(bloqueCasaEnElSector("delivery")).toContain("Divoox");
+    // Antes que escribir datos viejos de nuestro propio producto, no se nombra.
+    expect(bloqueCasaEnElSector("delivery", { divoox: "su página cambió" })).toBe("");
+  });
+});
