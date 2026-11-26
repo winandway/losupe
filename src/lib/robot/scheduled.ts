@@ -66,6 +66,8 @@ export async function runScheduled(
     force: opts.force,
     franja: opts.franja,
     fetchImpl: opts.fetchImpl,
+    // El reloj no publica fuera de franja; la corrida a mano sí puede (candado 68).
+    respetarHorario: trigger === "cron",
   });
   // Antes de cerrar, se le pone foto a cualquier nota que se haya quedado sin ella —venga del robot,
   // de una semilla del repositorio o del panel—. Una nota sin foto al lado de otras con foto se lee

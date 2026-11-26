@@ -1,5 +1,5 @@
 import { pingIndexNow } from "@/lib/indexnow";
-import { GeminiUbicacionError } from "./gemini";
+import { GeminiContenidoError, GeminiUbicacionError } from "./gemini";
 import type { SectionId } from "@/lib/sections";
 import { slugify } from "@/lib/slug";
 import { absoluteUrl, articlePath } from "@/lib/urls";
@@ -110,6 +110,13 @@ export type PipelineOptions = {
   franja?: string;
   fetchImpl?: typeof fetch;
   now?: Date;
+  /**
+   * El reloj (GitHub o la plataforma) NO publica fuera de franja (26 nov 2026, candado 68). La
+   * guardia de GitHub llama cada quince minutos toda la noche, y al pasar la medianoche el cupo del
+   * día volvía a cero: la corrida escribía a las 12:21 AM, que es justo lo que la escaleta prohíbe.
+   * La corrida a mano no lo lleva: sirve para rescatar un turno a cualquier hora.
+   */
+  respetarHorario?: boolean;
 };
 
 export type NoteResult = {
@@ -135,6 +142,11 @@ export type NoteResult = {
   socialError?: string;
   /** Si esta nota es un capítulo más de otra, de cuál. Para que se vea en el panel. */
   seguimientoDe?: string;
+  /**
+   * El modelo se negó a escribir este tema: quedó apartado para siempre y la corrida siguió con
+   * otro. No cuenta como fallo de la corrida (candado 68).
+   */
+  apartado?: boolean;
 };
 
 export type RunSummary = {
@@ -535,6 +547,38 @@ async function ideasSinMaterial(db: D1Database): Promise<string[]> {
   }
 }
 
+/**
+ * Temas que el modelo se negó a escribir por su contenido. A diferencia de los «sin material», esta
+ * lista no olvida: un tema que hoy rechaza, lo rechaza mañana también (candado 68).
+ */
+const TEMAS_RECHAZADOS = "temas_rechazados_por_contenido";
+const MAX_TEMAS_RECHAZADOS = 300;
+
+async function temasRechazados(db: D1Database): Promise<string[]> {
+  const row = await db
+    .prepare(`SELECT value FROM settings WHERE key = ?1`)
+    .bind(TEMAS_RECHAZADOS)
+    .first<{ value: string }>()
+    .catch(() => null);
+  try {
+    const v = JSON.parse(row?.value ?? "[]") as unknown;
+    return Array.isArray(v) ? v.filter((t): t is string => typeof t === "string") : [];
+  } catch {
+    return [];
+  }
+}
+
+export async function apartarTemaRechazado(db: D1Database, tema: string): Promise<void> {
+  const previos = await temasRechazados(db);
+  if (!tema || previos.includes(tema)) return;
+  const lista = [tema, ...previos].slice(0, MAX_TEMAS_RECHAZADOS);
+  await db
+    .prepare(`INSERT OR REPLACE INTO settings (key, value, updated_at) VALUES (?1, ?2, ${SQL_NOW})`)
+    .bind(TEMAS_RECHAZADOS, JSON.stringify(lista))
+    .run()
+    .catch(() => undefined);
+}
+
 async function anotarIdeaSinMaterial(db: D1Database, tema: string): Promise<void> {
   const previas = await ideasSinMaterial(db);
   if (previas.includes(tema)) return;
@@ -706,6 +750,8 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
       franjaPendiente(now, todayTotal)
     )?.key ?? null;
   if (todayTotal >= perDay) return done("skipped", "quota", "daily_quota_reached");
+  if (opts.respetarHorario && !opts.franja && !franjaDeLaCorrida)
+    return done("skipped", "horario", "fuera_de_horario");
 
   const autoPublish = (await getSetting(db, "robot_auto_publish")) === "1";
   // La firma por defecto tiene que existir y estar activa: si el ajuste apunta a alguien que ya no
@@ -762,8 +808,13 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   });
 
   // 5) Notas, alternando
+  /** Temas que el modelo rechazó en ESTA corrida; cada uno da derecho a probar con otro. */
+  let rechazados = 0;
+  const MAX_RECHAZADOS_POR_CORRIDA = 3;
   for (let i = 0; i < maxNotes; i++) {
     const itemId = crypto.randomUUID();
+    /** El tema de esta vuelta, para poder apartarlo si el modelo se niega a escribirlo. */
+    let temaDeLaVuelta = "";
     // Fuera del `try` para poder devolver el tema a la cola si la corrida se cae por algo que no es
     // culpa del tema (ver el error de ubicación de Gemini, más abajo).
     let candidatoUsado: Awaited<ReturnType<typeof pickCandidate>> = null;
@@ -783,7 +834,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
       universalAvailable: Boolean(nextCandidate),
     });
     if (!kind) {
-      if (notes.length === 0) return done("skipped", "nothing", "nothing_to_do");
+      if (notes.every((n) => n.apartado)) return done("skipped", "nothing", "nothing_to_do");
       break;
     }
     const result: NoteResult = { kind, ok: false, costUsd: 0 };
@@ -979,7 +1030,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
           hayActualidad: Boolean(nextCandidate),
           titularesRecientes: await titularesRecientes(db),
           seccionesConCupo: await seccionesConCupo(db, now),
-          ideasSinMaterial: await ideasSinMaterial(db),
+          ideasSinMaterial: [...(await ideasSinMaterial(db)), ...(await temasRechazados(db))],
           ahora: now,
           fetchImpl,
         }).catch(() => ({ genero: "actualidad" as const }));
@@ -1091,6 +1142,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
                 };
           seccion = propio.seccion;
           tema = propio.titular;
+          temaDeLaVuelta = tema;
           result.genero = encargo.genero;
           await noteItem(db, runId, itemId, {
             status: "working",
@@ -1263,6 +1315,27 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
         notes.push(result);
         return done("skipped", "write", "gemini_sin_servicio_en_esta_region", message);
       }
+      // EL MODELO SE NIEGA A ESCRIBIR ESTE TEMA (candado 68). Reintentarlo da lo mismo, así que se
+      // aparta para siempre —el candidato de actualidad queda descartado; la efeméride o la pieza
+      // propia, en la lista de rechazados— y la corrida prueba con otro tema en esta misma vuelta.
+      if (e instanceof GeminiContenidoError) {
+        result.apartado = true;
+        if (candidatoUsado) {
+          await db
+            .prepare(`UPDATE candidates SET status = 'skipped', error = ?2 WHERE id = ?1`)
+            .bind(candidatoUsado.id, `el modelo se negó a escribirlo (${e.motivo})`)
+            .run()
+            .catch(() => undefined);
+        } else if (temaDeLaVuelta) {
+          await apartarTemaRechazado(db, temaDeLaVuelta);
+        }
+        notes.push(result);
+        if (rechazados < MAX_RECHAZADOS_POR_CORRIDA) {
+          rechazados += 1;
+          i -= 1;
+        }
+        continue;
+      }
       // Si Gemini rechazó la llave (401/403), no tiene sentido seguir.
       if (/respondió 40[13]/.test(message) || /GEMINI_API_KEY/.test(message)) {
         notes.push(result);
@@ -1273,13 +1346,19 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   }
 
   const okCount = notes.filter((n) => n.ok).length;
-  const summaryReason = `${okCount}/${notes.length} notas; fuentes leídas ${discover.fetched}, candidatos nuevos ${discover.added}`;
+  // Un tema apartado por el modelo no es un fallo del diario: lo que cuenta son los demás.
+  const fallidas = notes.filter((n) => !n.ok && !n.apartado);
+  const apartados = notes.length - okCount - fallidas.length;
+  const summaryReason = `${okCount}/${notes.length - apartados} notas; fuentes leídas ${discover.fetched}, candidatos nuevos ${discover.added}${
+    apartados > 0 ? `; temas apartados por el modelo ${apartados}` : ""
+  }`;
+  const falló = okCount === 0 && fallidas.length > 0;
   return done(
-    okCount > 0 || notes.length === 0 ? "done" : "error",
+    okCount > 0 || notes.length === 0 ? "done" : falló ? "error" : "skipped",
     "done",
     summaryReason,
-    okCount === 0 && notes.length > 0
-      ? notes
+    falló
+      ? fallidas
           .map((n) => n.error)
           .filter(Boolean)
           .join(" | ")

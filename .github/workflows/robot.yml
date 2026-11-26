@@ -42,6 +42,7 @@ jobs:
           set -o pipefail
           FIN=$(( $(date +%s) + 330 * 60 ))
           FALLOS=0
+          RACHA=0
           VUELTA=0
           while [ "$(date +%s)" -lt "$FIN" ]; do
             VUELTA=$((VUELTA + 1))
@@ -63,14 +64,25 @@ jobs:
             else
               FALLOS=0
             fi
+            # SEIS FALLOS SEGUIDOS SE AVISAN, PERO LA GUARDIA NO SE VA (26 nov 2026, candado 68).
+            # Antes aquí había un `exit 1`: la madrugada del 26 nov un tema rechazado por el modelo
+            # encadenó seis errores, la guardia se cortó a las 06:58 UTC y el diario se quedó sin
+            # reloj hasta que GitHub quiso volver a disparar, horas después. Un reloj que se apaga
+            # porque algo falla deja de vigilar justo cuando más falta hace. Ahora sigue llamando
+            # y el trabajo termina en rojo al final, para que se vea en la pestaña Actions.
             if [ "$FALLOS" -ge 6 ]; then
-              echo "Seis fallos seguidos: algo está roto de verdad. Se corta la guardia en rojo."
-              exit 1
+              echo "::error::Seis fallos seguidos del diario (vuelta $VUELTA). La guardia sigue."
+              RACHA=1
+              FALLOS=0
             fi
             # Quince minutos: los turnos están separados por veinte, así que ninguna franja se queda
             # sin su intento y ninguna recibe dos notas pegadas.
             sleep 900
           done
+          if [ "$RACHA" -eq 1 ]; then
+            echo "Guardia terminada, con al menos una racha de seis fallos seguidos."
+            exit 1
+          fi
           echo "Guardia terminada sin incidencias."
         env:
           CRON_SECRET: ${{ secrets.CRON_SECRET }}

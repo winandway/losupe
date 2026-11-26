@@ -37,6 +37,29 @@ export class GeminiError extends Error {
  * que la corrida termine como SALTADA y no como error, y para que el tema vuelva a la cola intacto.
  * La siguiente visita, desde otro sitio, lo escribe.
  */
+/**
+ * EL MODELO SE NIEGA A ESCRIBIR DE ESTE TEMA (26 nov 2026, candado 68).
+ *
+ * No es un mal minuto del proveedor: es el tema. Reintentarlo da lo mismo una y otra vez, y así se
+ * perdió la madrugada del 26 nov 2026 — once corridas seguidas con «Ilona Staller: 75 años de su
+ * nacimiento» rebotando en `PROHIBITED_CONTENT`. Con su propia clase, la corrida lo aparta para
+ * siempre y sigue con otro tema en la misma vuelta.
+ */
+export const MOTIVOS_DE_CONTENIDO = new Set([
+  "SAFETY",
+  "BLOCKLIST",
+  "PROHIBITED_CONTENT",
+  "SPII",
+  "IMAGE_SAFETY",
+]);
+
+export class GeminiContenidoError extends GeminiError {
+  constructor(public motivo: string) {
+    super(`Gemini no devolvió texto (${motivo})`);
+    this.name = "GeminiContenidoError";
+  }
+}
+
 export class GeminiUbicacionError extends GeminiError {
   constructor(detalle: string) {
     super(`Gemini no atiende desde este centro de datos: ${detalle}`, 400);
@@ -170,6 +193,7 @@ export async function generateJson<T>(opts: GeminiOptions): Promise<GeminiJsonRe
   const text = body.candidates?.[0]?.content?.parts?.map((p) => p.text ?? "").join("") ?? "";
   if (!text) {
     const why = body.promptFeedback?.blockReason ?? body.candidates?.[0]?.finishReason ?? "vacío";
+    if (MOTIVOS_DE_CONTENIDO.has(why)) throw new GeminiContenidoError(why);
     throw new GeminiError(`Gemini no devolvió texto (${why})`);
   }
   let data: T;

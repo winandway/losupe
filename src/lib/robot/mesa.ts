@@ -126,16 +126,18 @@ export async function encargoDelTurno(
     (opts.franja ?? franjaActiva(ahora))?.genero !== "actualidad" || !opts.hayActualidad;
   if (reglas.efemerides && huecoDeCuriosidades && opts.seccionesConCupo.length > 0) {
     const lista = await efemeridesDeHoy(ahora, opts.fetchImpl);
-    efemeride = lista.find((e) => e.redondo && opts.seccionesConCupo.includes(e.sectionId)) ?? null;
-    // Y que no la hayamos contado ya (el robot corre tres veces al día).
-    if (efemeride) {
-      const titular = titularDeEfemeride(efemeride);
-      const yaEsta = opts.titularesRecientes.some((t) =>
-        t.toLowerCase().includes((efemeride?.fuentes[0]?.titulo ?? "###").toLowerCase()),
-      );
-      if (yaEsta) efemeride = null;
-      else if (!titular) efemeride = null;
-    }
+    // Ni la que ya contamos (el robot corre varias veces al día) ni la que el modelo se negó a
+    // escribir: antes se elegía la PRIMERA redonda y, si no servía, el turno se quedaba sin
+    // efeméride; y si el modelo la rechazaba, volvía a salir elegida en cada corrida (candado 68).
+    const apartadas = new Set(opts.ideasSinMaterial ?? []);
+    efemeride =
+      lista.find((e) => {
+        if (!e.redondo || !opts.seccionesConCupo.includes(e.sectionId)) return false;
+        const titular = titularDeEfemeride(e);
+        if (!titular || apartadas.has(titular)) return false;
+        const quien = (e.fuentes[0]?.titulo ?? "###").toLowerCase();
+        return !opts.titularesRecientes.some((t) => t.toLowerCase().includes(quien));
+      }) ?? null;
   }
 
   const franja = opts.franja ?? franjaActiva(ahora);

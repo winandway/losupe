@@ -2541,3 +2541,50 @@ más relevantes del sector y la tercera puede ser nuestra cuando hay material.
 firmada por Pedro Llerena, con las ciudades atribuidas a la empresa y la marca de motos contada como
 plan anunciado. La ficha de Divoox (`productos.ts`) cambió de fuente: la etapa ya no es «próximamente»
 sino lo que dijo la empresa el 26 nov 2026, y se retiró la frase vigilada de la página de Venezuela.
+
+## 68. Un tema que el modelo rechaza ya no se lleva por delante el reloj (26 nov 2026)
+
+**Qué se rompió y cómo se veía.** El canario `/__health` mostraba corridas en `error` desde las 05:00
+UTC del 26 nov 2026, todas con `Gemini no devolvió texto (PROHIBITED_CONTENT)` y el mismo tema:
+«Ilona Staller: 75 años de su nacimiento». Después de las 06:57 UTC ya no apareció ninguna corrida.
+
+**Las causas reales (tres, encadenadas).**
+
+1. El selector de efemérides solo miraba el texto de Wikipedia, que decía «actriz y política
+   italiana». La ficha del artículo dice «actriz pornográfica». Pasó como Artistas, aniversario
+   redondo, y salió elegida.
+2. Gemini se negó a escribirla, pero ese «no» era un error genérico: el tema no se apartaba y la
+   corrida siguiente volvía a elegir la misma efeméride, cada quince minutos.
+3. La guardia de GitHub (`.github/workflows/robot.yml`) se cortaba sola con `exit 1` al sexto
+   fallo seguido. Se cortó a las 06:58 UTC y el diario se quedó sin reloj hasta que GitHub volvió a
+   disparar. Y de paso se vio otra cosa: el reloj publicaba **de madrugada** (una nota a las 12:21 AM
+   del Este), porque `/__scheduled` no miraba la franja; solo lo hacía el latido de las visitas.
+
+**Qué se hizo.**
+
+- `gemini.ts`: los motivos de contenido (`PROHIBITED_CONTENT`, `SAFETY`, `BLOCKLIST`, `SPII`,
+  `IMAGE_SAFETY`) lanzan `GeminiContenidoError`. `OTHER` y los demás siguen siendo errores normales.
+- `pipeline.ts`: con ese error, el tema se aparta **para siempre** —la noticia de actualidad queda en
+  `candidates` como `skipped` con su motivo; la efeméride o la pieza propia, en el ajuste
+  `temas_rechazados_por_contenido` (hasta 300, no olvida)— y la corrida prueba con otro tema en la
+  misma vuelta (hasta tres rechazos por corrida). Un tema apartado no cuenta como fallo: si la
+  corrida publica otra cosa, termina `done`; si solo hubo rechazos, `skipped`.
+- `mesa.ts`: la efeméride elegida es la primera redonda que no esté ya contada ni apartada (antes se
+  tomaba la primera y, si no servía, el turno se quedaba sin efeméride).
+- `efemerides.ts`: `esAptaParaFamilias` mira el texto **y** la descripción y el resumen de cada
+  artículo enlazado. Fuera: cine para adultos, prostitución, Playboy y parecidos, asesinos en serie,
+  violadores, pederastas, terroristas, genocidas, narcotraficantes y jefes de la mafia. Dentro, porque
+  sí son noticia: muertes, asesinatos de figuras públicas, crisis.
+- `robot.yml`: seis fallos seguidos escriben un `::error::` y la guardia **sigue llamando**; el
+  trabajo termina en rojo al final para que se vea en Actions.
+- `scheduled.ts` + `pipeline.ts` (`respetarHorario`): una corrida del reloj fuera de franja termina
+  `skipped / fuera_de_horario`. La corrida a mano (con clave) y la de `?franja=` siguen pudiendo
+  rescatar un turno a cualquier hora.
+
+- **Pruebas:** `tests/unit/candado-68-tema-rechazado.test.ts`, con base SQLite real. **Rojo
+  comprobado** cinco veces: sin la clase de contenido, sin el filtro familiar, sin mirar los
+  apartados en la mesa, sin el horario del reloj y con el `exit 1` de vuelta en la guardia.
+- **Cómo se comprueba en vivo:** en `https://losupe.com/__health`, `relojes.ultimas` vuelve a tener
+  corridas cada quince minutos y las de las franjas terminan `done`; de madrugada salen `skipped`.
+- **Qué NO tocar:** no se reintenta un rechazo de contenido, no se vacía la lista de rechazados, no
+  se vuelve a poner un `exit` dentro del bucle de la guardia, y el reloj no publica fuera de franja.

@@ -62,6 +62,33 @@ export function seccionDeEfemeride(texto: string): SectionId | null {
   return null;
 }
 
+/**
+ * LO QUE UN DIARIO FAMILIAR NO CELEBRA (26 nov 2026, candado 68).
+ *
+ * El 26 nov 2026 la lista de Wikipedia traía «Nació Ilona Staller, actriz y política italiana».
+ * Pasaba por «actriz» a Artistas y era un aniversario redondo (75), así que salió elegida. Pero la
+ * descripción de su propio artículo dice «actriz pornográfica»: el modelo se negó a escribirla y el
+ * turno se perdió toda la madrugada. El texto de la efeméride suaviza; la ficha del artículo no.
+ * Por eso se mira TODO: el texto, la descripción y el resumen de cada artículo enlazado.
+ *
+ * No es una lista de temas incómodos (las muertes, los asesinatos de figuras públicas o las crisis
+ * sí son noticia): es lo que no se homenajea en portada — cine para adultos y quien comete crímenes
+ * atroces.
+ */
+const NO_APTO_PARA_FAMILIAS =
+  /\b(porno\w*|pornograf\w*|erotic\w*|cine (para adultos|x)|(entretenimiento|contenido|industria|peliculas?) (para|de) adultos|actriz x|actor x|playboy|playmate|penthouse|onlyfans|prostitu\w*|proxeneta|striptease|stripper|camgirl|asesino en serie|asesina en serie|violador|pederast\w*|pedofil\w*|abusador sexual|abuso sexual|terrorista|genocida|criminal de guerra|narcotraficante|capo del narcotrafico|lider de la mafia|jefe de la mafia)\b/;
+
+/** ¿Se puede celebrar esto en la portada de un diario que lee toda la familia? */
+export function esAptaParaFamilias(...textos: readonly (string | undefined)[]): boolean {
+  const t = textos
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "");
+  return !NO_APTO_PARA_FAMILIAS.test(t);
+}
+
 type RespuestaWiki = {
   events?: WikiItem[];
   deaths?: WikiItem[];
@@ -70,7 +97,12 @@ type RespuestaWiki = {
 type WikiItem = {
   text?: string;
   year?: number;
-  pages?: { titles?: { normalized?: string }; content_urls?: { desktop?: { page?: string } } }[];
+  pages?: {
+    titles?: { normalized?: string };
+    description?: string;
+    extract?: string;
+    content_urls?: { desktop?: { page?: string } };
+  }[];
 };
 
 function aEfemeride(item: WikiItem, hoy: number, prefijo: string): Efemeride | null {
@@ -81,6 +113,9 @@ function aEfemeride(item: WikiItem, hoy: number, prefijo: string): Efemeride | n
   const texto = `${prefijo}${item.text}`.trim();
   const sectionId = seccionDeEfemeride(texto);
   if (!sectionId) return null;
+  // Lo que el texto suaviza, la ficha del artículo lo dice (ver NO_APTO_PARA_FAMILIAS).
+  const fichas = (item.pages ?? []).flatMap((p) => [p.description, p.extract]);
+  if (!esAptaParaFamilias(texto, ...fichas)) return null;
   const fuentes = (item.pages ?? [])
     .map((p) => ({
       titulo: p.titles?.normalized ?? "",
