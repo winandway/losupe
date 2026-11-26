@@ -277,12 +277,16 @@ describe("nuestra propia app aparece en el segmento, declarada", () => {
 
     // Los componentes de la casa SÍ los nombran: ese es su trabajo, y van con su aviso.
     const DE_LA_CASA = ["FichasCasa.tsx", "AvisoCasa.tsx"];
-    const archivos = [
-      "src/app/[lang]/[section]/page.tsx",
-      ...readdirSync("src/components")
-        .filter((f) => f.endsWith(".tsx") && !DE_LA_CASA.includes(f))
-        .map((f) => `src/components/${f}`),
-    ];
+    const tsx = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory()
+          ? tsx(`${dir}/${e.name}`)
+          : e.name.endsWith(".tsx") && !DE_LA_CASA.includes(e.name)
+            ? [`${dir}/${e.name}`]
+            : [],
+      );
+    const archivos = [...tsx("src/app"), ...tsx("src/components")];
+    expect(archivos.length).toBeGreaterThan(20);
 
     for (const archivo of archivos) {
       const fuente = readFileSync(archivo, "utf8");
