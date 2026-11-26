@@ -372,12 +372,21 @@ async function finishRun(
   step: string,
   summary: unknown,
   error?: string,
+  franja?: string | null,
 ) {
   await db
     .prepare(
-      `UPDATE runs SET status = ?2, step = ?3, finished_at = ?4, summary_json = ?5, error = ?6 WHERE id = ?1`,
+      `UPDATE runs SET status = ?2, step = ?3, finished_at = ?4, summary_json = ?5, error = ?6, franja = ?7 WHERE id = ?1`,
     )
-    .bind(runId, status, step, new Date().toISOString(), JSON.stringify(summary), error ?? null)
+    .bind(
+      runId,
+      status,
+      step,
+      new Date().toISOString(),
+      JSON.stringify(summary),
+      error ?? null,
+      franja ?? null,
+    )
     .run();
 }
 
@@ -637,6 +646,13 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   const fetchImpl = opts.fetchImpl ?? fetch;
   const notes: NoteResult[] = [];
   let spent = 0;
+  /**
+   * QUÉ TURNO RECLAMÓ ESTA CORRIDA (25 nov 2026). El turno no se elige por el reloj, se elige por
+   * cuántas notas van, y un turno que quema sus ocho intentos no dejaba rastro de cuál era: cuando
+   * una sección salía corta había que adivinarlo por las horas de publicación. Se apunta en el mismo
+   * `UPDATE` del cierre, así que no cuesta ni una escritura más.
+   */
+  let franjaDeLaCorrida: string | null = null;
   await startRun(db, runId, opts.trigger, startedAt);
 
   const done = async (
@@ -646,7 +662,7 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
     error?: string,
   ): Promise<RunSummary> => {
     const summary = { reason, notes, spentUsd: spent };
-    await finishRun(db, runId, status, step, summary, error);
+    await finishRun(db, runId, status, step, summary, error, franjaDeLaCorrida);
     return {
       ok: status !== "error",
       runId,
@@ -683,6 +699,11 @@ export async function runPipeline(env: RobotEnv, opts: PipelineOptions): Promise
   const perDay = Number((await getSetting(db, "notes_per_day")) ?? "6") || 6;
   const todayBySection = await robotNotesToday(db, now);
   let todayTotal = Object.values(todayBySection).reduce((a, b) => a + b, 0);
+  franjaDeLaCorrida =
+    (
+      (opts.franja ? FRANJAS.find((f) => f.key === opts.franja) : undefined) ??
+      franjaPendiente(now, todayTotal)
+    )?.key ?? null;
   if (todayTotal >= perDay) return done("skipped", "quota", "daily_quota_reached");
 
   const autoPublish = (await getSetting(db, "robot_auto_publish")) === "1";

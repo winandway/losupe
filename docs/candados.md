@@ -2325,3 +2325,38 @@ nuestro lado y están corregidas en la ficha.
 - **Qué NO tocar:** `ponerTransparencia` no debe tocar las notas de la casa; el aviso de
   transparencia no lo escribe nunca el modelo; y ninguna prueba de fichas puede depender del reloj
   real — se les pasa `now`, porque si no caducan solas el día que pasa el mes.
+
+## 62. El turno que no dejaba rastro: una sección salía corta y había que adivinar (25 nov 2026)
+
+**Qué se vio.** El día del estreno del segmento de delivery salió **una** nota de las tres. El diario
+publicó trece notas ese día —el ritmo estaba bien—, pero el reparto no: una de delivery, cuatro de
+artistas, tres de economía. Para saber por qué hubo que deducirlo de las horas de publicación del
+mapa de noticias y de los cinco rechazos seguidos que enseñaba el canario («suena a IA», «copia
+fuentes»).
+
+**La causa de que no se pudiera medir.** El turno **no se elige por el reloj**: `franjaPendiente`
+devuelve «el enésimo turno cuya hora ya pasó», donde ene es el número de notas que llevan hoy. Así
+el día se recupera en orden si el robot se atrasa. Pero cuando un turno quema sus ocho intentos se
+salta, y en la base no quedaba escrito **cuál** era: la tabla `runs` guardaba el disparador, el
+estado y el error, nunca el turno. La marca del turno vive en `settings` y se sobreescribe, así que
+solo se conserva la última.
+
+**El arreglo.** `runs` tiene columna `franja`, y la corrida la apunta **en el mismo `UPDATE` del
+cierre** que ya hacía: ni una escritura más (regla de presupuesto de la nube). El canario añade
+`turnos`: cada turno del día con su sección, cuántos intentos lleva, cuántas notas salieron y el
+motivo del **último** fallo —no el primero por orden alfabético, que es lo que devolvía un `MAX()`—.
+Los turnos salen en el orden del día, no en el que los devuelva la base.
+
+Esto no cambia cómo publica el diario: cambia que mañana no haya que adivinar. Lo que sí hay que
+mirar con esto puesto es si el filtro de calidad rechaza de más en una sección nueva, cuyas fuentes
+son revistas del sector y el modelo se apoya demasiado en sus frases (los dos rechazos de «copia
+fuentes» fueron del borrador en **inglés**).
+
+- **Pruebas:** `tests/unit/reloj-del-diario.test.ts` (el canario resume los turnos) y
+  `tests/unit/robot-pipeline.test.ts` (la corrida lo escribe al cerrar). **Rojo comprobado** con
+  cuatro mutaciones: la corrida no apunta el turno; el canario enseña el fallo alfabético en vez del
+  último; los turnos salen en el orden de la base; y apuntar el turno con un `UPDATE` aparte, que
+  sería una escritura de más por corrida.
+- **Qué NO tocar:** `franjaPendiente` indexa el array **por posición**, así que las horas de
+  `FRANJAS` tienen que seguir ordenadas de menor a mayor. Y el turno se apunta en el cierre, nunca
+  con un `UPDATE` propio.

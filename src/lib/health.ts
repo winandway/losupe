@@ -1,4 +1,5 @@
 import { fichasPorCaducar, fichasVencidas } from "./casa/vigilar-ficha";
+import { FRANJAS, NOMBRE_FRANJA, rangoDelDiaLocal } from "./robot/franjas";
 import type { SchemaStatus } from "./schema-guard";
 
 export type HealthReport = {
@@ -40,6 +41,20 @@ export type HealthReport = {
   fichasVencidas?: Record<string, string>;
   /** Fichas que caducan dentro de una semana, con los días que les quedan, para releerlas a tiempo. */
   fichasPorCaducar?: Record<string, number>;
+  /**
+   * LOS TURNOS DE HOY, uno por uno (25 nov 2026). El turno no se elige por el reloj, se elige por
+   * cuántas notas van; un turno que quema sus ocho intentos se salta y antes no dejaba rastro de
+   * cuál era. Aquí se ve de un vistazo: cuántos intentos lleva cada turno, si salió su nota y, si
+   * no salió, el último motivo. Medir antes de creer.
+   */
+  turnos?: {
+    key: string;
+    nombre: string;
+    seccion: string | null;
+    intentos: number;
+    notas: number;
+    porQue: string | null;
+  }[];
   db: {
     binding: boolean;
     schema: SchemaStatus | null;
@@ -95,6 +110,7 @@ export async function buildHealthReport(
     const guiones = await leerEstadoGuiones(db);
     const fichas = await fichasVencidas(db).catch(() => ({}));
     const porCaducar = fichasPorCaducar(new Date(time));
+    const turnos = await turnosDeHoy(db, new Date(time)).catch(() => []);
     return {
       ok: true,
       time,
@@ -112,6 +128,7 @@ export async function buildHealthReport(
       guiones,
       ...(Object.keys(fichas).length > 0 ? { fichasVencidas: fichas } : {}),
       ...(Object.keys(porCaducar).length > 0 ? { fichasPorCaducar: porCaducar } : {}),
+      ...(turnos.length > 0 ? { turnos } : {}),
       db: {
         binding: true,
         schema,
@@ -169,4 +186,45 @@ async function leerEstadoGuiones(db: D1Database): Promise<HealthReport["guiones"
     console.error("[health] no se pudo leer el estado de los guiones", error);
     return null;
   }
+}
+
+/**
+ * Resumen de los turnos de hoy, leído de `runs.franja`. Una sola consulta agrupada: nada de una
+ * consulta por turno (presupuesto de lecturas de la nube).
+ */
+async function turnosDeHoy(
+  db: D1Database,
+  now: Date,
+): Promise<NonNullable<HealthReport["turnos"]>> {
+  const { desde, hasta } = rangoDelDiaLocal(now);
+  const { results } = await db
+    .prepare(
+      `SELECT franja,
+              COUNT(*) AS intentos,
+              SUM(CASE WHEN status = 'done' THEN 1 ELSE 0 END) AS hechos,
+              (SELECT r2.error
+                 FROM runs r2
+                WHERE r2.franja = runs.franja
+                  AND r2.started_at >= ?1 AND r2.started_at < ?2
+                  AND r2.error IS NOT NULL
+                ORDER BY r2.started_at DESC, r2.rowid DESC
+                LIMIT 1) AS porQue
+         FROM runs
+        WHERE started_at >= ?1 AND started_at < ?2 AND franja IS NOT NULL
+        GROUP BY franja`,
+    )
+    .bind(desde, hasta)
+    .all<{ franja: string; intentos: number; hechos: number; porQue: string | null }>();
+  const porClave = new Map((results ?? []).map((r) => [r.franja, r]));
+  return FRANJAS.filter((f) => porClave.has(f.key)).map((f) => {
+    const r = porClave.get(f.key);
+    return {
+      key: f.key,
+      nombre: NOMBRE_FRANJA[f.key]?.es ?? f.key,
+      seccion: f.seccion ?? null,
+      intentos: Number(r?.intentos ?? 0),
+      notas: Number(r?.hechos ?? 0),
+      porQue: r?.porQue ? String(r.porQue).slice(0, 200) : null,
+    };
+  });
 }

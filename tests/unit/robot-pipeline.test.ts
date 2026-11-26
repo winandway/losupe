@@ -305,3 +305,24 @@ describe("cola y alternancia", () => {
     expect(q).toMatchObject({ sponsorsActive: 1, queued: 1, nextSponsor: "Empresa" });
   });
 });
+
+describe("la corrida apunta qué turno reclamó (25 nov 2026)", () => {
+  /**
+   * El día del estreno del segmento de delivery salió una nota de las tres y hubo que deducir el
+   * porqué de las horas de publicación, porque la corrida no dejaba escrito su turno. Se apunta en
+   * el mismo `UPDATE` del cierre: ni una escritura más, y el canario ya puede resumir el día.
+   */
+  it("lo escribe en el cierre de la corrida, sin una escritura de más", async () => {
+    const db = makeDb();
+    const r = await runPipeline(
+      { DB: db.asD1(), GEMINI_API_KEY: "k" },
+      { trigger: "cron", base: "https://losupe.com", fetchImpl: geminiOk, franja: "manana-3" },
+    );
+    expect(r.status).toBe("done");
+    const cierres = db.calls.filter((c) => c.sql.startsWith("UPDATE runs SET status"));
+    expect(cierres).toHaveLength(1);
+    expect(cierres[0]!.params[6]).toBe("manana-3");
+    // Y nadie añadió un UPDATE aparte solo para el turno.
+    expect(db.calls.filter((c) => /UPDATE runs SET franja/i.test(c.sql))).toHaveLength(0);
+  });
+});

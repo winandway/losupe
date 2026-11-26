@@ -29,11 +29,11 @@
       YaDominios → Servicios → losupe.com → DNSSEC (si no aparece la sección, la habilita Soporte).
 
       Key tag: `2371` · Algoritmo: `13` (ECDSAP256SHA256) · Tipo de digest: `2` (SHA-256)
-                                                                                  Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
-                                                                                  En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                      Digest: `674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
+                                                                                      En una sola línea: `losupe.com. IN DS 2371 13 2 674D6A1D62D32BFD81F8582CD4C69E958CD87E6D068B9A9F245D0D832CA78365`
 
-                                                                                  Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
-                                                                                  hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
+                                                                                      Se comprueba con `dig +short DS losupe.com`: cuando devuelva esa línea, está listo (tarda
+                                                                                      hasta unas horas). Detalle: [`docs/agentes-ia.md`](docs/agentes-ia.md).
 
 ## 🔴 Segmento de delivery (Richard, 25 nov 2026)
 
@@ -54,7 +54,12 @@
       `verificado` en `src/lib/casa/productos.ts`. El canario avisa una semana antes en
       `fichasPorCaducar`. Las nueve fichas del 7 de noviembre caducan el **7 de diciembre**.
 - [ ] 🤖 Vigilar la primera semana del segmento: que salgan las tres al día y que ninguna se vaya a
-      otra sección.
+      otra sección. **Medido el 25 de noviembre: salió UNA de tres** (trece notas en total ese día,
+      el ritmo bien, el reparto mal). El canario ahora enseña `turnos` con los intentos y el motivo
+      de cada turno (candado 62), así que mañana se ve sin deducir nada.
+- [ ] 🤖 Mirar si el filtro de calidad rechaza de más en delivery: los dos rechazos de «copia
+      fuentes» fueron del borrador en INGLÉS, y las fuentes del sector son revistas con mucha jerga.
+      Si se confirma, se refuerza la instrucción del inglés — nunca se baja el filtro.
 
 ## 🤖 Fila de la IA
 

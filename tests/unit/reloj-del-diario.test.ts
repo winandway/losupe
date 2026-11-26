@@ -119,3 +119,60 @@ describe("el reloj de GitHub es una guardia larga, no un disparo suelto", () => 
     expect(yml).toMatch(/cancel-in-progress:\s*false/);
   });
 });
+
+describe("el canario dice qué turno reclamó cada corrida (25 nov 2026)", () => {
+  /**
+   * El día del estreno del segmento de delivery salió UNA nota de las tres, y para saber por qué
+   * hubo que deducirlo de las horas de publicación: el turno no se elige por el reloj, se elige por
+   * cuántas notas van, y un turno que quema sus ocho intentos no dejaba rastro de cuál era. Ahora
+   * cada corrida lo apunta y el canario lo resume. Medir antes de creer.
+   */
+  it("resume los turnos del día: intentos, notas y el motivo del último fallo", async () => {
+    const { SqliteD1 } = await import("./sqlite-d1");
+    const { buildHealthReport } = await import("@/lib/health");
+    const { applySchema } = await import("@/lib/schema-guard");
+    const { SCHEMA_SQL } = await import("@/lib/schema-sql");
+    const db = new SqliteD1();
+    await applySchema(db as unknown as D1Database, SCHEMA_SQL);
+
+    let minuto = 0;
+    const corrida = (id: string, franja: string | null, status: string, error: string | null) =>
+      db.raw
+        .prepare(
+          `INSERT INTO runs (id, trigger, status, step, started_at, franja, error)
+           VALUES (?, 'cron', ?, 'end', ?, ?, ?)`,
+        )
+        .run(
+          id,
+          status,
+          new Date(Date.now() - (60 - minuto++) * 60_000).toISOString(),
+          franja,
+          error,
+        );
+
+    // El turno de delivery de media mañana: dos intentos, ninguna nota. El motivo que se enseña es
+    // el del ÚLTIMO intento, no el que quede primero por orden alfabético.
+    corrida("a", "manana-3", "error", "suena a IA");
+    corrida("b", "manana-3", "error", "El borrador en en copia fuentes (10.2 % de fragmentos)");
+    // El de la tarde: salió.
+    corrida("c", "tarde-2b", "done", null);
+    // Y una corrida que no reclamó turno (el latido): no cuenta como turno.
+    corrida("d", null, "skipped", null);
+
+    const r = await buildHealthReport(db as unknown as D1Database, null);
+    const turnos = r.turnos ?? [];
+    const manana3 = turnos.find((t) => t.key === "manana-3");
+    expect(manana3).toBeDefined();
+    expect(manana3!.seccion).toBe("delivery");
+    expect(manana3!.intentos).toBe(2);
+    expect(manana3!.notas).toBe(0);
+    expect(manana3!.porQue).toContain("copia fuentes");
+
+    const tarde = turnos.find((t) => t.key === "tarde-2b");
+    expect(tarde!.notas).toBe(1);
+    expect(tarde!.porQue).toBeNull();
+
+    // Y los turnos salen en el orden del día, no en el que los devuelva la base.
+    expect(turnos.map((t) => t.key)).toEqual(["manana-3", "tarde-2b"]);
+  });
+});

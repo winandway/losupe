@@ -383,6 +383,11 @@ ALTER TABLE article_i18n ADD COLUMN titulo_video TEXT;
 ALTER TABLE articles ADD COLUMN video_url TEXT;
 ALTER TABLE articles ADD COLUMN video_poster TEXT;
 ALTER TABLE articles ADD COLUMN video_credit TEXT;
+-- QUE TURNO RECLAMO ESTA CORRIDA (25 nov 2026). Sin esto, cuando una seccion sale corta hay que
+-- adivinar por las horas: el turno no se elige por el reloj, se elige por cuantas notas van, y un
+-- turno que quema sus ocho intentos no deja rastro de cual era. Ahora cada corrida lo apunta y el
+-- canario lo resume por dia. Medir antes de creer.
+ALTER TABLE runs ADD COLUMN franja TEXT;
 
 
 -- Equipo de redacción (personas reales). El robot reparte las notas entre ellos por turnos.
