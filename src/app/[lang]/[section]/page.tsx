@@ -12,7 +12,7 @@ import { getDict } from "@/i18n";
 import { requireLang } from "@/lib/params";
 import { getDb } from "@/lib/db";
 import { listPaged } from "@/lib/queries";
-import { FichaDelSector } from "@/components/FichaDelSector";
+import { DirectorioDelSector } from "@/components/DirectorioDelSector";
 import { FichasCasa } from "@/components/FichasCasa";
 import { sectionByAnySlug, sectionBySlug } from "@/lib/sections";
 import { breadcrumbJsonLd, itemListJsonLd, sectionAlternates } from "@/lib/seo";
@@ -139,9 +139,9 @@ export default async function SectionPage({ params, searchParams }: Props) {
       />
 
       {section.house && page === 1 ? <FichasCasa lang={lang} dict={dict} /> : null}
-      {/* La app del grupo que compite en este sector, declarada (candado 61). */}
+      {/* El directorio del sector, con la nuestra dentro y declarada (candado 63). */}
       {!section.house && page === 1 ? (
-        <FichaDelSector sectionId={section.id} lang={lang} dict={dict} />
+        <DirectorioDelSector sectionId={section.id} lang={lang} dict={dict} />
       ) : null}
     </Container>
   );

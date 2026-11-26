@@ -257,20 +257,39 @@ describe("nuestra propia app aparece en el segmento, declarada", () => {
     expect(b).toMatch(/NO escribas ningún aviso de transparencia/);
   });
 
-  it("la sección lleva su ficha al pie, con enlace marcado como de la casa", async () => {
+  it("al pie va el DIRECTORIO del sector, no una ficha sola de la nuestra", async () => {
     const { renderToStaticMarkup } = await import("react-dom/server");
-    const { FichaDelSector } = await import("@/components/FichaDelSector");
+    const { DirectorioDelSector } = await import("@/components/DirectorioDelSector");
+    const { DIRECTORIO } = await import("@/lib/sector/directorio");
     const { es } = await import("@/i18n/es");
     const html = renderToStaticMarkup(
-      <FichaDelSector sectionId="delivery" lang="es" dict={es as never} />,
+      <DirectorioDelSector sectionId="delivery" lang="es" dict={es as never} />,
     );
-    expect(html).toContain("Divoox");
+
+    // Están TODAS, con las mismas casillas. Una pieza fija que solo hable de la nuestra le dice a
+    // Google que la sección existe para promocionarla (docs/SEO-IMPARCIALIDAD.md).
+    for (const e of DIRECTORIO) expect(html).toContain(e.nombre);
+    expect(DIRECTORIO.filter((e) => !e.nuestra).length).toBeGreaterThanOrEqual(5);
+
+    // La nuestra NO va primero, y el titular de la sección no es nuestro producto.
+    expect(DIRECTORIO[0]!.nuestra).toBeFalsy();
+    expect(html.indexOf("Divoox")).toBeGreaterThan(html.indexOf("DoorDash"));
+    expect(html).not.toMatch(/Nuestra propia app/i);
+    expect(es.section.sectorDirTitle).not.toMatch(/divoox|nuestra/i);
+
+    // Pero la transparencia sigue, dentro de SU ficha.
     expect(html).toContain("Windoce LLC");
-    // `rel="sponsored"`: es de la casa y Google tiene que saberlo.
-    expect(html).toMatch(/rel="sponsored/);
-    // En una sección donde no tenemos producto, no se pinta nada.
+    // Enlaces: la nuestra marcada como de la casa, las demás sin pasar autoridad.
+    expect(html).toMatch(/rel="sponsored noopener"/);
+    expect(html).toMatch(/rel="nofollow noopener"/);
+    // Cada ficha dice de dónde salen sus datos.
+    for (const e of DIRECTORIO) expect(html).toContain(e.fuente.es);
+
+    // En una sección que no es la del sector, no se pinta nada.
     expect(
-      renderToStaticMarkup(<FichaDelSector sectionId="artistas" lang="es" dict={es as never} />),
+      renderToStaticMarkup(
+        <DirectorioDelSector sectionId="artistas" lang="es" dict={es as never} />,
+      ),
     ).toBe("");
   });
 });

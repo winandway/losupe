@@ -60,10 +60,13 @@ código:
    de apps de la región, una nota sobre Venezuela o América Latina, una sobre comisiones o sobre lo
    que gana un repartidor. Si no encaja, no lo menciona: una mención forzada se nota y resta. Nunca
    en el titular de algo que hizo otra empresa, y nunca un dato que no esté en la ficha.
-2. **Su ficha va al pie de la sección**, siempre, en las dos portadas de idioma: qué es, para quién
-   es, cuatro datos comprobados con su fecha y el enlace, marcado `rel="sponsored"`. Encabezada por
-   «Nuestra propia app de reparto» y la frase que lo dice sin rodeos: Losupe es de Windoce, y Windoce
-   también es dueña de esta app.
+2. **Al pie de la sección va el DIRECTORIO del sector**, no una ficha sola de la nuestra: Uber Eats,
+   DoorDash, Instacart, Rappi, Spark Driver y Divoox, con las mismas casillas para todas —qué es,
+   dónde opera, qué paga el restaurante, cómo cobra quien reparte—, ordenadas de la más grande a la
+   más nueva, con su fuente y su fecha. Divoox sale **la última**, con su línea de transparencia
+   dentro de SU ficha y el enlace marcado `rel="sponsored"`; los de las demás van `nofollow`.
+   Una ficha sola de la nuestra le decía a Google para qué existe la sección: ver
+   [`SEO-IMPARCIALIDAD.md`](SEO-IMPARCIALIDAD.md) y el candado 63.
 3. **Está en la rotación de temas** del segmento, como una empresa más de la lista, junto a DoorDash
    y a Rappi.
 

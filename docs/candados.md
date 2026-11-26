@@ -2367,3 +2367,39 @@ fuentes» fueron del borrador en **inglés**).
 - **Qué NO tocar:** `franjaPendiente` indexa el array **por posición**, así que las horas de
   `FRANJAS` tienen que seguir ordenadas de menor a mayor. El turno se apunta en el cierre, nunca con
   un `UPDATE` propio. Y la consulta de turnos **no se vuelve a envolver en un `catch` mudo**.
+
+## 63. Una ficha sola de nuestro producto le decía a Google para qué existe la sección (25 nov 2026)
+
+**Qué se vio.** Al pie de «Delivery y logística», en las dos portadas de idioma, había UNA ficha: la
+de Divoox, bajo el título **«Nuestra propia app de reparto»**. Estaba declarada, era verdad y estaba
+bien escrita. Richard la miró y dijo lo que nadie había dicho: _«le estás diciendo a Google: mira,
+estamos haciendo todo esto, lo estamos haciendo es por Divoox. Nosotros mismos nos estamos
+delatando… tenemos que ser parciales, porque si no, Google nos puede sancionar»_.
+
+**Por qué tenía razón.** La honestidad del aviso no arregla el problema de posicionamiento. Una pieza
+fija, repetida en toda la sección, que solo habla del producto del dueño, es exactamente lo que las
+políticas de Google llaman contenido hecho para el buscador y no para el lector —y linda con el abuso
+de la reputación del sitio: usar la autoridad del medio para posicionar otra cosa—. La prueba de
+fuego es la suya: _si un competidor mira la sección, ¿ve un medio o ve un folleto?_
+
+**El arreglo.** El directorio del sector: Uber Eats, DoorDash, Instacart, Rappi, Spark Driver y
+Divoox, con las **mismas cuatro casillas** para todas (qué es, dónde opera, qué paga el restaurante,
+cómo cobra quien reparte), cada una con su fuente y su fecha, y **cuando una empresa no publica un
+dato se dice que no lo publica** — eso informa igual y demuestra que la tabla no está armada para que
+gane uno. El orden es de la más grande a la más nueva, criterio neutro e impreso en la página, y por
+eso Divoox sale **la última**. La transparencia pasa de ser el titular de la sección a estar dentro
+de su propia ficha. Los enlaces: `sponsored` el nuestro, `nofollow` los demás; ninguno pasa autoridad.
+
+De paso, la tabla compara nuestras comisiones (7,5 / 12,5 / 15 %) con las de DoorDash (15 / 25 / 30 %)
+sin que tengamos que decir una palabra. Eso es lo que hace un medio: poner los datos al lado.
+
+**La regla escrita.** [`docs/SEO-IMPARCIALIDAD.md`](SEO-IMPARCIALIDAD.md), con las políticas de Google
+que la sostienen y las ocho reglas que seguimos en toda sección donde el grupo tenga un producto.
+
+- **Pruebas:** `tests/unit/segmento-delivery.test.tsx`. **Rojo comprobado** con cinco mutaciones:
+  dejar solo la nuestra (el fallo original), ponerla primera, devolver «nuestra» al titular, quitar
+  las marcas de los enlaces y borrar la línea de transparencia de su ficha.
+- **Qué NO tocar:** el directorio no baja de cinco competidores, nuestro producto no sube de
+  posición, el título de una pieza fija no lleva nuestro nombre ni la palabra «nuestra», y ninguna
+  ficha se queda sin fuente. Los datos de las demás empresas salen de sus propias páginas o de prensa
+  del sector citada: **jamás una cifra inventada de un competidor**, que ahí sí nos hunden de verdad.
