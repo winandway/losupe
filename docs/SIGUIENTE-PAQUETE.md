@@ -3,7 +3,36 @@
 > Dictado por Richard el 26 de noviembre de 2026, al final de una sesión que ya estaba muy larga.
 > Se arranca en una sesión nueva, en esta misma carpeta. Es lo único que hay que hacer.
 
-## 1. La cadencia de «Delivery y logística» (lo primero)
+## 0. Quitar la sección «Desde Windoce» del sitio (lo PRIMERO de todo)
+
+Orden de Richard, el 26 de noviembre: _«esto elimínalo. Eso yo lo pedí, pero interno: tener en cuenta
+nuestros proyectos para hablar de ellos cada vez que tengamos cosas nuevas y crear tutoriales de
+ellos, pero no para ponerlo así, porque aquí nos estamos delatando también»_.
+
+La idea original sigue viva, pero cambia de sitio: **cuando un producto nuestro lanza algo, eso es
+una noticia del sector y va en su sección** (punto 1 de este documento), no en una sección con
+nuestro nombre. Una sección llamada «Desde Windoce» en el menú de un diario es el mismo escaparate
+que el directorio y la etiqueta, en grande.
+
+Qué hay que hacer, con cuidado porque la sección está indexada:
+
+1. Apagar la sección en `src/lib/sections.ts` y en `schema.sql` (`active = 0`), para que salga del
+   menú, del pie, del mapa del sitio, del RSS, del MCP y de los listados.
+2. **Las direcciones viejas no se pueden quedar en 404.** `/es/desde-windoce` y `/en/from-windoce`
+   estaban en el mapa y Google ya las vio: redirección 301 a la portada (o a la sección que
+   corresponda), igual que se hizo en el candado 58. Las notas que ya salieron, lo mismo.
+3. Archivar las notas de esa sección (`status = 'archived'`), **sin borrar datos**.
+4. Parar el paso diario de la casa (`src/lib/casa/paso-diario.ts`) y su turno en la escaleta, y
+   retirar el resto de la maquinaria que quede muerta (fichas, aviso de la casa, `house_notes`),
+   dejando el candado 57 anotado como superado en `docs/candados.md`.
+5. Las siete notas que esperaban el visto bueno de Richard dejan de esperarlo: se archivan. Su
+   contenido sirve de material para las notas del sector cuando toque.
+6. Comprobar en vivo que no queda ni un enlace a la sección y que las direcciones viejas redirigen.
+
+Candado: una prueba que falla si la sección vuelve a aparecer en el menú, en el mapa del sitio o en
+el RSS, y otra que falla si una dirección vieja de la sección devuelve 404 en vez de redirigir.
+
+## 1. La cadencia de «Delivery y logística»
 
 Hoy el segmento rota temas uno por día. Con veintiséis empresas, nosotros saldríamos cada veintiséis
 días. Palabras de Richard: _«eso no es un SEO, no es un posicionamiento, no estamos haciendo nada»_.
